@@ -22,7 +22,7 @@ namespace TIZServer.TIZServer
 
 		#region IConnectionObserver Members
 
-		public bool GetConnection(Socket acceptSocket, bool isConnect)
+		public bool GetConnectionEvent(Socket acceptSocket, bool isConnect)
 		{
 			TizConnection connection;
 

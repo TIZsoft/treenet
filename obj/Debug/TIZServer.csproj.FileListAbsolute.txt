@@ -1,0 +1,11 @@
+E:\Project\TreeNet\bin\Debug\TIZServer.exe.config
+E:\Project\TreeNet\obj\Debug\TIZServer.csprojResolveAssemblyReference.cache
+E:\Project\TreeNet\obj\Debug\TIZServerForm.MainForm.resources
+E:\Project\TreeNet\obj\Debug\TIZServer.Properties.Resources.resources
+E:\Project\TreeNet\obj\Debug\TIZServer.csproj.GenerateResource.Cache
+E:\Project\TreeNet\bin\Debug\TIZServer.exe
+E:\Project\TreeNet\bin\Debug\TIZServer.pdb
+E:\Project\TreeNet\bin\Debug\Newtonsoft.Json.dll
+E:\Project\TreeNet\bin\Debug\Newtonsoft.Json.xml
+E:\Project\TreeNet\obj\Debug\TIZServer.exe
+E:\Project\TreeNet\obj\Debug\TIZServer.pdb

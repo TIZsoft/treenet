@@ -103,6 +103,7 @@ namespace TIZServer
 			_listenSocket.Listen(_config.MaxConnections);
 			//_listenSocket.IOControl(IOControlCode.KeepAliveValues, TIZNetwork.GetKeepAliveSetting(1, 5000, 5000), null);
 			StartAccept(_acceptAsyncOp);
+			Logger.Log("Server try accept...");
 		}
 
 		public void Stop()
@@ -143,7 +144,7 @@ namespace TIZServer
 			RemoveNullObservers();
 
 			foreach (IConnectionObserver observer in _observers)
-				observer.GetConnection(socket, isConnect);
+				observer.GetConnectionEvent(socket, isConnect);
 		}
 
 		#endregion

@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Net;
+using System.Text;
 using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
-using Newtonsoft.Json;
 using TIZServer;
-using TIZSoft;
+using TIZServer.TestClient;
 using TIZSoft.VS;
 
 namespace TIZServerForm
@@ -17,6 +12,7 @@ namespace TIZServerForm
 		private ServerConfig _serverConfig;
 		private LogPrinter _logPrinter;
 		private ServerMain _main;
+		private TestClient _testClient;
 
 		void ReadServerConfig()
 		{
@@ -36,12 +32,22 @@ namespace TIZServerForm
 			ServerConfig.Save(Application.StartupPath, _serverConfig);
 		}
 
+		ClientConfig GetTestClientConfig()
+		{
+			ClientConfig config = new ClientConfig();
+			config.Address = AddressTextBox.Text;
+			config.Port = int.Parse(PortTextBox.Text);
+			config.BufferSize = int.Parse(BufferSizeTextBox.Text);
+			return config;
+		}
+
 		public MainForm()
 		{
 			InitializeComponent();
 			ReadServerConfig();
 			_logPrinter = new LogPrinter(LogMsgrichTextBox);
 			_main = new ServerMain();
+			_testClient = new TestClient();
 		}
 
 		private void PortTextBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -51,64 +57,21 @@ namespace TIZServerForm
 
 		private void StartBtn_Click(object sender, EventArgs e)
 		{
-			SaveServerConfig();
-			_main.Setup(_serverConfig);
-			_main.Start();
+			bool isClient = IsClientCheckBox.Checked;
 
-			//if (_server == null)
-			//	CreateServer();
-
-			//if (_server.IsRunning)
-			//	_server.StopServer();
-			//else
-			//{
-			//	GameDataLoader.LoadAllFiles(Application.StartupPath + @"\GameData");
-			//	_server.StartServer(GetNetConfig(), DBHosttextBox.Text, DBUsertextBox.Text, DBPwdtextBox.Text);
-			//}
+			if (isClient)
+			{
+				ClientConfig config = GetTestClientConfig();
+				_testClient.Setup(config);
+				_testClient.Start();
+			}
+			else
+			{
+				SaveServerConfig();
+				_main.Setup(_serverConfig);
+				_main.Start();
+			}
 		}
-
-		private void CreateServer()
-		{
-			//_server = new Server();
-		}
-
-		//private NetConfig GetNetConfig()
-		//{
-		//	string address = AddressTextBox.Text;
-		//	int port = 0;
-
-		//	if (!int.TryParse(PortTextBox.Text, out port))
-		//	{
-		//		Logger.LogError(string.Format("parse Port fail! use {0} instead!", TIZNetwork.DEFAULT_PORT_NUMBER));
-		//		port = TIZNetwork.DEFAULT_PORT_NUMBER;
-		//	}
-
-		//	int maxConn = 0;
-
-		//	if (!int.TryParse(MaxConnsTextBox.Text, out maxConn))
-		//	{
-		//		Logger.LogError(string.Format("parse Max Conns. fail! use {0} instead!", TIZNetwork.DEFAULT_SERVER_MAX_CONN));
-		//		maxConn = TIZNetwork.DEFAULT_SERVER_MAX_CONN;
-		//	}
-
-		//	int bufferSize = 0;
-
-		//	if (!int.TryParse(BufferSizeTextBox.Text, out bufferSize))
-		//	{
-		//		Logger.LogError(string.Format("parse Content Size fail! use {0} instead!", TIZNetwork.DEFAULT_NET_BUFFER_SIZE));
-		//		bufferSize = TIZNetwork.DEFAULT_NET_BUFFER_SIZE;
-		//	}
-
-		//	int listenNumber = 0;
-
-		//	if (!int.TryParse(ListenNoTextBox.Text, out listenNumber))
-		//	{
-		//		Logger.LogError(string.Format("parse Listen No. fail! use {0} instead!", TIZNetwork.DEFAULT_SERVER_LISTEN_NUM));
-		//		listenNumber = TIZNetwork.DEFAULT_SERVER_LISTEN_NUM;
-		//	}
-
-		//	return new NetConfig(address, port, SocketType.Stream, ProtocolType.Tcp, maxConn, bufferSize, listenNumber);
-		//}
 
 		//private void CheckServerStatus()
 		//{
@@ -143,7 +106,10 @@ namespace TIZServerForm
 
 		private void button1_Click(object sender, EventArgs e)
 		{
-			SaveServerConfig();
+			if (IsClientCheckBox.Checked)
+				_testClient.Connection.Send(Encoding.UTF8.GetBytes("Hello World!"));
+
+			//SaveServerConfig();
 			//string json = File.ReadAllText(Application.StartupPath + @"\Award_S.json");
 			//GameData<Award> datas = new GameData<Award>(json);
 

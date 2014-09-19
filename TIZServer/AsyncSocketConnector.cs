@@ -1,6 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
+using System.Windows.Forms.VisualStyles;
 using TIZServer.Interface;
+using TIZServer.TestClient;
+using TIZSoft;
 
 namespace TIZServer
 {
@@ -8,23 +12,63 @@ namespace TIZServer
 	{
 		private List<IConnectionObserver> _connectionObservers;
 		private SocketAsyncEventArgs _connectArgs;
-		private readonly BufferManager _bufferManager;
 
 		void OnConnectComplete(object sender, SocketAsyncEventArgs args)
 		{
-			
+			switch (args.LastOperation)
+			{
+				case SocketAsyncOperation.Connect:
+					ConnectResult(args);
+					break;
+
+				default:
+					break;
+			}
 		}
 
-		void InitConnectArgs(string address, int port)
+		void ConnectResult(SocketAsyncEventArgs args)
 		{
+			switch (args.SocketError)
+			{
+				case SocketError.Success:
+					Notify(args.AcceptSocket, true);
+					break;
 
+				default:
+					Logger.Log(string.Format("因為 {0} ，所以無法連線", args.SocketError));
+					break;
+			}
 		}
 
-		public AsyncSocketConnector(BufferManager bufferManager, string address, int port)
+		void InitConnectArgs(ClientConfig config)
+		{
+			if (_connectArgs != null)
+				_connectArgs.Dispose();
+
+			_connectArgs = new SocketAsyncEventArgs();
+			_connectArgs.AcceptSocket = new Socket(AddressFamily.InterNetwork, config.TransferType, config.UseProtocol);
+			IPAddress ipAddress = IPAddress.Parse(config.Address);
+			_connectArgs.RemoteEndPoint = new IPEndPoint(ipAddress, config.Port);
+			_connectArgs.Completed += OnConnectComplete;
+		}
+
+		public AsyncSocketConnector()
 		{
 			_connectionObservers = new List<IConnectionObserver>();
-			_bufferManager = bufferManager;
-			InitConnectArgs(address, port);
+		}
+
+		public void Connect(ClientConfig config)
+		{
+			InitConnectArgs(config);
+
+			if (!_connectArgs.AcceptSocket.ConnectAsync(_connectArgs))
+				ConnectResult(_connectArgs);
+		}
+
+		public void Stop()
+		{
+			if (_connectArgs != null)
+				_connectArgs.Dispose();
 		}
 
 		#region IConnectionSubject Members

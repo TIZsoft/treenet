@@ -56,6 +56,7 @@
 			this.ConnectionCountLabel = new System.Windows.Forms.Label();
 			this.button1 = new System.Windows.Forms.Button();
 			this.GameUpdateTimer = new System.Windows.Forms.Timer(this.components);
+			this.IsClientCheckBox = new System.Windows.Forms.CheckBox();
 			this.ConnectionPanel.SuspendLayout();
 			this.panel1.SuspendLayout();
 			this.SuspendLayout();
@@ -156,7 +157,7 @@
 			this.BufferSizeLabel.AutoSize = true;
 			this.BufferSizeLabel.Location = new System.Drawing.Point(15, 114);
 			this.BufferSizeLabel.Name = "BufferSizeLabel";
-			this.BufferSizeLabel.Size = new System.Drawing.Size(58, 12);
+			this.BufferSizeLabel.Size = new System.Drawing.Size(64, 12);
 			this.BufferSizeLabel.TabIndex = 13;
 			this.BufferSizeLabel.Text = "Content Size";
 			// 
@@ -334,11 +335,22 @@
 			this.GameUpdateTimer.Interval = 33;
 			this.GameUpdateTimer.Tick += new System.EventHandler(this.GameUpdateTimer_Tick);
 			// 
+			// IsClientCheckBox
+			// 
+			this.IsClientCheckBox.AutoSize = true;
+			this.IsClientCheckBox.Location = new System.Drawing.Point(536, 46);
+			this.IsClientCheckBox.Name = "IsClientCheckBox";
+			this.IsClientCheckBox.Size = new System.Drawing.Size(60, 16);
+			this.IsClientCheckBox.TabIndex = 6;
+			this.IsClientCheckBox.Text = "IsClient";
+			this.IsClientCheckBox.UseVisualStyleBackColor = true;
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(784, 562);
+			this.Controls.Add(this.IsClientCheckBox);
 			this.Controls.Add(this.button1);
 			this.Controls.Add(this.panel1);
 			this.Controls.Add(this.ConnectionPanel);
@@ -350,6 +362,7 @@
 			this.panel1.ResumeLayout(false);
 			this.panel1.PerformLayout();
 			this.ResumeLayout(false);
+			this.PerformLayout();
 
 		}
 
@@ -382,5 +395,6 @@
 		private System.Windows.Forms.Label label3;
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.Timer GameUpdateTimer;
+		private System.Windows.Forms.CheckBox IsClientCheckBox;
 	}
 }

@@ -117,7 +117,7 @@ namespace TIZServer
 			_packetContainer = packetContainer;
 		}
 
-		public TizConnection()
+		protected TizConnection()
 		{
 			DestAddress = string.Empty;
 			_observers = new List<IConnectionObserver>();
@@ -196,7 +196,7 @@ namespace TIZServer
 			RemoveNullObservers();
 
 			foreach (IConnectionObserver observer in _observers)
-				observer.GetConnection(connection, isConnect);
+				observer.GetConnectionEvent(connection, isConnect);
 		}
 
 		#endregion
