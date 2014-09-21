@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet", "Tizsoft.Treenet\Tizsoft.Treenet.csproj", "{1D6374E8-979F-457C-A649-3E3369373365}"
+	ProjectSection(ProjectDependencies) = postProject
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652} = {42DD1816-7E8D-4581-93B6-BE03F1E72652}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft", "Tizsoft\Tizsoft.csproj", "{42DD1816-7E8D-4581-93B6-BE03F1E72652}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Net", "Tizsoft.Net\Tizsoft.Net.csproj", "{C63ED371-2C77-40AD-B9BC-F1222B221B68}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.IO", "Tizsoft.IO\Tizsoft.IO.csproj", "{206DAAAD-628B-46A9-8366-8CCA080B1991}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Data", "Tizsoft.Data\Tizsoft.Data.csproj", "{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1D6374E8-979F-457C-A649-3E3369373365}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D6374E8-979F-457C-A649-3E3369373365}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D6374E8-979F-457C-A649-3E3369373365}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D6374E8-979F-457C-A649-3E3369373365}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C63ED371-2C77-40AD-B9BC-F1222B221B68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C63ED371-2C77-40AD-B9BC-F1222B221B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C63ED371-2C77-40AD-B9BC-F1222B221B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C63ED371-2C77-40AD-B9BC-F1222B221B68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{206DAAAD-628B-46A9-8366-8CCA080B1991}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{206DAAAD-628B-46A9-8366-8CCA080B1991}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{206DAAAD-628B-46A9-8366-8CCA080B1991}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{206DAAAD-628B-46A9-8366-8CCA080B1991}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
