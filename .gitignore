@@ -1,2 +1,10 @@
 */bin
 */obj
+packages/Newtonsoft.Json.6.0.5/lib/net20/Newtonsoft.Json.dll
+packages/Newtonsoft.Json.6.0.5/lib/net35/Newtonsoft.Json.dll
+packages/Newtonsoft.Json.6.0.5/lib/net40/Newtonsoft.Json.dll
+packages/Newtonsoft.Json.6.0.5/lib/net45/Newtonsoft.Json.dll
+packages/Newtonsoft.Json.6.0.5/lib/netcore45/Newtonsoft.Json.dll
+packages/Newtonsoft.Json.6.0.5/lib/portable-net40+sl5+wp80+win8+wpa81/Newtonsoft.Json.dll
+packages/Newtonsoft.Json.6.0.5/lib/portable-net45+wp80+win8+wpa81/Newtonsoft.Json.dll
+treenet.v12.suo
