@@ -1,20 +1,36 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet", "Tizsoft.Treenet\Tizsoft.Treenet.csproj", "{1D6374E8-979F-457C-A649-3E3369373365}"
 	ProjectSection(ProjectDependencies) = postProject
 		{42DD1816-7E8D-4581-93B6-BE03F1E72652} = {42DD1816-7E8D-4581-93B6-BE03F1E72652}
+		{C63ED371-2C77-40AD-B9BC-F1222B221B68} = {C63ED371-2C77-40AD-B9BC-F1222B221B68}
+		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0} = {B722B7A9-8ACE-4D6F-929F-05075C69FFD0}
+		{206DAAAD-628B-46A9-8366-8CCA080B1991} = {206DAAAD-628B-46A9-8366-8CCA080B1991}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft", "Tizsoft\Tizsoft.csproj", "{42DD1816-7E8D-4581-93B6-BE03F1E72652}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Net", "Tizsoft.Net\Tizsoft.Net.csproj", "{C63ED371-2C77-40AD-B9BC-F1222B221B68}"
+	ProjectSection(ProjectDependencies) = postProject
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652} = {42DD1816-7E8D-4581-93B6-BE03F1E72652}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.IO", "Tizsoft.IO\Tizsoft.IO.csproj", "{206DAAAD-628B-46A9-8366-8CCA080B1991}"
+	ProjectSection(ProjectDependencies) = postProject
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652} = {42DD1816-7E8D-4581-93B6-BE03F1E72652}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Data", "Tizsoft.Data\Tizsoft.Data.csproj", "{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{42DD1816-7E8D-4581-93B6-BE03F1E72652} = {42DD1816-7E8D-4581-93B6-BE03F1E72652}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet.Tests", "Tizsoft.Treenet.Tests\Tizsoft.Treenet.Tests.csproj", "{6B29104B-D7FB-4A51-91DF-C84088694396}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,8 +58,15 @@ Global
 		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B722B7A9-8ACE-4D6F-929F-05075C69FFD0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B29104B-D7FB-4A51-91DF-C84088694396}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B29104B-D7FB-4A51-91DF-C84088694396}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B29104B-D7FB-4A51-91DF-C84088694396}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B29104B-D7FB-4A51-91DF-C84088694396}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6B29104B-D7FB-4A51-91DF-C84088694396} = {BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}
 	EndGlobalSection
 EndGlobal

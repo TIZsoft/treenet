@@ -30,6 +30,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.6.0.5\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -39,32 +43,42 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientConfig.cs" />
+    <Compile Include="DBConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TIZServer\AsyncSocketConnector.cs" />
-    <Compile Include="TIZServer\AsyncSocketListener.cs" />
-    <Compile Include="TIZServer\BufferManager.cs" />
-    <Compile Include="TIZServer\ConnectionMonitor.cs" />
-    <Compile Include="TIZServer\Interface\IConnectionObserver.cs" />
-    <Compile Include="TIZServer\Interface\IConnectionSubject.cs" />
-    <Compile Include="TIZServer\Interface\INullObj.cs" />
-    <Compile Include="TIZServer\Interface\IPacketContainer.cs" />
-    <Compile Include="TIZServer\Interface\IPacketParser.cs" />
-    <Compile Include="TIZServer\Null Objects\NullTizConnection.cs" />
-    <Compile Include="TIZServer\Null Objects\NullTizPacket.cs" />
-    <Compile Include="TIZServer\PacketContainer.cs" />
-    <Compile Include="TIZServer\PacketHandler.cs" />
-    <Compile Include="TIZServer\ParseDefaultEchoPacket.cs" />
-    <Compile Include="TIZServer\ServerConfig.cs" />
-    <Compile Include="TIZServer\ServerMain.cs" />
-    <Compile Include="TIZServer\TestClient\ClientConfig.cs" />
-    <Compile Include="TIZServer\TestClient\TestClient.cs" />
-    <Compile Include="TIZServer\TizConnection.cs" />
-    <Compile Include="TIZServer\TizPacket.cs" />
+    <Compile Include="AsyncSocketConnector.cs" />
+    <Compile Include="AsyncSocketListener.cs" />
+    <Compile Include="BufferManager.cs" />
+    <Compile Include="ConnectionMonitor.cs" />
+    <Compile Include="Interface\IConnectionObserver.cs" />
+    <Compile Include="Interface\IConnectionSubject.cs" />
+    <Compile Include="Interface\INullObj.cs" />
+    <Compile Include="Interface\IPacketContainer.cs" />
+    <Compile Include="Interface\IPacketParser.cs" />
+    <Compile Include="Null Objects\NullTizConnection.cs" />
+    <Compile Include="Null Objects\NullTizPacket.cs" />
+    <Compile Include="PacketContainer.cs" />
+    <Compile Include="PacketHandler.cs" />
+    <Compile Include="ParseDefaultEchoPacket.cs" />
+    <Compile Include="ServerConfig.cs" />
+    <Compile Include="ServerMain.cs" />
+    <Compile Include="TizConnection.cs" />
+    <Compile Include="Network.cs" />
+    <Compile Include="TizPacket.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Diagnostics\" />
     <Folder Include="Security\" />
     <Folder Include="Web\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tizsoft\Tizsoft.csproj">
+      <Project>{42DD1816-7E8D-4581-93B6-BE03F1E72652}</Project>
+      <Name>Tizsoft</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

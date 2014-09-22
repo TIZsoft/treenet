@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace TIZSoft
+namespace Tizsoft
 {
     public struct LogMsg
     {
