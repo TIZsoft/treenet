@@ -2,51 +2,23 @@
 
 namespace Tizsoft.Treenet
 {
-	public class ClientConfig
-	{
-		public string Address { get; set; }
-		public int Port { get; set; }
-		public int BufferSize { get; set; }
-		public SocketType TransferType { get; set; }
-		public ProtocolType UseProtocol { get; set; }
+    public class ClientConfig
+    {
+        public string Address { get; set; }
 
-		//private static string CONFIG_FILENAME = "ServerConfig.json";
+        public int Port { get; set; }
 
-		//private static string ConfigFullPath(string appPath)
-		//{
-		//	return string.Format(@"{0}\{1}", appPath, CONFIG_FILENAME);
-		//}
+        public int BufferSize { get; set; }
 
-		public ClientConfig()
-		{
-			Address = "127.0.0.1";
-			TransferType = SocketType.Stream;
-			UseProtocol = ProtocolType.Tcp;
-		}
+        public SocketType TransferType { get; set; }
 
-		//public static ServerConfig Read(string appPath)
-		//{
-		//	ServerConfig config = new ServerConfig();
+        public ProtocolType UseProtocol { get; set; }
 
-		//	if (File.Exists(ConfigFullPath(appPath)))
-		//	{
-		//		using (var configFile = File.OpenText(ConfigFullPath(appPath)))
-		//		{
-		//			string configString = configFile.ReadToEnd();
-
-		//			if (!string.IsNullOrEmpty(configString))
-		//				config = JsonConvert.DeserializeObject<ServerConfig>(configString);
-		//		}
-		//	}
-
-		//	return config;
-		//}
-
-		//public static void Save(string appPath, ServerConfig config)
-		//{
-		//	string jsonStr = JsonConvert.SerializeObject(config);
-		//	File.WriteAllText(ConfigFullPath(appPath), jsonStr, Encoding.UTF8);
-		//	Logger.Log(jsonStr);
-		//}
-	}
+        public ClientConfig()
+        {
+            Address = "127.0.0.1";
+            TransferType = SocketType.Stream;
+            UseProtocol = ProtocolType.Tcp;
+        }
+    }
 }

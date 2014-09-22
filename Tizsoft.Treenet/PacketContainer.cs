@@ -8,50 +8,43 @@ namespace Tizsoft.Treenet
     {
         public PacketContainer()
         {
-            _waitToParsePackets = new Queue<TizPacket>();
-            _unusedPackets = new Queue<TizPacket>();
+            _waitToParsePackets = new Queue<Packet>();
+            _unusedPackets = new Queue<Packet>();
         }
 
-        Queue<TizPacket> _waitToParsePackets;
-        Queue<TizPacket> _unusedPackets;
+        readonly Queue<Packet> _waitToParsePackets;
+        readonly Queue<Packet> _unusedPackets;
 
-        TizPacket GetUnusedPacket()
+        Packet GetUnusedPacket()
         {
-            TizPacket unusedPacket;
-
-            if (_unusedPackets.Count != 0)
-                unusedPacket = _unusedPackets.Dequeue();
-            else
-                unusedPacket = new TizPacket();
-		
-            return unusedPacket;
+            return _unusedPackets.Count != 0 ? _unusedPackets.Dequeue() : new Packet();
         }
 
         #region IPacketContainer Members
 
-        public void AddPacket(TizConnection connection, SocketAsyncEventArgs asyncArgs)
+        public void AddPacket(Connection connection, SocketAsyncEventArgs asyncArgs)
         {
-            TizPacket packet = GetUnusedPacket();
+            var packet = GetUnusedPacket();
             packet.SetContent(connection, asyncArgs);
             _waitToParsePackets.Enqueue(packet);
         }
 
-        public void RecyclePacket(TizPacket packet)
+        public void RecyclePacket(Packet packet)
         {
-            if (packet != null)
-            {
-                packet.Clear();
-                _unusedPackets.Enqueue(packet);	
-            }
+            if (packet == null)
+                return;
+
+            packet.Clear();
+            _unusedPackets.Enqueue(packet);
         }
 
-        public TizPacket NextPacket()
+        public Packet NextPacket()
         {
             return _waitToParsePackets.Count > 0 ? _waitToParsePackets.Dequeue() : NullPacket;
         }
 
         #endregion
 
-        public static TizPacket NullPacket { get { return NullTizPacket.Instance; } }
+        public static Packet NullPacket { get { return Treenet.NullPacket.Instance; } }
     }
 }

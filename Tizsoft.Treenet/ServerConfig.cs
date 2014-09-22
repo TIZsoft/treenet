@@ -5,50 +5,55 @@ using Newtonsoft.Json;
 
 namespace Tizsoft.Treenet
 {
-	public class ServerConfig
-	{
-		public string Address { get; set; }
-		public int Port { get; set; }
-		public int MaxConnections { get; set; }
-		public int BufferSize { get; set; }
-		public SocketType TransferType { get; set; }
-		public ProtocolType UseProtocol { get; set; }
+    public class ServerConfig
+    {
+        public string Address { get; set; }
 
-		private static string CONFIG_FILENAME = "ServerConfig.json";
+        public int Port { get; set; }
 
-		private static string ConfigFullPath(string appPath)
-		{
-			return string.Format(@"{0}\{1}", appPath, CONFIG_FILENAME);
-		}
+        public int MaxConnections { get; set; }
 
-		public ServerConfig()
-		{
-			Address = "127.0.0.1";
-		}
+        public int BufferSize { get; set; }
 
-		public static ServerConfig Read(string appPath)
-		{
-			ServerConfig config = new ServerConfig();
+        public SocketType TransferType { get; set; }
 
-			if (File.Exists(ConfigFullPath(appPath)))
-			{
-				using (var configFile = File.OpenText(ConfigFullPath(appPath)))
-				{
-					string configString = configFile.ReadToEnd();
+        public ProtocolType UseProtocol { get; set; }
 
-					if (!string.IsNullOrEmpty(configString))
-						config = JsonConvert.DeserializeObject<ServerConfig>(configString);
-				}
-			}
+        const string ConfigFilename = "ServerConfig.json";
 
-			return config;
-		}
+        private static string ConfigFullPath(string appPath)
+        {
+            return string.Format(@"{0}\{1}", appPath, ConfigFilename);
+        }
 
-		public static void Save(string appPath, ServerConfig config)
-		{
-			string jsonStr = JsonConvert.SerializeObject(config);
-			File.WriteAllText(ConfigFullPath(appPath), jsonStr, Encoding.UTF8);
-			Logger.Log(jsonStr);
-		}
-	}
+        public ServerConfig()
+        {
+            Address = "127.0.0.1";
+        }
+
+        public static ServerConfig Read(string appPath)
+        {
+            var config = new ServerConfig();
+
+            if (File.Exists(ConfigFullPath(appPath)))
+            {
+                using (var configFile = File.OpenText(ConfigFullPath(appPath)))
+                {
+                    var configString = configFile.ReadToEnd();
+
+                    if (!string.IsNullOrEmpty(configString))
+                        config = JsonConvert.DeserializeObject<ServerConfig>(configString);
+                }
+            }
+
+            return config;
+        }
+
+        public static void Save(string appPath, ServerConfig config)
+        {
+            var jsonStr = JsonConvert.SerializeObject(config);
+            File.WriteAllText(ConfigFullPath(appPath), jsonStr, Encoding.UTF8);
+            Logger.Log(jsonStr);
+        }
+    }
 }

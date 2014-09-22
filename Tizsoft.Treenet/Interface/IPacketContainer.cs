@@ -4,9 +4,10 @@ namespace Tizsoft.Treenet.Interface
 {
 	public interface IPacketContainer
 	{
-		void AddPacket(TizConnection connection, SocketAsyncEventArgs aysncArgs);
-		void RecyclePacket(TizPacket packet);
-		//int PacketCount { get; }
-		TizPacket NextPacket();
+		void AddPacket(Connection connection, SocketAsyncEventArgs aysncArgs);
+
+		void RecyclePacket(Packet packet);
+
+		Packet NextPacket();
 	}
 }

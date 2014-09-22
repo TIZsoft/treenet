@@ -56,7 +56,7 @@ namespace Tizsoft.Collections
             {
                 return item;
             }
-            
+
             return _objectGenerator();
         }
 
