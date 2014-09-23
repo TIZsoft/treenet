@@ -1,34 +1,16 @@
-﻿using System;
-using Tizsoft.Collections;
+﻿using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
-    public class ServerMain
+    public class ServerMain : IService
     {
         SimpleObjPool<Connection> _asyncOpPool;
         readonly BufferManager _bufferManager;
         readonly AsyncSocketListener _socketListener;
-        readonly ConnectionMonitor _connectionMonitor;
+        readonly ConnectionObserver _connectionObserver;
         readonly IPacketContainer _packetContainer;
         readonly PacketHandler _packetHandler;
-
-        IPacketParser CreatePacketParser(PacketType type)
-        {
-            switch (type)
-            {
-                default:
-                    return new ParseDefaultEchoPacket();
-            }
-        }
-
-        void InitPacketHandler()
-        {
-            foreach (PacketType type in Enum.GetValues(typeof(PacketType)))
-            {
-                _packetHandler.AddParser((int)type, null);
-            }
-        }
 
         void InitConnectionPool(int maxConnections, IPacketContainer packetContainer, IConnectionObserver connectionObserver)
         {
@@ -46,8 +28,8 @@ namespace Tizsoft.Treenet
         {
             _bufferManager = new BufferManager();
             _socketListener = new AsyncSocketListener();
-            _connectionMonitor = new ConnectionMonitor();
-            _socketListener.Register(_connectionMonitor);
+            _connectionObserver = new ConnectionObserver();
+            _socketListener.Register(_connectionObserver);
             _packetContainer = new PacketContainer();
             _packetHandler = new PacketHandler();
         }
@@ -55,19 +37,9 @@ namespace Tizsoft.Treenet
         public void Setup(ServerConfig config)
         {
             _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
-            InitConnectionPool(config.MaxConnections, _packetContainer, _connectionMonitor);
-            _connectionMonitor.Setup(config.MaxConnections, _asyncOpPool);
+            InitConnectionPool(config.MaxConnections, _packetContainer, _connectionObserver);
+            _connectionObserver.Setup(_asyncOpPool);
             _socketListener.Setup(config);
-        }
-
-        public void Start()
-        {
-            _socketListener.Start();
-        }
-
-        public void Stop()
-        {
-            _socketListener.Stop();
         }
 
         public void Update()
@@ -81,5 +53,24 @@ namespace Tizsoft.Treenet
                 _packetHandler.Parse(packet);
             }
         }
+
+        #region IService Members
+
+        public void Start()
+        {
+            _socketListener.Start();
+            IsWorking = true;
+        }
+
+        public void Stop()
+        {
+            _socketListener.Stop();
+            _connectionObserver.Reset();
+            IsWorking = false;
+        }
+
+        public bool IsWorking { get; private set; }
+
+        #endregion
     }
 }

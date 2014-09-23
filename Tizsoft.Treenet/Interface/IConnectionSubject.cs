@@ -8,6 +8,6 @@ namespace Tizsoft.Treenet.Interface
 
         void Unregister(IConnectionObserver observer);
 
-        void Notify(Socket connection, bool isConnect);
+        void Notify(Socket socket, bool isConnect);
     }
 }

@@ -1,13 +1,12 @@
 ﻿using System.Net.Sockets;
-using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
-    public class NullPacket : Packet, INullObj
+    public class NullPacket : Packet
     {
-        static NullPacket _instance;
+        static Packet _instance;
 
-        public static NullPacket Instance
+        public static Packet Instance
         {
             get
             {
@@ -20,24 +19,22 @@ namespace Tizsoft.Treenet
 
         NullPacket()
         {
-            Connection = NullConnection.Instance;
+            Connection = Connection.NullConnection;
         }
 
-        public new void SetContent(Connection connection, SocketAsyncEventArgs asyncArgs)
+        public override void SetContent(Connection connection, SocketAsyncEventArgs asyncArgs)
         {
         }
 
-        public new void Clear()
+        public override void Clear()
         {
         }
 
-        public new byte[] Content { get { return null; } }
-
-        public new Connection Connection { get; private set; }
+        public override byte[] Content { get { return null; } }
 
         #region INullObj Members
 
-        public new bool IsNull
+        public override bool IsNull
         {
             get { return true; }
         }

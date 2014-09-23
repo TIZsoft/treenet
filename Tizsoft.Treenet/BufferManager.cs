@@ -82,10 +82,7 @@ namespace Tizsoft.Treenet
         public void FreeBuffer(SocketAsyncEventArgs args)
         {
             if (args != null)
-            {
                 _freeIndexPool.Push(args.Offset);
-                args.SetBuffer(null, 0, 0);
-            }
         }
     }
 }

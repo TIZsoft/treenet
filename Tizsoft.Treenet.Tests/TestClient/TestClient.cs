@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Net.Sockets;
+using System.Text;
+using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet.Tests.TestClient
@@ -6,41 +8,41 @@ namespace Tizsoft.Treenet.Tests.TestClient
     /// <summary>
     /// support "only 1" connection
     /// </summary>
-    public class TestClient : IConnectionObserver
+    public class TestClient : IConnectionObserver, IService
     {
+        Connection _connection;
+        ClientConfig _config;
+        SimpleObjPool<Connection> _connectionPool;
         readonly AsyncSocketConnector _connector;
-        readonly Connection _connection;
         readonly BufferManager _bufferManager;
         readonly IPacketContainer _packetContainer;
-        ClientConfig _config;
+        readonly ConnectionObserver _connectionObserver;
+        readonly PacketHandler _packetHandler;
+
+        void InitConnectionPool()
+        {
+            _connection = new Connection(_bufferManager, _packetContainer);
+            _connection.Register(_connectionObserver);
+            _connectionPool = new SimpleObjPool<Connection>(1);
+            _connectionPool.Push(_connection);
+        }
 
         public TestClient()
         {
             _connector = new AsyncSocketConnector();
-            _bufferManager = new BufferManager();
             _packetContainer = new PacketContainer();
-            _connection = new Connection(_bufferManager, _packetContainer);
-            _connector.Register(this);
-            _connection.Register(this);
+            _bufferManager = new BufferManager();
+            _connectionObserver = new ConnectionObserver();
+            _connector.Register(_connectionObserver);
+            _packetHandler = new PacketHandler();
         }
 
         public void Setup(ClientConfig config)
         {
             _config = config;
+            InitConnectionPool();
+            _connectionObserver.Setup(_connectionPool);
             _bufferManager.InitBuffer(_config.BufferSize * 2, _config.BufferSize);
-        }
-
-        public void Start()
-        {
-            _connector.Connect(_config);
-        }
-
-        public void Stop()
-        {
-            if (!IsConnected)
-                _connector.Stop();
-            else
-                _connection.Dispose();
         }
 
         public void Update()
@@ -61,7 +63,7 @@ namespace Tizsoft.Treenet.Tests.TestClient
 
         #region IConnectionObserver Members
 
-        public bool GetConnectionEvent(System.Net.Sockets.Socket socket, bool isConnect)
+        public void GetConnectionEvent(Socket socket, bool isConnect)
         {
             switch (isConnect)
             {
@@ -75,8 +77,30 @@ namespace Tizsoft.Treenet.Tests.TestClient
             }
 
             IsConnected = isConnect;
-            return true;
         }
+
+        #endregion
+
+        #region IService Members
+
+        public void Start()
+        {
+            _connector.Connect(_config);
+            IsWorking = true;
+        }
+
+        public void Stop()
+        {
+            if (!IsConnected)
+                _connector.Stop();
+            else
+                _connection.Dispose();
+
+            _connectionObserver.Reset();
+            IsWorking = false;
+        }
+
+        public bool IsWorking { get; private set; }
 
         #endregion
     }

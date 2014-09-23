@@ -1,8 +1,9 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Net.Sockets;
 
 namespace Tizsoft.Treenet
 {
-    public class ClientConfig
+    public class ClientConfig : EventArgs
     {
         public string Address { get; set; }
 

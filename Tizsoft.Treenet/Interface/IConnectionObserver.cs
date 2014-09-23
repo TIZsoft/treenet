@@ -4,6 +4,6 @@ namespace Tizsoft.Treenet.Interface
 {
     public interface IConnectionObserver
     {
-        bool GetConnectionEvent(Socket socket, bool isConnect);
+        void GetConnectionEvent(Socket socket, bool isConnect);
     }
 }

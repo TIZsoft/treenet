@@ -31,20 +31,17 @@ namespace Tizsoft.Treenet
 
         public void RecyclePacket(Packet packet)
         {
-            if (packet == null)
-                return;
-
             packet.Clear();
-            _unusedPackets.Enqueue(packet);
+
+            if (!packet.IsNull)
+                _unusedPackets.Enqueue(packet);
         }
 
         public Packet NextPacket()
         {
-            return _waitToParsePackets.Count > 0 ? _waitToParsePackets.Dequeue() : NullPacket;
+            return _waitToParsePackets.Count > 0 ? _waitToParsePackets.Dequeue() : Packet.NullPacket;
         }
 
         #endregion
-
-        public static Packet NullPacket { get { return Treenet.NullPacket.Instance; } }
     }
 }

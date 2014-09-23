@@ -80,8 +80,19 @@ namespace Tizsoft.Treenet
             _connectionObservers.Remove(observer);
         }
 
-        public void Notify(Socket connection, bool isConnect)
+        void RemoveNullConnectionObservers()
         {
+            _connectionObservers.RemoveAll(observer => observer == null);
+        }
+
+        public void Notify(Socket socket, bool isConnect)
+        {
+            RemoveNullConnectionObservers();
+
+            foreach (var connectionObserver in _connectionObservers)
+            {
+                connectionObserver.GetConnectionEvent(socket, isConnect);
+            }
         }
 
         #endregion
