@@ -117,12 +117,17 @@ namespace Tizsoft.Database
 
             if (userData.Tables[table].Rows.Count == 0)
             {
-                MySqlCommand create = Create(new List<string>() {"guid"}, table, new List<object>() {guid});
+                MySqlCommand create = Create(new List<string>() { "guid" }, table, new List<object>() { guid });
                 create.ExecuteNonQuery();
                 _accountDataAdapter.Fill(userData);
             }
 
             return JsonConvert.SerializeObject(userData);
+        }
+
+        public string GetUserData(Guid guid, string table)
+        {
+            return GetUserData(GuidUtil.ToBase64(guid), table);
         }
     }
 }
