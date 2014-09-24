@@ -16,7 +16,7 @@ namespace TestFormApp
         {
             DatabaseConnector connector = new DatabaseConnector();
             connector.Connect(new DatabaseConfig("localhost", 3306, "root", "1234", "speedrunning", string.Empty));
-            //connector.GetUserData("")
+            richTextBox1.AppendText(connector.GetUserData(GuidUtil.ToBase64(GuidUtil.New()), "account"));
         }
     }
 }

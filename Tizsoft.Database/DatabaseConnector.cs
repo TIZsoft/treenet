@@ -43,7 +43,9 @@ namespace Tizsoft.Database
             if (!string.IsNullOrEmpty(whereClause))
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
-            return new MySqlCommand(_queryBuilder.ToString());
+            MySqlCommand command = new MySqlCommand(_queryBuilder.ToString());
+            command.Connection = _mySqlConnection;
+            return command;
         }
 
         MySqlCommand Create(List<string> columns, string table, List<object> values)
@@ -63,7 +65,10 @@ namespace Tizsoft.Database
                 _queryBuilder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
 
             _queryBuilder.Append(")");
-            return new MySqlCommand(_queryBuilder.ToString());
+
+            MySqlCommand command = new MySqlCommand(_queryBuilder.ToString());
+            command.Connection = _mySqlConnection;
+            return command;
         }
 
         public DatabaseConnector()
@@ -73,6 +78,8 @@ namespace Tizsoft.Database
 
         ~DatabaseConnector()
         {
+            _accountDataAdapter.Dispose();
+            _accountCommandBuilder.Dispose();
             CloseConnection();
         }
 
@@ -104,9 +111,17 @@ namespace Tizsoft.Database
             if (_mySqlConnection == null)
                 throw new Exception("not connect yet!");
 
-            _accountDataAdapter.SelectCommand = Request(null, table, string.Format("Guid={0}", guid));
+            _accountDataAdapter.SelectCommand = Request(null, table, string.Format(@"guid='{0}'", guid));
             DataSet userData = new DataSet();
             _accountDataAdapter.Fill(userData, table);
+
+            if (userData.Tables[table].Rows.Count == 0)
+            {
+                MySqlCommand create = Create(new List<string>() {"guid"}, table, new List<object>() {guid});
+                create.ExecuteNonQuery();
+                _accountDataAdapter.Fill(userData);
+            }
+
             return JsonConvert.SerializeObject(userData);
         }
     }
