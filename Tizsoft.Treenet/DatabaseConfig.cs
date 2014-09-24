@@ -1,8 +1,10 @@
-﻿namespace Tizsoft
+﻿using System;
+
+namespace Tizsoft
 {
-    public class DBConfig
+    public class DatabaseConfig : EventArgs
     {
-        public DBConfig(string host, int port, string user, string pass, string db, string opt)
+        public DatabaseConfig(string host, int port, string user, string pass, string db, string opt)
         {
             HostName = host;
             Port = port;
