@@ -3,11 +3,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>f5a35032-b597-42f1-8005-a9aa230fcbe2</ProjectGuid>
+    <ProjectGuid>{6B29104B-D7FB-4A51-91DF-C84088694396}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Tizsoft.Tests</RootNamespace>
-    <AssemblyName>Tizsoft.Tests</AssemblyName>
+    <RootNamespace>Tizsoft.Treenet.Tests</RootNamespace>
+    <AssemblyName>Tizsoft.Treenet.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -35,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="nunit.framework, Version=2.6.3.13283, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -50,8 +53,21 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestClient\TestClient.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Tizsoft.Treenet\Tizsoft.Treenet.csproj">
+      <Project>{1D6374E8-979F-457C-A649-3E3369373365}</Project>
+      <Name>Tizsoft.Treenet</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Tizsoft\Tizsoft.csproj">
+      <Project>{42DD1816-7E8D-4581-93B6-BE03F1E72652}</Project>
+      <Name>Tizsoft</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

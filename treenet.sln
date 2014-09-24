@@ -28,7 +28,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Data", "Tizsoft.Dat
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet.Tests", "Tizsoft.Treenet.Tests\Tizsoft.Treenet.Tests.csproj", "{6B29104B-D7FB-4A51-91DF-C84088694396}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet.Tests", "Tests\Tizsoft.Treenet.Tests\Tizsoft.Treenet.Tests.csproj", "{6B29104B-D7FB-4A51-91DF-C84088694396}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Tests", "Tests\Tizsoft.Tests\Tizsoft.Tests.csproj", "{1CC47A14-2240-4820-9943-4EFBD18613C5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Database", "Tizsoft.Database\Tizsoft.Database.csproj", "{7D67265A-AB2E-4B91-8A67-0025D01509BB}"
 EndProject
@@ -79,11 +81,16 @@ Global
 		{55644BF8-6F13-4873-9BC0-EF5DFB0F1B9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55644BF8-6F13-4873-9BC0-EF5DFB0F1B9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{55644BF8-6F13-4873-9BC0-EF5DFB0F1B9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CC47A14-2240-4820-9943-4EFBD18613C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CC47A14-2240-4820-9943-4EFBD18613C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CC47A14-2240-4820-9943-4EFBD18613C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CC47A14-2240-4820-9943-4EFBD18613C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6B29104B-D7FB-4A51-91DF-C84088694396} = {BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}
+		{1CC47A14-2240-4820-9943-4EFBD18613C5} = {BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}
 	EndGlobalSection
 EndGlobal
