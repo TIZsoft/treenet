@@ -8,13 +8,13 @@ namespace Tizsoft.Treenet
     public class Packet : INullObj
     {
         readonly MemoryStream _buffer;
-        protected PacketType _packetType;
+        PacketType _packetType;
 
         public Packet()
         {
             _buffer = new MemoryStream();
-            Connection = Connection.NullConnection;
             _packetType = PacketType.Undefine;
+            Connection = Connection.NullConnection;
         }
 
         public virtual void SetContent(Connection connection, SocketAsyncEventArgs asyncArgs)
@@ -34,15 +34,15 @@ namespace Tizsoft.Treenet
 
         public virtual PacketType PacketType
         {
-            get
-            {
-                return Enum.IsDefined(typeof (PacketType), _packetType) ? (PacketType) _packetType : PacketType.Undefine;
-            }
+            get { return Enum.IsDefined(typeof(PacketType), _packetType) ? _packetType : PacketType.Undefine; }
+            protected set { _packetType = value; }
         }
+
         public virtual byte[] Content { get { return _buffer.ToArray(); } }
+
         public Connection Connection { get; protected set; }
 
-        public static Packet NullPacket {get { return Treenet.NullPacket.Instance; }}
+        public static Packet NullPacket { get { return Treenet.NullPacket.Instance; } }
 
         #region INullObj Members
 

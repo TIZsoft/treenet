@@ -4,7 +4,6 @@ using System.Net.Sockets;
 
 namespace Tizsoft.Treenet
 {
-    // The operations exposed on the BufferManager class are not thread safe. 
     /// <summary>
     /// This class creates a single large buffer which can be divided up  
     /// and assigned to SocketAsyncEventArgs objects for use with each  
@@ -17,32 +16,28 @@ namespace Tizsoft.Treenet
     public class BufferManager
     {
         // The total number of bytes controlled by the buffer pool.
-        int _numBytes;
+        int _totalBytes;
 
-        // The underlying byte array maintained by the Content Manager.
+        // The underlying byte array maintained by the Buffer Manager.
         byte[] _buffer;
 
-        readonly Stack<int> _freeIndexPool;
+        readonly Stack<int> _freeIndexPool = new Stack<int>();
         int _currentIndex;
         int _bufferSize;
 
-        public BufferManager()
-        {
-            _freeIndexPool = new Stack<int>();
-        }
-
-        // Allocates buffer space used by the buffer pool 
+        // Allocates buffer space used by the buffer pool.
         public void InitBuffer(int totalBytes, int bufferSize)
         {
             try
             {
-                _numBytes = totalBytes;
+                _totalBytes = totalBytes;
                 _currentIndex = 0;
                 _bufferSize = bufferSize;
                 _freeIndexPool.Clear();
-                // create one big large buffer and divide that  
-                // out to each SocketAsyncEventArg object
-                _buffer = new byte[_numBytes];
+
+                // Create one big large buffer and divide that  
+                // out to each SocketAsyncEventArgs object.
+                _buffer = new byte[_totalBytes];
             }
             catch (Exception e)
             {
@@ -52,7 +47,7 @@ namespace Tizsoft.Treenet
 
         /// <summary>
         /// Assigns a buffer from the buffer pool to the  
-        /// specified SocketAsyncEventArgs object 
+        /// specified SocketAsyncEventArgs object.
         /// </summary>
         /// <param name="args"></param>
         /// <returns>If the buffer was set successfully, then returns true, otherwise returns false.</returns>
@@ -64,7 +59,7 @@ namespace Tizsoft.Treenet
             }
             else
             {
-                if ((_numBytes - _bufferSize) < _currentIndex)
+                if ((_totalBytes - _bufferSize) < _currentIndex)
                 {
                     return false;
                 }
@@ -82,7 +77,9 @@ namespace Tizsoft.Treenet
         public void FreeBuffer(SocketAsyncEventArgs args)
         {
             if (args != null)
+            {
                 _freeIndexPool.Push(args.Offset);
+            }
         }
     }
 }

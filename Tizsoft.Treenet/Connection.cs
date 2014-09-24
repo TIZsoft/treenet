@@ -30,14 +30,16 @@ namespace Tizsoft.Treenet
             }
         }
 
-        // This method is invoked when an asynchronous receive operation completes.  
-        // If the remote host closed the socket, then the socket is closed.   
+        /// <summary>
+        /// This method is invoked when an asynchronous receive operation completes.<br />
+        /// If the remote host closed the socket, then the socket is closed.
+        /// </summary>
         void ReceiveResult(SocketAsyncEventArgs args)
         {
-            // check if the remote host closed the socket
+            // Check if the remote host closed the socket.
             if (args.SocketError == SocketError.Success)
             {
-                //means client has disconnect
+                // Client has been disconnected.
                 if (args.BytesTransferred == 0)
                 {
                     CloseAsyncSocket();
@@ -55,11 +57,10 @@ namespace Tizsoft.Treenet
             }
         }
 
-        // This method is invoked when an asynchronous send operation completes.   
-        // The method issues another receive on the socket to read any additional  
-        // data sent from the client 
-        // 
-        // <param name="e"></param>
+        /// <summary>
+        /// This method is invoked when an asynchronous send operation completes.
+        /// The method issues another receive on the socket to read any additional data sent from the client.
+        /// </summary>
         void SendResult(SocketAsyncEventArgs args)
         {
             if (args.SocketError == SocketError.Success)
@@ -86,23 +87,25 @@ namespace Tizsoft.Treenet
 
         void CloseAsyncSocket()
         {
-            if (_socket != null)
+            if (_socket == null)
             {
-                Notify(_socket, false);
+                return;
+            }
 
-                try
-                {
-                    _socket.Shutdown(SocketShutdown.Both);
-                }
-                catch (Exception e)
-                {
-                    Logger.LogException(e);
-                }
-                finally
-                {
-                    _socket.Dispose();
-                    _socket = null;
-                }
+            Notify(_socket, false);
+
+            try
+            {
+                _socket.Shutdown(SocketShutdown.Both);
+            }
+            catch (Exception e)
+            {
+                Logger.LogException(e);
+            }
+            finally
+            {
+                _socket.Dispose();
+                _socket = null;
             }
         }
 
@@ -120,16 +123,18 @@ namespace Tizsoft.Treenet
             if (_bufferManager != null)
                 _bufferManager.FreeBuffer(asyncArgs);
 
-            if (asyncArgs != null)
+            if (asyncArgs == null)
             {
-                try
-                {
-                    asyncArgs.Dispose();
-                }
-                finally
-                {
-                    asyncArgs = null;
-                }
+                return;
+            }
+
+            try
+            {
+                asyncArgs.Dispose();
+            }
+            finally
+            {
+                asyncArgs = null;
             }
         }
 

@@ -47,6 +47,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\Concurrent\ConcurrentPool.cs" />
+    <Compile Include="Collections\Concurrent\PoolObject.cs" />
     <Compile Include="Collections\Pool.cs" />
     <Compile Include="GuidUtil.cs" />
     <Compile Include="Logger.cs" />
@@ -57,7 +59,6 @@
     <Compile Include="Helpers\Utils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Collections\Concurrent\" />
     <Folder Include="Extensions\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
