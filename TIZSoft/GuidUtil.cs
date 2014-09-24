@@ -24,7 +24,7 @@ namespace Tizsoft
             return Convert.ToBase64String(bytes);
         }
 
-        public static Guid FormBase64(string value)
+        public static Guid FromBase64(string value)
         {
             var guidBytes = Convert.FromBase64String(value);
             return new Guid(guidBytes);
