@@ -14,10 +14,13 @@ namespace Tizsoft.Treenet
         ServerConfig _config;
         readonly List<IConnectionObserver> _observers;
 
-        // Begins an operation to accept a connection request from the client  
-        // 
-        // <param name="acceptEventArg">The context object to use when issuing 
-        // the accept operation on the server's listening socket</param> 
+        /// <summary>
+        /// Begins an operation to accept a connection request from the client.
+        /// </summary>
+        /// <param name="args">
+        /// The context object to use when issuing the accept operation on
+        /// the server's listening socket.
+        /// </param>
         void StartAccept(SocketAsyncEventArgs args)
         {
             if (args == null)
@@ -28,7 +31,7 @@ namespace Tizsoft.Treenet
             }
             else
             {
-                // socket must be cleared since the context object is being reused
+                // Socket must be cleared since the context object is being reused.
                 args.AcceptSocket = null;
             }
 
@@ -38,8 +41,11 @@ namespace Tizsoft.Treenet
                 AcceptResult(args);
         }
 
-        // This method is called whenever a receive or send operation is completed on a socket  
-        // <param name="e">SocketAsyncEventArg associated with the completed receive operation</param>
+        /// <summary>
+        /// This method is called whenever a receive or send operation is completed on a socket
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args">SocketAsyncEventArg associated with the completed receive operation.</param>
         void OnAcceptComplete(object sender, SocketAsyncEventArgs args)
         {
             if (_acceptAsyncOp.LastOperation != SocketAsyncOperation.Accept)
@@ -58,12 +64,12 @@ namespace Tizsoft.Treenet
             {
                 Notify(args.AcceptSocket, false);
 
-                //server close on purpose
+                // Server close on purpose.
                 if (args.SocketError == SocketError.OperationAborted)
                     return;
             }
 
-            // Accept the next connection request
+            // Accept the next connection request.
             StartAccept(args);
         }
 
@@ -85,41 +91,45 @@ namespace Tizsoft.Treenet
 
         void CloseAsyncAcceptOp(SocketAsyncEventArgs args)
         {
-            if (args != null)
+            if (args == null)
             {
-                try
-                {
-                    if (args.AcceptSocket != null)
-                        args.AcceptSocket.Shutdown(SocketShutdown.Both);
-                }
-                catch (Exception exception)
-                {
-                    Logger.LogException(exception);
-                }
-                finally
-                {
-                    args.Dispose();
-                }
+                return;
+            }
+
+            try
+            {
+                if (args.AcceptSocket != null)
+                    args.AcceptSocket.Shutdown(SocketShutdown.Both);
+            }
+            catch (Exception exception)
+            {
+                Logger.LogException(exception);
+            }
+            finally
+            {
+                args.Dispose();
             }
         }
 
         void CloseListenSocket()
         {
-            if (_listenSocket != null)
+            if (_listenSocket == null)
             {
-                try
-                {
-                    _listenSocket.Shutdown(SocketShutdown.Both);
-                }
-                catch (Exception exception)
-                {
-                    Logger.LogException(exception);
-                }
-                finally
-                {
-                    _listenSocket.Dispose();
-                    _listenSocket = null;
-                }
+                return;
+            }
+
+            try
+            {
+                _listenSocket.Shutdown(SocketShutdown.Both);
+            }
+            catch (Exception exception)
+            {
+                Logger.LogException(exception);
+            }
+            finally
+            {
+                _listenSocket.Dispose();
+                _listenSocket = null;
             }
         }
 

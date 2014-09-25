@@ -10,13 +10,13 @@ namespace Tizsoft.Collections.Concurrent
     /// <summary>
     /// Represents a thread-safe object pool.
     /// </summary>
-    /// <typeparam name="T">Type of item.</typeparam>
-    public class ConcurrentPool<T>
+    /// <typeparam name="T">The type of the objects to be stored in pool.</typeparam>
+    public class ConcurrentPool<T> : IPool<T>
     {
         /// <summary>
         /// Represents a chunk of pooled objects.
         /// </summary>
-        class Segment
+        sealed class Segment
         {
             readonly int _size;
 
@@ -27,7 +27,17 @@ namespace Tizsoft.Collections.Concurrent
             public Segment(int size, IEnumerable<T> items)
             {
                 _size = size;
-                _items = items == null ? new Stack<T>(size) : new Stack<T>(items);
+                _items = new Stack<T>(size);
+
+                if (items == null)
+                {
+                    return;
+                }
+
+                foreach (var item in items)
+                {
+                    _items.Push(item);
+                }
             }
 
             public bool TryGet(out T item)
@@ -67,6 +77,56 @@ namespace Tizsoft.Collections.Concurrent
             }
         }
 
+        /// <summary>
+        /// Represents disposable wrapper around pooled object
+        /// that is used to return object back to the pool.
+        /// </summary>
+        sealed class PoolObject : IPoolObject<T>
+        {
+            readonly T _value;
+            readonly ConcurrentPool<T> _pool;
+            bool _isDisposed;
+
+            public T Value
+            {
+                get
+                {
+                    // Make sure value can't be obtained (though we can't guarantee that
+                    // it is not used) anymore after it is released back to the pool.
+                    if (_isDisposed)
+                    {
+                        throw new ObjectDisposedException("Pool object has been disposed.");
+                    }
+
+                    return _value;
+                }
+            }
+
+            /// <summary>
+            /// Get reference to the pool to return value to.
+            /// </summary>
+            /// <param name="value"></param>
+            /// <param name="pool"></param>
+            public PoolObject(T value, ConcurrentPool<T> pool)
+            {
+                _value = value;
+                _pool = pool;
+            }
+
+            public void Dispose()
+            {
+                if (_isDisposed)
+                {
+                    return;
+                }
+
+                // As we are disposing pooled object disposal basically
+                // equivalent to returning the object back to the pool.
+                _isDisposed = true;
+                _pool.Release(_value);
+            }
+        }
+
         // Generator function that is used from potentionally multiple threads
         // to produce pooled objects and thus must be thread-safe.
         readonly Func<T> _objectGenerator;
@@ -74,11 +134,17 @@ namespace Tizsoft.Collections.Concurrent
         readonly int _segmentSize;
         
         // Thread local pool used without synchronization to reduce costs.
-        readonly ThreadLocal<Segment> _localPool = new ThreadLocal<Segment>();
+        readonly ThreadLocal<Segment> _localPool;
 
         // Global pool that is used once there is nothing or too much in local pool.
-        readonly ConcurrentStack<Segment> _globalPool = new ConcurrentStack<Segment>();
-        
+        readonly ConcurrentStack<Segment> _globalPool;
+
+        /// <summary>
+        /// TODO: Is this meaningful?
+        /// Gets the number of objects contained in the <see cref="ConcurrentPool{T}"/>.
+        /// </summary>
+        public int Count { get; private set; }
+
         public ConcurrentPool(Func<T> objectGenerator, int segmentSize)
         {
             if (objectGenerator == null)
@@ -91,6 +157,8 @@ namespace Tizsoft.Collections.Concurrent
                 throw new ArgumentOutOfRangeException("segmentSize", segmentSize, "Segment size must > 0.");
             }
 
+            _localPool = new ThreadLocal<Segment>();
+            _globalPool = new ConcurrentStack<Segment>();
             _objectGenerator = objectGenerator;
             _segmentSize = segmentSize;
         }
@@ -98,8 +166,8 @@ namespace Tizsoft.Collections.Concurrent
         /// <summary>
         /// Acquire object from pool.
         /// </summary>
-        /// <returns></returns>
-        public PoolObject<T> Acquire()
+        /// <returns>An instance of <typeparamref name="T"/>.</returns>
+        public IPoolObject<T> Acquire()
         {
             var local = _localPool.Value;
             T item;
@@ -109,7 +177,8 @@ namespace Tizsoft.Collections.Concurrent
             if (local != null &&
                 local.TryGet(out item))
             {
-                return new PoolObject<T>(item, this);
+                --Count;
+                return new PoolObject(item, this);
             }
 
             // If failed (either due to empty or not yet initialized
@@ -125,13 +194,15 @@ namespace Tizsoft.Collections.Concurrent
                     items[i] = _objectGenerator();
                 }
 
+                Count += _segmentSize;
                 local = new Segment(_segmentSize, items);
             }
 
             // Eventually get object from local non-empty pool.
             _localPool.Value = local;
             local.TryGet(out item);
-            return new PoolObject<T>(item, this);
+            --Count;
+            return new PoolObject(item, this);
         }
 
         /// <summary>
@@ -139,8 +210,10 @@ namespace Tizsoft.Collections.Concurrent
         /// to avoid multiple releases of the same object.
         /// </summary>
         /// <param name="poolObject"></param>
-        internal void Release(T poolObject)
+        void Release(T poolObject)
         {
+            ++Count;
+
             var local = _localPool.Value;
 
             // Return object back to local pool first.

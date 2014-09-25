@@ -30,12 +30,10 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>..\build\$(Configuration)\Tizsoft.Core.xml</DocumentationFile>
+    <RegisterForComInterop>false</RegisterForComInterop>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -50,7 +48,8 @@
     <Compile Include="Caching\Cache\Cache.cs" />
     <Compile Include="Caching\CacheData.cs" />
     <Compile Include="Collections\Concurrent\ConcurrentPool.cs" />
-    <Compile Include="Collections\Concurrent\PoolObject.cs" />
+    <Compile Include="Collections\IPool.cs" />
+    <Compile Include="Collections\IPoolObject.cs" />
     <Compile Include="Collections\Pool.cs" />
     <Compile Include="GuidUtil.cs" />
     <Compile Include="Logger.cs" />

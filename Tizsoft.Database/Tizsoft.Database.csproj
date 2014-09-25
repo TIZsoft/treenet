@@ -26,10 +26,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\build\Release\</OutputPath>
+    <OutputPath>..\build\$(Configuration)\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>..\build\$(Configuration)\Tizsoft.Database.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MySql.Data, Version=6.9.3.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
