@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
@@ -78,8 +80,12 @@ namespace Tizsoft.Database
 
         ~DatabaseConnector()
         {
-            _accountDataAdapter.Dispose();
-            _accountCommandBuilder.Dispose();
+            if (_accountDataAdapter != null)
+                _accountDataAdapter.Dispose();
+
+            if (_accountCommandBuilder != null)
+                _accountCommandBuilder.Dispose();
+
             CloseConnection();
         }
 
@@ -90,8 +96,8 @@ namespace Tizsoft.Database
 
             try
             {
-                DatabaseConfig config = (DatabaseConfig)configArgs;
-                string connString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8", config.HostName, config.UserName, config.Password, config.DataBase);
+                var config = (DatabaseConfig)configArgs;
+                var connString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8", config.HostName, config.UserName, config.Password, config.DataBase);
 
                 _mySqlConnection = new MySqlConnection(connString);
                 _mySqlConnection.Open();
@@ -102,32 +108,59 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 Logger.LogException(exception);
-                throw exception;
+                //throw exception;
             }
         }
 
-        public string GetUserData(string guid, string table)
+        public string GetUserData(string guid)
         {
             if (_mySqlConnection == null)
                 throw new Exception("not connect yet!");
 
-            _accountDataAdapter.SelectCommand = Request(null, table, string.Format(@"guid='{0}'", guid));
             DataSet userData = new DataSet();
-            _accountDataAdapter.Fill(userData, table);
+            _accountDataAdapter.SelectCommand = Request(null, TableConst.AccountTable, string.Format(@"{0}='{1}'", TableConst.GuidField, guid));
 
-            if (userData.Tables[table].Rows.Count == 0)
+            try
             {
-                MySqlCommand create = Create(new List<string>() { "guid" }, table, new List<object>() { guid });
-                create.ExecuteNonQuery();
-                _accountDataAdapter.Fill(userData);
+                _accountDataAdapter.Fill(userData, TableConst.AccountTable);
+
+                if (userData.Tables[TableConst.AccountTable].Rows.Count == 0)
+                {
+                    MySqlCommand create = Create(new List<string>() { TableConst.GuidField }, TableConst.AccountTable, new List<object>() { guid });
+                    create.ExecuteNonQuery();
+                    _accountDataAdapter.Fill(userData, TableConst.AccountTable);
+                }
+            }
+            catch (Exception exception)
+            {
+                Logger.LogException(exception);
+                throw exception;
             }
 
             return JsonConvert.SerializeObject(userData);
         }
 
-        public string GetUserData(Guid guid, string table)
+        public string GetUserData(Guid guid)
         {
-            return GetUserData(GuidUtil.ToBase64(guid), table);
+            return GetUserData(GuidUtil.ToBase64(guid));
+        }
+
+        /// <summary>
+        /// write user data back to database
+        /// </summary>
+        /// <param name="userData">must in json format</param>
+        public void WriteUserData(string userData)
+        {
+            try
+            {
+                using (var jsonReader = new JsonTextReader(new StringReader(userData)))
+                {
+                }
+            }
+            catch (Exception exception)
+            {
+                throw exception;
+            }
         }
     }
 }
