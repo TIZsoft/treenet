@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.IO;
-using System.Runtime.Remoting.Messaging;
+using System.Runtime.InteropServices;
 using System.Text;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Tizsoft.Database
 {
@@ -13,8 +13,6 @@ namespace Tizsoft.Database
     {
         StringBuilder _queryBuilder;
         MySqlConnection _mySqlConnection;
-        MySqlDataAdapter _accountDataAdapter;
-        MySqlCommandBuilder _accountCommandBuilder;
 
         void CloseConnection()
         {
@@ -27,7 +25,29 @@ namespace Tizsoft.Database
             _queryBuilder.Remove(0, _queryBuilder.Length);
         }
 
-        MySqlCommand Request(List<string> columns, string table, string whereClause)
+        void Create(string table, List<string> columns, List<object> values)
+        {
+            if (columns == null || values == null)
+                return;
+
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("INSERT INTO {0} (", table);
+
+            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
+                _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
+
+            _queryBuilder.Append(") VALUES(");
+
+            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
+                _queryBuilder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
+
+            _queryBuilder.Append(")");
+
+            var createCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
+            createCommand.ExecuteNonQueryAsync();
+        }
+
+        MySqlDataReader Request(string table, List<string> columns, string whereClause)
         {
             ResetQueryBuilder();
             _queryBuilder.Append("SELECT ");
@@ -45,32 +65,47 @@ namespace Tizsoft.Database
             if (!string.IsNullOrEmpty(whereClause))
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
-            MySqlCommand command = new MySqlCommand(_queryBuilder.ToString());
-            command.Connection = _mySqlConnection;
-            return command;
+            var requestCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
+            return requestCommand.ExecuteReader();
         }
 
-        MySqlCommand Create(List<string> columns, string table, List<object> values)
+        void Update(string table, List<string> columns, List<object> values, string whereClause)
         {
-            if (columns == null || values == null)
-                return new MySqlCommand();
-
             ResetQueryBuilder();
-            _queryBuilder.AppendFormat("INSERT INTO {0} (", table);
 
-            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
-                _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
+            if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
+                return;
 
-            _queryBuilder.Append(") VALUES(");
+            _queryBuilder.AppendFormat("UPDATE {0} SET ", table);
+            var bound = Math.Min(columns.Count, values.Count);
 
-            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
-                _queryBuilder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
+            for (var i = 0; i < bound; ++i)
+                _queryBuilder.AppendFormat(@"`{0}` = '{1}'{2}", columns[i], values[i], i == bound - 1 ? " " : ",");
 
-            _queryBuilder.Append(")");
+            if (!string.IsNullOrEmpty(whereClause))
+                _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
-            MySqlCommand command = new MySqlCommand(_queryBuilder.ToString());
-            command.Connection = _mySqlConnection;
-            return command;
+            var updateCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
+            updateCommand.ExecuteNonQuery();
+        }
+
+        int Count(string table, KeyValuePair<string, string> whereClause)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat(@"SELECT COUNT(*) FROM {0} WHERE `{1}`='{2}'", table, whereClause.Key, whereClause.Value);
+
+            try
+            {
+                MySqlCommand countCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
+                var count = countCommand.ExecuteScalar();
+                return Convert.ToInt32(count);
+            }
+            catch (Exception exception)
+            {
+                Logger.LogException(exception);
+            }
+
+            return 0;
         }
 
         public DatabaseConnector()
@@ -80,12 +115,6 @@ namespace Tizsoft.Database
 
         ~DatabaseConnector()
         {
-            if (_accountDataAdapter != null)
-                _accountDataAdapter.Dispose();
-
-            if (_accountCommandBuilder != null)
-                _accountCommandBuilder.Dispose();
-
             CloseConnection();
         }
 
@@ -101,61 +130,68 @@ namespace Tizsoft.Database
 
                 _mySqlConnection = new MySqlConnection(connString);
                 _mySqlConnection.Open();
-
-                _accountDataAdapter = new MySqlDataAdapter();
-                _accountCommandBuilder = new MySqlCommandBuilder(_accountDataAdapter);
             }
             catch (Exception exception)
             {
                 Logger.LogException(exception);
-                //throw exception;
             }
         }
 
-        public string GetUserData(string guid)
+        public T GetUserData<T>(string guid)
         {
             if (_mySqlConnection == null)
                 throw new Exception("not connect yet!");
 
-            DataSet userData = new DataSet();
-            _accountDataAdapter.SelectCommand = Request(null, TableConst.AccountTable, string.Format(@"{0}='{1}'", TableConst.GuidField, guid));
+            string json = string.Empty;
+            MySqlDataReader dataReader = null;
 
             try
             {
-                _accountDataAdapter.Fill(userData, TableConst.AccountTable);
+                if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(SchemaConst.GuidField, guid)) == 0)
+                    Create(SchemaConst.AccountTable, new List<string>() {SchemaConst.GuidField},
+                        new List<object>() {guid});
 
-                if (userData.Tables[TableConst.AccountTable].Rows.Count == 0)
-                {
-                    MySqlCommand create = Create(new List<string>() { TableConst.GuidField }, TableConst.AccountTable, new List<object>() { guid });
-                    create.ExecuteNonQuery();
-                    _accountDataAdapter.Fill(userData, TableConst.AccountTable);
-                }
+                dataReader = Request(SchemaConst.AccountTable, null,
+                    string.Format(@"`{0}`='{1}'", SchemaConst.GuidField, guid));
+
+                dataReader.Read();
+                var dictionary = new Dictionary<string, object>();
+                foreach (var accountField in SchemaConst.AccountFields)
+                    dictionary.Add(accountField, dataReader[accountField]);
+
+                json = JsonConvert.SerializeObject(dictionary);
             }
             catch (Exception exception)
             {
                 Logger.LogException(exception);
                 throw exception;
             }
+            finally
+            {
+                if (dataReader != null)
+                    dataReader.Close();
+            }
 
-            return JsonConvert.SerializeObject(userData);
+            return JsonConvert.DeserializeObject<T>(json);
         }
 
-        public string GetUserData(Guid guid)
+        public T GetUserData<T>(Guid guid)
         {
-            return GetUserData(GuidUtil.ToBase64(guid));
+            return GetUserData<T>(GuidUtil.ToBase64(guid));
         }
 
-        /// <summary>
-        /// write user data back to database
-        /// </summary>
-        /// <param name="userData">must in json format</param>
-        public void WriteUserData(string userData)
+        public void WriteUserData(object userData)
         {
             try
             {
-                using (var jsonReader = new JsonTextReader(new StringReader(userData)))
-                {
-                }
+                string jsonStr = JsonConvert.SerializeObject(userData);
+                var userdataJObject = JObject.Parse(jsonStr);
+                var values = new List<object>(SchemaConst.AccountFields.Count);
+
+                foreach (var accountField in SchemaConst.AccountFields)
+                    values.Add(userdataJObject[accountField]);
+
+                Update(SchemaConst.AccountTable, SchemaConst.AccountFields, values, string.Format("`{0}`='{1}'", SchemaConst.GuidField, userdataJObject[SchemaConst.GuidField]));
             }
             catch (Exception exception)
             {

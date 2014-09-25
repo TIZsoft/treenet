@@ -51,7 +51,7 @@
   <ItemGroup>
     <Compile Include="DatabaseConnector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TableConst.cs" />
+    <Compile Include="SchemaConst.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tizsoft.Treenet\Tizsoft.Treenet.csproj">
