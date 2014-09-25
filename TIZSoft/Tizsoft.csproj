@@ -47,6 +47,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caching\Cache\Cache.cs" />
+    <Compile Include="Caching\CacheData.cs" />
     <Compile Include="Collections\Concurrent\ConcurrentPool.cs" />
     <Compile Include="Collections\Concurrent\PoolObject.cs" />
     <Compile Include="Collections\Pool.cs" />
