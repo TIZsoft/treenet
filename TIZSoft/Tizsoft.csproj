@@ -57,6 +57,7 @@
     <Compile Include="Collections\SimpleObjPool.cs" />
     <Compile Include="ICommand.cs" />
     <Compile Include="Helpers\Utils.cs" />
+    <Compile Include="TizId.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Extensions\" />
