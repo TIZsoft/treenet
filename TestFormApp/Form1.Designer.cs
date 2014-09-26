@@ -59,6 +59,7 @@
             this.IsClientCheckBox = new System.Windows.Forms.CheckBox();
             this.QueryGuidBtn = new System.Windows.Forms.Button();
             this.SetLevelBtn = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             this.ConnectionPanel.SuspendLayout();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -370,11 +371,22 @@
             this.SetLevelBtn.UseVisualStyleBackColor = true;
             this.SetLevelBtn.Click += new System.EventHandler(this.SetLevelBtn_Click);
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(537, 40);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 23;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 562);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.IsClientCheckBox);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.ConnectionPanel);
@@ -422,6 +434,7 @@
         private System.Windows.Forms.CheckBox IsClientCheckBox;
         private System.Windows.Forms.Button QueryGuidBtn;
         private System.Windows.Forms.Button SetLevelBtn;
+        private System.Windows.Forms.Button button1;
     }
 }
 

@@ -1,4 +1,6 @@
-﻿using Tizsoft.Collections;
+﻿using System;
+using System.ComponentModel;
+using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -34,14 +36,6 @@ namespace Tizsoft.Treenet
             _packetHandler = new PacketHandler();
         }
 
-        public void Setup(ServerConfig config)
-        {
-            _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
-            InitConnectionPool(config.MaxConnections, _packetContainer, _connectionObserver);
-            _connectionObserver.Setup(_asyncOpPool);
-            _socketListener.Setup(config);
-        }
-
         public void Update()
         {
             var packet = _packetContainer.NextPacket();
@@ -54,12 +48,27 @@ namespace Tizsoft.Treenet
             }
         }
 
+        public PacketHandler PacketHandler {get { return _packetHandler; }}
+
         #region IService Members
 
         public void Start()
         {
             _socketListener.Start();
             IsWorking = true;
+        }
+
+        public void Setup(EventArgs configArgs)
+        {
+            ServerConfig config = (ServerConfig) configArgs;
+
+            if (config == null)
+                throw new InvalidCastException("configArgs");
+
+            _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
+            InitConnectionPool(config.MaxConnections, _packetContainer, _connectionObserver);
+            _connectionObserver.Setup(_asyncOpPool);
+            _socketListener.Setup(config);
         }
 
         public void Stop()

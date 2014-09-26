@@ -1,8 +1,14 @@
 ﻿using System;
+using System.IO;
+using System.Net;
+using System.Text;
 using System.Windows.Forms;
+using Newtonsoft.Json.Linq;
 using Tizsoft;
 using Tizsoft.Database;
+using Tizsoft.Log;
 using Tizsoft.Treenet;
+using Tizsoft.Treenet.Interface;
 using Tizsoft.Treenet.Tests.TestClient;
 
 namespace TestFormApp
@@ -54,12 +60,75 @@ namespace TestFormApp
             _dbConnector.Connect(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning", string.Empty));
         }
 
+        void CheckJsonContent(JObject jsonObject)
+        {
+            if (jsonObject == null)
+                return;
+
+            var functionToken = (string) jsonObject.SelectToken("function");
+
+            switch (functionToken.ToLower())
+            {
+                case "login":
+                    var guid = (string) jsonObject.SelectToken("param.guid");
+                    var fbtoken = (string) jsonObject.SelectToken("param.fbtoken");
+
+                    if (string.IsNullOrEmpty(guid))
+                    {
+                        if (string.IsNullOrEmpty(fbtoken))
+                        {
+                            string reply = string.Empty;
+
+                            using (var wc = new WebClient())
+                            {
+                                try
+                                {
+                                    wc.Encoding = Encoding.UTF8;
+                                    reply = wc.DownloadString("https://graph.facebook.com/me/?access_token=" + fbtoken);
+                                    Logger.Log(reply);
+                                }
+                                catch (WebException ex)
+                                {
+                                    StreamReader SR = new StreamReader(ex.Response.GetResponseStream(), wc.Encoding);
+                                    reply = SR.ReadToEnd();
+                                    Logger.LogError(reply);
+                                }
+                            }
+                        }
+                    }
+                        
+                    break;
+
+                default:
+                    Logger.LogWarning(string.Format("未定義的function: <color=cyan>{0}</color>", functionToken));
+                    break;
+            }
+        }
+
+        IPacketParser CreatePacketParser(PacketType type)
+        {
+            switch (type)
+            {
+                default:
+                    return new ParseJsonPacket(CheckJsonContent);
+            }
+        }
+
+        void InitPacketParser()
+        {
+            foreach (PacketType type in Enum.GetValues(typeof(PacketType)))
+            {
+                _server.PacketHandler.AddParser(type, CreatePacketParser(type));
+            }
+        }
+
         public Form1()
         {
             InitializeComponent();
             ReadServerConfig();
             _logPrinter = new LogPrinter(LogMsgrichTextBox);
             _server = new ServerMain();
+            InitPacketParser();
             _testClient = new TestClient();
             InitDatabaseConnector();
         }
@@ -154,6 +223,13 @@ namespace TestFormApp
             _dbConnector.WriteUserData(_testUser);
             _testUser = _dbConnector.GetUserData<TestUserData>(_testUser.guid);
             LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"\"}}";
+            JObject jObject = JObject.Parse(json);
+            CheckJsonContent(jObject);
         }
     }
 }
