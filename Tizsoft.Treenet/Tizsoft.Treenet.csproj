@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BufferPool.cs" />
     <Compile Include="ClientConfig.cs" />
     <Compile Include="ConnectionObserver.cs" />
     <Compile Include="DatabaseConfig.cs" />
