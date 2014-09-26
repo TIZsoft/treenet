@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using Newtonsoft.Json;
 using Tizsoft;
 using Tizsoft.Database;
+using Tizsoft.Log;
 
 namespace TestFormApp
 {

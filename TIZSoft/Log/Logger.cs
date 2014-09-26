@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Tizsoft
+namespace Tizsoft.Log
 {
     public class Logger
     {

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net.Sockets;
 using Tizsoft.Collections;
+using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet

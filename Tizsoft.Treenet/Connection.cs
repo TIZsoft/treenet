@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet

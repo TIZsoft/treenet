@@ -28,6 +28,30 @@ namespace Tizsoft.Caching.Cache
             return _cacheObjects[key].CachedObject;
         }
 
+        public bool TryGet(string key, out T cachedObject)
+        {
+            CacheData<T> data;
+            if (_cacheObjects.TryGetValue(key, out data))
+            {
+                data.UpdateCount();
+                cachedObject = data.CachedObject;
+                return true;
+            }
+
+            cachedObject = default(T);
+            return false;
+        }
+
+        public void Update(string key, T obj)
+        {
+            if (!_cacheObjects.ContainsKey(key))
+            {
+                return;
+            }
+
+            _cacheObjects[key].UpdateCachedObject(obj);
+        }
+
         public void Remove(string key)
         {
             if (!_cacheObjects.ContainsKey(key))

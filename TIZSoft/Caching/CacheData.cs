@@ -10,9 +10,14 @@ namespace Tizsoft.Caching
 
         public CacheData(T obj)
         {
-            CachedObject = obj;
+            UpdateCachedObject(obj);
             Time = DateTime.UtcNow.Ticks;
             Count = 0;
+        }
+
+        public void UpdateCachedObject(T obj)
+        {
+            CachedObject = obj;
         }
 
         public void UpdateCount()

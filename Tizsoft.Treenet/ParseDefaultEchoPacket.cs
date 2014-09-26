@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet

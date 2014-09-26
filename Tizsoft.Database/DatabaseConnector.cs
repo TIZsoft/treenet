@@ -6,6 +6,7 @@ using System.Text;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Tizsoft.Log;
 
 namespace Tizsoft.Database
 {
