@@ -71,9 +71,11 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="LogPrinter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestUserData.cs" />
+    <Compile Include="TIZConst.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -101,6 +103,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Tests\Tizsoft.Treenet.Tests\Tizsoft.Treenet.Tests.csproj">
+      <Project>{6b29104b-d7fb-4a51-91df-c84088694396}</Project>
+      <Name>Tizsoft.Treenet.Tests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tizsoft.Database\Tizsoft.Database.csproj">
       <Project>{7d67265a-ab2e-4b91-8a67-0025d01509bb}</Project>
       <Name>Tizsoft.Database</Name>
