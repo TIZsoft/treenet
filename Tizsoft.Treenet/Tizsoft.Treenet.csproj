@@ -66,7 +66,7 @@
     <Compile Include="Null Objects\NullPacket.cs" />
     <Compile Include="PacketContainer.cs" />
     <Compile Include="PacketHandler.cs" />
-    <Compile Include="ParseDefaultEchoPacket.cs" />
+    <Compile Include="PacketParser\ParseDefaultEchoPacket.cs" />
     <Compile Include="ServerConfig.cs" />
     <Compile Include="ServerMain.cs" />
     <Compile Include="Connection.cs" />

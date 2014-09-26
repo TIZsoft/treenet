@@ -1,34 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Tizsoft.Treenet.Interface;
+using Tizsoft.Treenet.PacketParser;
 
 namespace Tizsoft.Treenet
 {
     public class PacketHandler
     {
         readonly Dictionary<PacketType, List<IPacketParser>> _parsers;
-
-        IPacketParser CreatePacketParser(PacketType type)
-        {
-            switch (type)
-            {
-                default:
-                    return new ParseDefaultEchoPacket();
-            }
-        }
-
-        void InitPacketParser()
-        {
-            foreach (PacketType type in Enum.GetValues(typeof(PacketType)))
-            {
-                AddParser(type, CreatePacketParser(type));
-            }
-        }
+        readonly IPacketParser _defaultPacketParser = new ParseDefaultEchoPacket();
 
         public PacketHandler()
         {
             _parsers = new Dictionary<PacketType, List<IPacketParser>>();
-            InitPacketParser();
         }
 
         public void Parse(Packet packet)
@@ -42,6 +25,10 @@ namespace Tizsoft.Treenet
                     if (parser != null)
                         parser.Parse(packet);
                 }
+            }
+            else
+            {
+                _defaultPacketParser.Parse(packet);
             }
         }
 

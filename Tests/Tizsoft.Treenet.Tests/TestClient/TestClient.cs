@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Net.Sockets;
 using System.Text;
 using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
@@ -35,14 +36,6 @@ namespace Tizsoft.Treenet.Tests.TestClient
             _connectionObserver = new ConnectionObserver();
             _connector.Register(_connectionObserver);
             _packetHandler = new PacketHandler();
-        }
-
-        public void Setup(ClientConfig config)
-        {
-            _config = config;
-            InitConnectionPool();
-            _connectionObserver.Setup(_connectionPool);
-            _bufferManager.InitBuffer(_config.BufferSize * 2, _config.BufferSize);
         }
 
         public void Update()
@@ -87,6 +80,18 @@ namespace Tizsoft.Treenet.Tests.TestClient
         {
             _connector.Connect(_config);
             IsWorking = true;
+        }
+
+        public void Setup(EventArgs configArgs)
+        {
+            _config = (ClientConfig)configArgs;
+
+            if (_config == null)
+                throw new InvalidCastException("configArgs");
+
+            InitConnectionPool();
+            _connectionObserver.Setup(_connectionPool);
+            _bufferManager.InitBuffer(_config.BufferSize * 2, _config.BufferSize);
         }
 
         public void Stop()
