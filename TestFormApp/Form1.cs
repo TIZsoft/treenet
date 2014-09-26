@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Windows.Forms;
-using Newtonsoft.Json;
 using Tizsoft;
 using Tizsoft.Database;
-using Tizsoft.Log;
+using Tizsoft.Treenet;
+using Tizsoft.Treenet.Tests.TestClient;
 
 namespace TestFormApp
 {
@@ -12,59 +12,148 @@ namespace TestFormApp
         Guid _guid;
         DatabaseConnector _dbConnector;
         TestUserData _testUser = new TestUserData();
+        private ServerConfig _serverConfig;
+        private LogPrinter _logPrinter;
+        private ServerMain _server;
+        private TestClient _testClient;
+
+        void ReadServerConfig()
+        {
+            _serverConfig = ServerConfig.Read(Application.StartupPath);
+            AddressTextBox.Text = _serverConfig.Address ?? string.Empty;
+            PortTextBox.Text = _serverConfig.Port.ToString();
+            MaxConnsTextBox.Text = _serverConfig.MaxConnections.ToString();
+            BufferSizeTextBox.Text = _serverConfig.BufferSize.ToString();
+        }
+
+        void SaveServerConfig()
+        {
+            _serverConfig.Address = AddressTextBox.Text;
+            _serverConfig.Port = int.Parse(PortTextBox.Text);
+            _serverConfig.MaxConnections = int.Parse(MaxConnsTextBox.Text);
+            _serverConfig.BufferSize = int.Parse(BufferSizeTextBox.Text);
+            ServerConfig.Save(Application.StartupPath, _serverConfig);
+        }
+
+        ClientConfig GetTestClientConfig()
+        {
+            ClientConfig config = new ClientConfig();
+            config.Address = AddressTextBox.Text;
+            config.Port = int.Parse(PortTextBox.Text);
+            config.BufferSize = int.Parse(BufferSizeTextBox.Text);
+            return config;
+        }
+
+        void InitDatabaseConnector()
+        {
+            string databaseAddress = DBHosttextBox.Text;
+            string user = DBUsertextBox.Text;
+            string password = DBPwdtextBox.Text;
+
+            _dbConnector = new DatabaseConnector();
+            _dbConnector.Connect(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning", string.Empty));
+        }
 
         public Form1()
         {
             InitializeComponent();
-
-            _dbConnector = new DatabaseConnector();
-            _dbConnector.Connect(new DatabaseConfig("1.34.115.165", 3306, "test", "Treenet", "speedrunning", string.Empty));
+            ReadServerConfig();
+            _logPrinter = new LogPrinter(LogMsgrichTextBox);
+            _server = new ServerMain();
+            _testClient = new TestClient();
+            InitDatabaseConnector();
         }
-
-        private void button1_Click(object sender, EventArgs e)
+        
+        private void PortTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            _guid = GuidUtil.New();
-            //var userDataStr = _dbConnector.GetUserData(_guid);
-            //_testUser = JsonConvert.DeserializeObject<TestUserData>(userDataStr);
-            //richTextBox1.AppendText(userDataStr + Environment.NewLine);
-            _testUser = _dbConnector.GetUserData<TestUserData>(_guid);
-            richTextBox1.AppendText(_testUser.ToString() + Environment.NewLine);
-            button2.Text = string.Format("Query\n{0}", GuidUtil.ToBase64(_guid));
-            button2.Enabled = true;
-            button3.Enabled = true;
+            e.Handled = !Char.IsDigit(e.KeyChar);
         }
-
-        private void button2_Click(object sender, EventArgs e)
+        
+        private void StartBtn_Click(object sender, EventArgs e)
         {
-            _testUser = _dbConnector.GetUserData<TestUserData>(_guid);
-            richTextBox1.AppendText(_testUser.ToString() + Environment.NewLine);
-            //richTextBox1.AppendText(_dbConnector.GetUserData(_guid) + Environment.NewLine);
-        }
+            bool isClient = IsClientCheckBox.Checked;
 
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            if (Logger.Msgs.Count > 0)
+            if (isClient)
             {
-                richTextBox1.AppendText(Logger.Msgs.Dequeue() + Environment.NewLine);
+                if (_testClient.IsWorking)
+                    _testClient.Stop();
+                else
+                {
+                    ClientConfig config = GetTestClientConfig();
+                    _testClient.Setup(config);
+                    _testClient.Start();
+                }
+            }
+            else
+            {
+                if (_server.IsWorking)
+                    _server.Stop();
+                else
+                {
+                    SaveServerConfig();
+                    _server.Setup(_serverConfig);
+                    _server.Start();	
+                }
+            }
+        }
+        
+        private void CheckServerStatus()
+        {
+            StartBtn.Text = (IsClientCheckBox.Checked ? _testClient.IsWorking : _server.IsWorking) ? "Stop" : "Start";
+
+            if (_server.IsWorking)
+            {
+                StatusprogressBar.MarqueeAnimationSpeed = StatusprogressBar.Maximum;
+                StatusprogressBar.Value = (StatusprogressBar.Value + 1) % StatusprogressBar.Maximum;
+            }
+            else
+            {
+                StatusprogressBar.MarqueeAnimationSpeed = StatusprogressBar.Minimum;
+                StatusprogressBar.Value = StatusprogressBar.Minimum;
             }
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void NewGuidBtn_Click(object sender, EventArgs e)
+        {
+            _guid = GuidUtil.New();
+            _testUser = _dbConnector.GetUserData<TestUserData>(_guid);
+            LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
+            QueryGuidBtn.Text = string.Format("Query\n{0}", GuidUtil.ToBase64(_guid));
+            QueryGuidBtn.Enabled = true;
+            SetLevelBtn.Enabled = true;
+        }
+
+        private void statusTimer_Tick(object sender, EventArgs e)
+        {
+            if (_server != null)
+            {
+                CheckServerStatus();
+            }
+
+            _logPrinter.Print();
+        }
+        
+        private void GameUpdateTimer_Tick(object sender, EventArgs e)
+        {
+            if (_testClient != null && _testClient.IsWorking)
+                _testClient.Update();
+
+            if (_server != null && _server.IsWorking)
+                _server.Update();
+        }
+
+        private void QueryGuidBtn_Click(object sender, EventArgs e)
+        {
+            _testUser = _dbConnector.GetUserData<TestUserData>(_guid);
+            LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
+        }
+
+        private void SetLevelBtn_Click(object sender, EventArgs e)
         {
             _testUser.level = 10;
             _dbConnector.WriteUserData(_testUser);
             _testUser = _dbConnector.GetUserData<TestUserData>(_testUser.guid);
-            //_testUser = JsonConvert.DeserializeObject<TestUserData>(userDataStr);
-            richTextBox1.AppendText(_testUser.ToString() + Environment.NewLine);
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-            _testUser = new TestUserData();
-            _testUser.level = 20;
-            string json = JsonConvert.SerializeObject(_testUser);
-            TestUserData user = JsonConvert.DeserializeObject<TestUserData>(json);
-            richTextBox1.AppendText(user.ToString() + Environment.NewLine);
+            LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
         }
     }
 }
