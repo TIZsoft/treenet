@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
@@ -140,6 +141,62 @@ namespace Tizsoft.Database
 
         public T GetUserData<T>(string guid)
         {
+            return GetUserDataByToken<T>(guid, TokenType.Guid);
+            //if (_mySqlConnection == null)
+            //    throw new Exception("not connect yet!");
+
+            //string json = string.Empty;
+            //MySqlDataReader dataReader = null;
+
+            //try
+            //{
+            //    if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(SchemaConst.GuidField, guid)) == 0)
+            //        Create(SchemaConst.AccountTable, new List<string>() {SchemaConst.GuidField},
+            //            new List<object>() {guid});
+
+            //    dataReader = Request(SchemaConst.AccountTable, null,
+            //        string.Format(@"`{0}`='{1}'", SchemaConst.GuidField, guid));
+
+            //    dataReader.Read();
+            //    var dictionary = new Dictionary<string, object>();
+            //    foreach (var accountField in SchemaConst.AccountFields)
+            //        dictionary.Add(accountField, dataReader[accountField]);
+
+            //    json = JsonConvert.SerializeObject(dictionary);
+            //}
+            //catch (Exception exception)
+            //{
+            //    Logger.LogException(exception);
+            //    throw;
+            //}
+            //finally
+            //{
+            //    if (dataReader != null)
+            //        dataReader.Close();
+            //}
+
+            //return JsonConvert.DeserializeObject<T>(json);
+        }
+
+        public T GetUserData<T>(Guid guid)
+        {
+            return GetUserDataByToken<T>(GuidUtil.ToBase64(guid), TokenType.Guid);
+        }
+
+        string TokenField(TokenType type)
+        {
+            switch (type)
+            {
+                case TokenType.Facebook:
+                    return SchemaConst.FbIdField;
+
+                default:
+                    return SchemaConst.GuidField;
+            }
+        }
+
+        public T GetUserDataByToken<T>(string token, TokenType type)
+        {
             if (_mySqlConnection == null)
                 throw new Exception("not connect yet!");
 
@@ -148,12 +205,22 @@ namespace Tizsoft.Database
 
             try
             {
-                if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(SchemaConst.GuidField, guid)) == 0)
-                    Create(SchemaConst.AccountTable, new List<string>() {SchemaConst.GuidField},
-                        new List<object>() {guid});
+                if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(TokenField(type), token)) == 0)
+                {
+                    var fieldColumns = new List<string>() {TokenField(type)};
+                    var valueColumns = new List<object>() {token};
+
+                    if (type != TokenType.Guid)
+                    {
+                        fieldColumns.Add(SchemaConst.GuidField);
+                        valueColumns.Add(GuidUtil.ToBase64(GuidUtil.New()));
+                    }
+
+                    Create(SchemaConst.AccountTable, fieldColumns, valueColumns);
+                }
 
                 dataReader = Request(SchemaConst.AccountTable, null,
-                    string.Format(@"`{0}`='{1}'", SchemaConst.GuidField, guid));
+                    string.Format(@"`{0}`='{1}'", TokenField(type), token));
 
                 dataReader.Read();
                 var dictionary = new Dictionary<string, object>();
@@ -165,7 +232,7 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 Logger.LogException(exception);
-                throw exception;
+                throw;
             }
             finally
             {
@@ -174,11 +241,6 @@ namespace Tizsoft.Database
             }
 
             return JsonConvert.DeserializeObject<T>(json);
-        }
-
-        public T GetUserData<T>(Guid guid)
-        {
-            return GetUserData<T>(GuidUtil.ToBase64(guid));
         }
 
         public void WriteUserData(object userData)

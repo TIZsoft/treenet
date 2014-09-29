@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using Tizsoft.Log;
+using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
@@ -30,9 +31,25 @@ namespace Tizsoft.Treenet
 
         public bool IsConnected { get; private set; }
 
+        public override void Register(IConnectionObserver observer)
+        {
+        }
+
+        public override void Unregister(IConnectionObserver observer)
+        {
+        }
+
+        public override void Notify(Socket socket, bool isConnect)
+        {
+        }
+
+        public override void Send(byte[] content)
+        {
+        }
+
         #region IDisposable Members
 
-        public new void Dispose()
+        public override void Dispose()
         {
             // Purposefully provides no behaviour.
             Logger.LogWarning("Dispose in NullConnection");
@@ -42,7 +59,7 @@ namespace Tizsoft.Treenet
 
         #region INullObj Members
 
-        public new bool IsNull
+        public override bool IsNull
         {
             get { return true; }
         }

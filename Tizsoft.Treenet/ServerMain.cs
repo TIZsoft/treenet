@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Text;
+using Newtonsoft.Json;
 using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
 
@@ -47,6 +49,11 @@ namespace Tizsoft.Treenet
                 _packetHandler.Parse(packet);
             }
         }
+
+        //public void Send(string jsonStr, Connection connection)
+        //{
+        //    connection.Send(Encoding.UTF8.GetBytes(jsonStr));
+        //}
 
         public PacketHandler PacketHandler {get { return _packetHandler; }}
 
