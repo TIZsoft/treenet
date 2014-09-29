@@ -71,7 +71,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Form1.cs" />
+    <Compile Include="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
@@ -115,6 +117,10 @@
     <ProjectReference Include="..\Tizsoft.Database\Tizsoft.Database.csproj">
       <Project>{7d67265a-ab2e-4b91-8a67-0025d01509bb}</Project>
       <Name>Tizsoft.Database</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tizsoft.Log\Tizsoft.Log.csproj">
+      <Project>{5E9944F3-3139-4566-A4A5-BBA5096DB799}</Project>
+      <Name>Tizsoft.Log</Name>
     </ProjectReference>
     <ProjectReference Include="..\Tizsoft.Treenet\Tizsoft.Treenet.csproj">
       <Project>{1d6374e8-979f-457c-a649-3e3369373365}</Project>

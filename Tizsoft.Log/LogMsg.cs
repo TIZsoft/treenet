@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace Tizsoft
+namespace Tizsoft.Log
 {
     public struct LogMsg
     {

@@ -83,6 +83,10 @@
     <Folder Include="Web\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Tizsoft.Log\Tizsoft.Log.csproj">
+      <Project>{5E9944F3-3139-4566-A4A5-BBA5096DB799}</Project>
+      <Name>Tizsoft.Log</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tizsoft\Tizsoft.csproj">
       <Project>{42DD1816-7E8D-4581-93B6-BE03F1E72652}</Project>
       <Name>Tizsoft</Name>
