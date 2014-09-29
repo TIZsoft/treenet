@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Newtonsoft.Json.Linq;
 using Tizsoft.Treenet;
 using Tizsoft.Treenet.Interface;
@@ -21,9 +22,9 @@ namespace TestFormApp
 //                }
 //            }}";
 
-        Action<JObject> _action;
+        Action<JObject, Connection> _action;
 
-        public ParseJsonPacket(Action<JObject> action)
+        public ParseJsonPacket(Action<JObject, Connection> action)
         {
             _action = action;
         }
@@ -32,7 +33,7 @@ namespace TestFormApp
 
         public void Parse(Packet packet)
         {
-            string jsonStr = BitConverter.ToString(packet.Content);
+            var jsonStr = Encoding.UTF8.GetString(packet.Content);
             JObject jsonObject = null;
 
             try
@@ -45,7 +46,7 @@ namespace TestFormApp
             }
             finally
             {
-                _action(jsonObject);
+                _action(jsonObject, packet.Connection);
             }
         }
 

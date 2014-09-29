@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NHibernate.Event.Default;
 using Tizsoft;
 using Tizsoft.Database;
 using Tizsoft.Log;
@@ -60,11 +63,46 @@ namespace TestFormApp
             _dbConnector.Connect(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning", string.Empty));
         }
 
-        void CheckJsonContent(JObject jsonObject)
+        void FacebookValidateHandler(object sender, DownloadStringCompletedEventArgs args)
+        {
+            var validateArgs = (FacebookValidateArgs) args.UserState;
+            var response = validateArgs.Response;
+
+            if (args.Error != null)
+            {
+                var responseStream = ((WebException) args.Error).Response.GetResponseStream();
+                using (var reader = new StreamReader(responseStream))
+                {
+                    response.Add("param", new Dictionary<string, object>()
+                    {
+                        {"error", reader.ReadToEnd()}
+                    });
+                }
+
+                var responseStr = JsonConvert.SerializeObject(response);
+                validateArgs.Connection.Send(Encoding.UTF8.GetBytes(responseStr));
+                return;
+            }
+
+            var validateResultJobject = JObject.Parse(args.Result);
+            var fbid = (string)validateResultJobject.SelectToken("id");
+            var user = _dbConnector.GetUserDataByToken<TestUserData>(fbid, TokenType.Facebook);
+            response.Add("param", new Dictionary<string, object>()
+            {
+                {"user", JsonConvert.SerializeObject(user)}
+            });
+            validateArgs.Connection.Send(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response)));
+        }
+
+        void CheckJsonContent(JObject jsonObject, Connection connection)
         {
             if (jsonObject == null)
                 return;
 
+            var response = new Dictionary<string, object>()
+            {
+                {"result", "login"},
+            };
             var functionToken = (string) jsonObject.SelectToken("function");
 
             switch (functionToken.ToLower())
@@ -77,23 +115,18 @@ namespace TestFormApp
                     {
                         if (string.IsNullOrEmpty(fbtoken))
                         {
-                            string reply = string.Empty;
-
-                            using (var wc = new WebClient())
+                            var userData = _dbConnector.GetUserData<TestUserData>(GuidUtil.New());
+                            response.Add("param", new Dictionary<string, object>()
                             {
-                                try
-                                {
-                                    wc.Encoding = Encoding.UTF8;
-                                    reply = wc.DownloadString("https://graph.facebook.com/me/?access_token=" + fbtoken);
-                                    Logger.Log(reply);
-                                }
-                                catch (WebException ex)
-                                {
-                                    StreamReader SR = new StreamReader(ex.Response.GetResponseStream(), wc.Encoding);
-                                    reply = SR.ReadToEnd();
-                                    Logger.LogError(reply);
-                                }
-                            }
+                                {"user", JsonConvert.SerializeObject(userData)}
+                            });
+                            var responseStr = JsonConvert.SerializeObject(response);
+                            Logger.Log(responseStr);
+                            connection.Send(Encoding.UTF8.GetBytes(responseStr));
+                        }
+                        else
+                        {
+                            ValidateFacebookTokenAsync(connection, fbtoken, response);
                         }
                     }
                         
@@ -102,6 +135,21 @@ namespace TestFormApp
                 default:
                     Logger.LogWarning(string.Format("未定義的function: <color=cyan>{0}</color>", functionToken));
                     break;
+            }
+        }
+
+        void ValidateFacebookTokenAsync(Connection connection, string fbtoken, Dictionary<string, object> response)
+        {
+            using (var wc = new WebClient())
+            {
+                var userToken = new FacebookValidateArgs();
+                userToken.Connection = connection;
+                userToken.FbToken = fbtoken;
+                userToken.Response = response;
+
+                wc.Encoding = Encoding.UTF8;
+                wc.DownloadStringCompleted += FacebookValidateHandler;
+                wc.DownloadStringAsync(new Uri("https://graph.facebook.com/me/?access_token=" + fbtoken), userToken);
             }
         }
 
@@ -227,9 +275,9 @@ namespace TestFormApp
 
         private void button1_Click(object sender, EventArgs e)
         {
-            string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"\"}}";
+            string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"12345\"}}";
             JObject jObject = JObject.Parse(json);
-            CheckJsonContent(jObject);
+            CheckJsonContent(jObject, Connection.NullConnection);
         }
     }
 }
