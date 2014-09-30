@@ -1,6 +1,6 @@
 ﻿namespace Tizsoft.Database
 {
-    public enum TokenType
+    public enum AccountType
     {
         Guid,
         Facebook,

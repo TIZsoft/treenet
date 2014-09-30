@@ -1,60 +1,44 @@
 ﻿using System.Collections.Generic;
+using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
-using Tizsoft.Treenet.PacketParser;
 
 namespace Tizsoft.Treenet
 {
     public class PacketHandler
     {
-        readonly Dictionary<PacketType, List<IPacketParser>> _parsers;
-        readonly IPacketParser _defaultPacketParser = new ParseDefaultEchoPacket();
+        readonly Dictionary<PacketType, IPacketProcessor> _parsers;
 
         public PacketHandler()
         {
-            _parsers = new Dictionary<PacketType, List<IPacketParser>>();
+            _parsers = new Dictionary<PacketType, IPacketProcessor>();
         }
 
         public void Parse(Packet packet)
         {
-            List<IPacketParser> parsers;
+            IPacketProcessor processor;
 
-            if (_parsers.TryGetValue(packet.PacketType, out parsers))
+            if (_parsers.TryGetValue(packet.PacketType, out processor))
             {
-                foreach (var parser in parsers)
-                {
-                    if (parser != null)
-                        parser.Parse(packet);
-                }
+                if (processor != null)
+                    processor.Process(packet);
             }
             else
             {
-                _defaultPacketParser.Parse(packet);
+                Logger.LogWarning(string.Format("封包類型 {0} 沒有指定處理方式!", packet.PacketType));
             }
         }
 
-        public void AddParser(PacketType packetType, IPacketParser parser)
+        public void AddParser(PacketType packetType, IPacketProcessor processor)
         {
-            if (parser == null)
+            if (processor == null)
                 return;
 
-            List<IPacketParser> parsers;
+            IPacketProcessor existProcessor;
 
-            if (!_parsers.TryGetValue(packetType, out parsers))
-            {
-                parsers = new List<IPacketParser>();
-                _parsers.Add(packetType, parsers);
-            }
+            if (_parsers.TryGetValue(packetType, out existProcessor))
+                _parsers.Remove(packetType);
 
-            if (!parsers.Contains(parser))
-                parsers.Add(parser);
-        }
-
-        public void RemoveParser(PacketType packetType, IPacketParser parser)
-        {
-            List<IPacketParser> parsers;
-
-            if (_parsers.TryGetValue(packetType, out parsers))
-                parsers.Remove(parser);
+            _parsers.Add(packetType, processor);
         }
     }
 }

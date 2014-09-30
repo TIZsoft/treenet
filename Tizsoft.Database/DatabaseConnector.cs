@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
@@ -141,53 +142,59 @@ namespace Tizsoft.Database
 
         public T GetUserData<T>(string guid)
         {
-            return GetUserDataByToken<T>(guid, TokenType.Guid);
-            //if (_mySqlConnection == null)
-            //    throw new Exception("not connect yet!");
-
-            //string json = string.Empty;
-            //MySqlDataReader dataReader = null;
-
-            //try
-            //{
-            //    if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(SchemaConst.GuidField, guid)) == 0)
-            //        Create(SchemaConst.AccountTable, new List<string>() {SchemaConst.GuidField},
-            //            new List<object>() {guid});
-
-            //    dataReader = Request(SchemaConst.AccountTable, null,
-            //        string.Format(@"`{0}`='{1}'", SchemaConst.GuidField, guid));
-
-            //    dataReader.Read();
-            //    var dictionary = new Dictionary<string, object>();
-            //    foreach (var accountField in SchemaConst.AccountFields)
-            //        dictionary.Add(accountField, dataReader[accountField]);
-
-            //    json = JsonConvert.SerializeObject(dictionary);
-            //}
-            //catch (Exception exception)
-            //{
-            //    Logger.LogException(exception);
-            //    throw;
-            //}
-            //finally
-            //{
-            //    if (dataReader != null)
-            //        dataReader.Close();
-            //}
-
-            //return JsonConvert.DeserializeObject<T>(json);
+            return GetUserDataByToken<T>(guid, AccountType.Guid);
         }
 
         public T GetUserData<T>(Guid guid)
         {
-            return GetUserDataByToken<T>(GuidUtil.ToBase64(guid), TokenType.Guid);
+            T userData;
+            return HasUserData(GuidUtil.ToBase64(guid), AccountType.Guid, out userData) ? userData : default(T);
         }
 
-        string TokenField(TokenType type)
+        public bool HasUserData<T>(string account, AccountType type, out T userData)
+        {
+            userData = default(T);
+
+            if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(AccountField(type), account)) == 0)
+                return false;
+
+            userData = GetUserDataByToken<T>(account, type);
+            return true;
+        }
+
+        public T CreateNewUser<T>(string guid)
+        {
+            return CreateNewUser<T>(guid, AccountType.Guid);
+        }
+
+        public T CreateNewUser<T>(Guid guid)
+        {
+            return CreateNewUser<T>(GuidUtil.ToBase64(guid), AccountType.Guid);
+        }
+
+        public T CreateNewUser<T>(string account, AccountType type)
+        {
+            if (_mySqlConnection == null)
+                throw new Exception("not connect yet!");
+
+            var fieldColumns = new List<string>() { AccountField(type) };
+            var valueColumns = new List<object>() { account };
+
+            if (type != AccountType.Guid)
+            {
+                fieldColumns.Add(SchemaConst.GuidField);
+                valueColumns.Add(GuidUtil.ToBase64(GuidUtil.New()));
+            }
+
+            Create(SchemaConst.AccountTable, fieldColumns, valueColumns);
+            return GetUserDataByToken<T>(account, type);
+        }
+
+        string AccountField(AccountType type)
         {
             switch (type)
             {
-                case TokenType.Facebook:
+                case AccountType.Facebook:
                     return SchemaConst.FbIdField;
 
                 default:
@@ -195,37 +202,27 @@ namespace Tizsoft.Database
             }
         }
 
-        public T GetUserDataByToken<T>(string token, TokenType type)
+        public T GetUserDataByToken<T>(string account, AccountType type)
         {
             if (_mySqlConnection == null)
                 throw new Exception("not connect yet!");
+
+            if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(AccountField(type), account)) == 0)
+                return default(T);
 
             string json = string.Empty;
             MySqlDataReader dataReader = null;
 
             try
             {
-                if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(TokenField(type), token)) == 0)
-                {
-                    var fieldColumns = new List<string>() {TokenField(type)};
-                    var valueColumns = new List<object>() {token};
-
-                    if (type != TokenType.Guid)
-                    {
-                        fieldColumns.Add(SchemaConst.GuidField);
-                        valueColumns.Add(GuidUtil.ToBase64(GuidUtil.New()));
-                    }
-
-                    Create(SchemaConst.AccountTable, fieldColumns, valueColumns);
-                }
-
                 dataReader = Request(SchemaConst.AccountTable, null,
-                    string.Format(@"`{0}`='{1}'", TokenField(type), token));
+                    string.Format(@"`{0}`='{1}'", AccountField(type), account));
 
                 dataReader.Read();
-                var dictionary = new Dictionary<string, object>();
-                foreach (var accountField in SchemaConst.AccountFields)
-                    dictionary.Add(accountField, dataReader[accountField]);
+                var dictionary = SchemaConst.AccountFields.ToDictionary(accountField => accountField, accountField => dataReader[accountField]);
+                //var dictionary = new Dictionary<string, object>();
+                //foreach (var accountField in SchemaConst.AccountFields)
+                //    dictionary.Add(accountField, dataReader[accountField]);
 
                 json = JsonConvert.SerializeObject(dictionary);
             }

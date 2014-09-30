@@ -37,6 +37,12 @@ namespace Tizsoft.Treenet
                 _unusedPackets.Enqueue(packet);
         }
 
+        public void Clear()
+        {
+            while (_waitToParsePackets.Count > 0)
+                RecyclePacket(_waitToParsePackets.Dequeue());
+        }
+
         public Packet NextPacket()
         {
             return _waitToParsePackets.Count > 0 ? _waitToParsePackets.Dequeue() : Packet.NullPacket;

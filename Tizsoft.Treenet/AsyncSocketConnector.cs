@@ -31,6 +31,7 @@ namespace Tizsoft.Treenet
 
                 default:
                     Logger.Log(string.Format("因為 {0} ，所以無法連線", args.SocketError));
+                    Notify(args.AcceptSocket, false);
                     break;
             }
         }

@@ -13,7 +13,7 @@ namespace Tizsoft.Treenet
         public Packet()
         {
             _buffer = new MemoryStream();
-            _packetType = PacketType.Undefine;
+            _packetType = PacketType.Stream;
             Connection = Connection.NullConnection;
         }
 
@@ -34,7 +34,7 @@ namespace Tizsoft.Treenet
 
         public virtual PacketType PacketType
         {
-            get { return Enum.IsDefined(typeof(PacketType), _packetType) ? _packetType : PacketType.Undefine; }
+            get { return Enum.IsDefined(typeof(PacketType), _packetType) ? _packetType : PacketType.Stream; }
             protected set { _packetType = value; }
         }
 

@@ -62,14 +62,14 @@
     <Compile Include="Interface\IConnectionSubject.cs" />
     <Compile Include="Interface\INullObj.cs" />
     <Compile Include="Interface\IPacketContainer.cs" />
-    <Compile Include="Interface\IPacketParser.cs" />
+    <Compile Include="Interface\IPacketProcessor.cs" />
     <Compile Include="Null Objects\NullConnection.cs" />
     <Compile Include="Null Objects\NullPacket.cs" />
     <Compile Include="PacketContainer.cs" />
     <Compile Include="PacketHandler.cs" />
     <Compile Include="PacketParser\ParseDefaultEchoPacket.cs" />
     <Compile Include="ServerConfig.cs" />
-    <Compile Include="ServerMain.cs" />
+    <Compile Include="ListenService.cs" />
     <Compile Include="Connection.cs" />
     <Compile Include="Network.cs" />
     <Compile Include="Packet.cs" />

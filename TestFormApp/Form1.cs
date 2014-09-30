@@ -6,7 +6,6 @@ using System.Text;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NHibernate.Event.Default;
 using Tizsoft;
 using Tizsoft.Database;
 using Tizsoft.Log;
@@ -23,8 +22,8 @@ namespace TestFormApp
         TestUserData _testUser = new TestUserData();
         private ServerConfig _serverConfig;
         private LogPrinter _logPrinter;
-        private ServerMain _server;
-        private TestClient _testClient;
+        private ListenService _listen;
+        private ConnectService _connectService;
 
         void ReadServerConfig()
         {
@@ -44,13 +43,15 @@ namespace TestFormApp
             ServerConfig.Save(Application.StartupPath, _serverConfig);
         }
 
-        ClientConfig GetTestClientConfig()
+        ClientConfig GetConnectServiceConfig(bool autoReconnect)
         {
-            ClientConfig config = new ClientConfig();
-            config.Address = AddressTextBox.Text;
-            config.Port = int.Parse(PortTextBox.Text);
-            config.BufferSize = int.Parse(BufferSizeTextBox.Text);
-            return config;
+            return new ClientConfig()
+            {
+                Address = AddressTextBox.Text,
+                Port = int.Parse(PortTextBox.Text),
+                BufferSize = int.Parse(BufferSizeTextBox.Text),
+                AutoReConnect = autoReconnect
+            };
         }
 
         void InitDatabaseConnector()
@@ -73,7 +74,7 @@ namespace TestFormApp
                 var responseStream = ((WebException) args.Error).Response.GetResponseStream();
                 using (var reader = new StreamReader(responseStream))
                 {
-                    response.Add("param", new Dictionary<string, object>()
+                    response.Add("param", new Dictionary<string, object>
                     {
                         {"error", reader.ReadToEnd()}
                     });
@@ -86,10 +87,15 @@ namespace TestFormApp
 
             var validateResultJobject = JObject.Parse(args.Result);
             var fbid = (string)validateResultJobject.SelectToken("id");
-            var user = _dbConnector.GetUserDataByToken<TestUserData>(fbid, TokenType.Facebook);
-            response.Add("param", new Dictionary<string, object>()
+
+            TestUserData userData;
+
+            if (!_dbConnector.HasUserData<TestUserData>(fbid, AccountType.Facebook, out userData))
+                userData = _dbConnector.CreateNewUser<TestUserData>(fbid, AccountType.Facebook);
+
+            response.Add("param", new Dictionary<string, object>
             {
-                {"user", JsonConvert.SerializeObject(user)}
+                {"user", JsonConvert.SerializeObject(userData)}
             });
             validateArgs.Connection.Send(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response)));
         }
@@ -115,21 +121,36 @@ namespace TestFormApp
                     {
                         if (string.IsNullOrEmpty(fbtoken))
                         {
-                            var userData = _dbConnector.GetUserData<TestUserData>(GuidUtil.New());
-                            response.Add("param", new Dictionary<string, object>()
+                            var userData = _dbConnector.CreateNewUser<TestUserData>(GuidUtil.New());
+                            response.Add("param", new Dictionary<string, object>
                             {
                                 {"user", JsonConvert.SerializeObject(userData)}
                             });
-                            var responseStr = JsonConvert.SerializeObject(response);
-                            Logger.Log(responseStr);
-                            connection.Send(Encoding.UTF8.GetBytes(responseStr));
                         }
                         else
                         {
                             ValidateFacebookTokenAsync(connection, fbtoken, response);
+                            return;
                         }
                     }
-                        
+                    else
+                    {
+                        TestUserData user;
+                        response.Add("param", _dbConnector.HasUserData(guid, AccountType.Guid, out user) ? 
+                            new Dictionary<string, object>
+                            {
+                                 {"user", JsonConvert.SerializeObject(user)}
+                            } 
+                            : 
+                            new Dictionary<string, object>
+                            {
+                                {"error", "wrong guid"}
+                            });
+                    }
+
+                    var responseStr = JsonConvert.SerializeObject(response);
+                    Logger.Log(responseStr);
+                    connection.Send(Encoding.UTF8.GetBytes(responseStr));
                     break;
 
                 default:
@@ -153,7 +174,7 @@ namespace TestFormApp
             }
         }
 
-        IPacketParser CreatePacketParser(PacketType type)
+        IPacketProcessor CreatePacketParser(PacketType type)
         {
             switch (type)
             {
@@ -166,7 +187,21 @@ namespace TestFormApp
         {
             foreach (PacketType type in Enum.GetValues(typeof(PacketType)))
             {
-                _server.PacketHandler.AddParser(type, CreatePacketParser(type));
+                _listen.AddParser(type, CreatePacketParser(type));
+            }
+        }
+
+        void AppClose(object sender, EventArgs args)
+        {
+            if (IsClientCheckBox.Checked)
+            {
+                if (_connectService != null)
+                    _connectService.Stop();
+            }
+            else
+            {
+                if (_listen != null)
+                    _listen.Stop();
             }
         }
 
@@ -175,10 +210,11 @@ namespace TestFormApp
             InitializeComponent();
             ReadServerConfig();
             _logPrinter = new LogPrinter(LogMsgrichTextBox);
-            _server = new ServerMain();
+            _listen = new ListenService();
             InitPacketParser();
-            _testClient = new TestClient();
+            _connectService = new ConnectService();
             InitDatabaseConnector();
+            Application.ApplicationExit += AppClose;
         }
         
         private void PortTextBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -192,33 +228,36 @@ namespace TestFormApp
 
             if (isClient)
             {
-                if (_testClient.IsWorking)
-                    _testClient.Stop();
+                if (_connectService.IsWorking)
+                {
+                    _connectService.Setup(GetConnectServiceConfig(false));
+                    _connectService.Stop();
+                }
                 else
                 {
-                    ClientConfig config = GetTestClientConfig();
-                    _testClient.Setup(config);
-                    _testClient.Start();
+                    ClientConfig config = GetConnectServiceConfig(true);
+                    _connectService.Setup(config);
+                    _connectService.Start();
                 }
             }
             else
             {
-                if (_server.IsWorking)
-                    _server.Stop();
+                if (_listen.IsWorking)
+                    _listen.Stop();
                 else
                 {
                     SaveServerConfig();
-                    _server.Setup(_serverConfig);
-                    _server.Start();	
+                    _listen.Setup(_serverConfig);
+                    _listen.Start();	
                 }
             }
         }
         
-        private void CheckServerStatus()
+        private void CheckServiceStatus()
         {
-            StartBtn.Text = (IsClientCheckBox.Checked ? _testClient.IsWorking : _server.IsWorking) ? "Stop" : "Start";
+            StartBtn.Text = (IsClientCheckBox.Checked ? _connectService.IsWorking : _listen.IsWorking) ? "Stop" : "Start";
 
-            if (_server.IsWorking)
+            if (_listen.IsWorking)
             {
                 StatusprogressBar.MarqueeAnimationSpeed = StatusprogressBar.Maximum;
                 StatusprogressBar.Value = (StatusprogressBar.Value + 1) % StatusprogressBar.Maximum;
@@ -242,9 +281,9 @@ namespace TestFormApp
 
         private void statusTimer_Tick(object sender, EventArgs e)
         {
-            if (_server != null)
+            if (_listen != null)
             {
-                CheckServerStatus();
+                CheckServiceStatus();
             }
 
             _logPrinter.Print();
@@ -252,11 +291,11 @@ namespace TestFormApp
         
         private void GameUpdateTimer_Tick(object sender, EventArgs e)
         {
-            if (_testClient != null && _testClient.IsWorking)
-                _testClient.Update();
+            if (_connectService != null && _connectService.IsWorking)
+                _connectService.Update();
 
-            if (_server != null && _server.IsWorking)
-                _server.Update();
+            if (_listen != null && _listen.IsWorking)
+                _listen.Update();
         }
 
         private void QueryGuidBtn_Click(object sender, EventArgs e)
