@@ -2,12 +2,14 @@
 
 namespace Tizsoft.Treenet.Interface
 {
-	public interface IPacketContainer
-	{
-		void AddPacket(Connection connection, SocketAsyncEventArgs aysncArgs);
+    public interface IPacketContainer
+    {
+        void AddPacket(Connection connection, SocketAsyncEventArgs aysncArgs);
 
-		void RecyclePacket(Packet packet);
+        void RecyclePacket(Packet packet);
 
-		Packet NextPacket();
-	}
+        void Clear();
+
+        Packet NextPacket();
+    }
 }

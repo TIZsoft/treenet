@@ -3,11 +3,11 @@ using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet.PacketParser
 {
-    public class ParseDefaultEchoPacket : IPacketParser
+    public class ParseDefaultEchoPacket : IPacketProcessor
     {
-        #region IPacketParser Members
+        #region IPacketProcessor Members
 
-        public void Parse(Packet packet)
+        public void Process(Packet packet)
         {
             Logger.Log("parse by default: echo back!");
             packet.Connection.Send(packet.Content);

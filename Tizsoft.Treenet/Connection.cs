@@ -43,7 +43,7 @@ namespace Tizsoft.Treenet
                 // Client has been disconnected.
                 if (args.BytesTransferred == 0)
                 {
-                    CloseAsyncSocket();
+                    Dispose();
                     return;
                 }
                 if (args.BytesTransferred > 0)
@@ -97,7 +97,8 @@ namespace Tizsoft.Treenet
 
             try
             {
-                _socket.Shutdown(SocketShutdown.Both);
+                if (_socket != null)
+                    _socket.Shutdown(SocketShutdown.Both);
             }
             catch (Exception e)
             {

@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Net.Sockets;
-using System.Text;
 using Tizsoft.Collections;
-using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet.Tests.TestClient
@@ -10,7 +7,7 @@ namespace Tizsoft.Treenet.Tests.TestClient
     /// <summary>
     /// support "only 1" connection
     /// </summary>
-    public class TestClient : IConnectionObserver, IService
+    public class ConnectService : IService
     {
         Connection _connection;
         ClientConfig _config;
@@ -20,6 +17,7 @@ namespace Tizsoft.Treenet.Tests.TestClient
         readonly IPacketContainer _packetContainer;
         readonly ConnectionObserver _connectionObserver;
         readonly PacketHandler _packetHandler;
+        bool _isInit = false;
 
         void InitConnectionPool()
         {
@@ -29,7 +27,7 @@ namespace Tizsoft.Treenet.Tests.TestClient
             _connectionPool.Push(_connection);
         }
 
-        public TestClient()
+        public ConnectService()
         {
             _connector = new AsyncSocketConnector();
             _packetContainer = new PacketContainer();
@@ -39,41 +37,20 @@ namespace Tizsoft.Treenet.Tests.TestClient
             _packetHandler = new PacketHandler();
         }
 
-        public void Update()
+        ~ConnectService()
         {
-            var packet = _packetContainer.NextPacket();
-
-            if (packet.IsNull || packet.Connection.IsNull)
-                _packetContainer.RecyclePacket(packet);
-            else
-            {
-                Logger.Log(string.Format("得到 server 傳回的訊息：{0}", Encoding.UTF8.GetString(packet.Content)));
-            }
+            Stop();
         }
 
-        public bool IsConnected { get; private set; }
-
-        public Connection Connection { get { return _connection; } }
-
-        #region IConnectionObserver Members
-
-        public void GetConnectionEvent(Socket socket, bool isConnect)
+        public void Send(byte[] contents)
         {
-            switch (isConnect)
-            {
-                case false:
-                    Logger.LogError("連線失敗!");
-                    break;
-
-                default:
-                    _connection.SetConnection(socket);
-                    break;
-            }
-
-            IsConnected = isConnect;
+            _connection.Send(contents);
         }
 
-        #endregion
+        public Packet Receive()
+        {
+            return IsWorking ? _packetContainer.NextPacket() : Packet.NullPacket;
+        }
 
         #region IService Members
 
@@ -90,19 +67,36 @@ namespace Tizsoft.Treenet.Tests.TestClient
             if (_config == null)
                 throw new InvalidCastException("configArgs");
 
-            InitConnectionPool();
-            _connectionObserver.Setup(_connectionPool);
-            _bufferManager.InitBuffer(_config.BufferSize * 2, _config.BufferSize);
+            if (!_isInit)
+            {
+                InitConnectionPool();
+                _connectionObserver.Setup(_connectionPool);
+                _bufferManager.InitBuffer(_config.BufferSize * 2, _config.BufferSize);
+                _isInit = true;
+            }
+        }
+
+        public void Update()
+        {
+            //if (!IsWorking)
+            //    return;
+
+            //var packet = _packetContainer.NextPacket();
+
+            //if (packet.IsNull || packet.Connection.IsNull)
+            //    _packetContainer.RecyclePacket(packet);
+            //else
+            //{
+            //    //Logger.Log(string.Format("得到 server 傳回的訊息：{0}", Encoding.UTF8.GetString(packet.Content)));
+            //    _packetHandler.Parse(packet);
+            //}
         }
 
         public void Stop()
         {
-            if (!IsConnected)
-                _connector.Stop();
-            else
-                _connection.Dispose();
-
+            _connector.Stop();
             _connectionObserver.Reset();
+            _packetContainer.Clear();
             IsWorking = false;
         }
 

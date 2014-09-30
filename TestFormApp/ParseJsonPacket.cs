@@ -7,7 +7,7 @@ using Tizsoft.Treenet.Interface;
 
 namespace TestFormApp
 {
-    public class ParseJsonPacket : IPacketParser
+    public class ParseJsonPacket : IPacketProcessor
     {
 //        const string SchemaJson = @"{
 //            'description': 'client send format',
@@ -29,9 +29,9 @@ namespace TestFormApp
             _action = action;
         }
 
-        #region IPacketParser Members
+        #region IPacketProcessor Members
 
-        public void Parse(Packet packet)
+        public void Process(Packet packet)
         {
             var jsonStr = Encoding.UTF8.GetString(packet.Content);
             JObject jsonObject = null;

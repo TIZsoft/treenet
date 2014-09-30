@@ -15,11 +15,14 @@ namespace Tizsoft.Treenet
 
         public ProtocolType UseProtocol { get; set; }
 
+        public bool AutoReConnect { get; set; }
+
         public ClientConfig()
         {
             Address = "127.0.0.1";
             TransferType = SocketType.Stream;
             UseProtocol = ProtocolType.Tcp;
+            AutoReConnect = true;
         }
     }
 }

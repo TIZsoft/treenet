@@ -2,7 +2,7 @@
 {
     public enum PacketType
     {
-        Test = -1,
-        Undefine = 0,
+        KeyValue = -1,
+        Stream = 0,
     }
 }

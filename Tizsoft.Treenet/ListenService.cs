@@ -1,13 +1,10 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Text;
-using Newtonsoft.Json;
 using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
-    public class ServerMain : IService
+    public class ListenService : IService
     {
         SimpleObjPool<Connection> _asyncOpPool;
         readonly BufferManager _bufferManager;
@@ -15,6 +12,7 @@ namespace Tizsoft.Treenet
         readonly ConnectionObserver _connectionObserver;
         readonly IPacketContainer _packetContainer;
         readonly PacketHandler _packetHandler;
+        bool _isInit = false;
 
         void InitConnectionPool(int maxConnections, IPacketContainer packetContainer, IConnectionObserver connectionObserver)
         {
@@ -28,7 +26,7 @@ namespace Tizsoft.Treenet
             }
         }
 
-        public ServerMain()
+        public ListenService()
         {
             _bufferManager = new BufferManager();
             _socketListener = new AsyncSocketListener();
@@ -38,24 +36,20 @@ namespace Tizsoft.Treenet
             _packetHandler = new PacketHandler();
         }
 
-        public void Update()
+        public void Send(Connection connection, byte[] contents)
         {
-            var packet = _packetContainer.NextPacket();
-
-            if (packet.IsNull || packet.Connection.IsNull)
-                _packetContainer.RecyclePacket(packet);
-            else
-            {
-                _packetHandler.Parse(packet);
-            }
+            connection.Send(contents);
         }
 
-        //public void Send(string jsonStr, Connection connection)
-        //{
-        //    connection.Send(Encoding.UTF8.GetBytes(jsonStr));
-        //}
+        public Packet Receive()
+        {
+            return IsWorking ? _packetContainer.NextPacket() : Packet.NullPacket;
+        }
 
-        public PacketHandler PacketHandler {get { return _packetHandler; }}
+        public void AddParser(PacketType type, IPacketProcessor processor)
+        {
+            _packetHandler.AddParser(type, processor);
+        }
 
         #region IService Members
 
@@ -67,21 +61,42 @@ namespace Tizsoft.Treenet
 
         public void Setup(EventArgs configArgs)
         {
-            ServerConfig config = (ServerConfig) configArgs;
+            var config = (ServerConfig) configArgs;
 
             if (config == null)
                 throw new InvalidCastException("configArgs");
 
-            _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
-            InitConnectionPool(config.MaxConnections, _packetContainer, _connectionObserver);
-            _connectionObserver.Setup(_asyncOpPool);
+            if (!_isInit)
+            {
+                _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
+                InitConnectionPool(config.MaxConnections, _packetContainer, _connectionObserver);
+                _connectionObserver.Setup(_asyncOpPool);
+                _isInit = true;
+            }
+            
             _socketListener.Setup(config);
+        }
+
+        public void Update()
+        {
+            //if (!IsWorking)
+            //    return;
+
+            //var packet = _packetContainer.NextPacket();
+
+            //if (packet.IsNull || packet.Connection.IsNull)
+            //    _packetContainer.RecyclePacket(packet);
+            //else
+            //{
+            //    _packetHandler.Parse(packet);
+            //}
         }
 
         public void Stop()
         {
             _socketListener.Stop();
             _connectionObserver.Reset();
+            _packetContainer.Clear();
             IsWorking = false;
         }
 
