@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using Tizsoft.Treenet;
@@ -9,19 +8,6 @@ namespace TestFormApp
 {
     public class ParseJsonPacket : IPacketProcessor
     {
-//        const string SchemaJson = @"{
-//            'description': 'client send format',
-//            'type': 'object',
-//            'properties':
-//            {
-//                'function': {'type':'string'},
-//                'param': 
-//                {
-//                    'type': 'array', 
-//                    'items': {'type':'string'}
-//                }
-//            }}";
-
         Action<JObject, Connection> _action;
 
         public ParseJsonPacket(Action<JObject, Connection> action)

@@ -39,7 +39,7 @@ namespace Tizsoft.Treenet
         {
         }
 
-        public override void Notify(Socket socket, bool isConnect)
+        public override void Notify(Connection connection, bool isConnect)
         {
         }
 

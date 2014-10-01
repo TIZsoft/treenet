@@ -53,7 +53,7 @@
     <Compile Include="Collections\Pool.cs" />
     <Compile Include="GuidUtil.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Collections\SimpleObjPool.cs" />
+    <Compile Include="Collections\FixedSizeObjPool.cs" />
     <Compile Include="ICommand.cs" />
     <Compile Include="Helpers\Utils.cs" />
     <Compile Include="TizId.cs" />

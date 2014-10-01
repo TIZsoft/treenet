@@ -4,25 +4,23 @@ using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
-    public class ListenService : IService
+    public class ListenService : IService, IConnectionSubject
     {
-        SimpleObjPool<Connection> _asyncOpPool;
+        FixedSizeObjPool<Connection> _connectionPool;
         readonly BufferManager _bufferManager;
         readonly AsyncSocketListener _socketListener;
-        readonly ConnectionObserver _connectionObserver;
         readonly IPacketContainer _packetContainer;
         readonly PacketHandler _packetHandler;
-        bool _isInit = false;
 
-        void InitConnectionPool(int maxConnections, IPacketContainer packetContainer, IConnectionObserver connectionObserver)
+        void InitConnectionPool(int maxConnections, IPacketContainer packetContainer)
         {
-            _asyncOpPool = new SimpleObjPool<Connection>(maxConnections);
+            _connectionPool = new FixedSizeObjPool<Connection>(maxConnections);
 
             for (var i = 0; i < maxConnections; ++i)
             {
                 var connection = new Connection(_bufferManager, packetContainer);
-                connection.Register(connectionObserver);
-                _asyncOpPool.Push(connection);
+                connection.Register(_socketListener);
+                _connectionPool.Push(connection);
             }
         }
 
@@ -30,8 +28,6 @@ namespace Tizsoft.Treenet
         {
             _bufferManager = new BufferManager();
             _socketListener = new AsyncSocketListener();
-            _connectionObserver = new ConnectionObserver();
-            _socketListener.Register(_connectionObserver);
             _packetContainer = new PacketContainer();
             _packetHandler = new PacketHandler();
         }
@@ -66,41 +62,43 @@ namespace Tizsoft.Treenet
             if (config == null)
                 throw new InvalidCastException("configArgs");
 
-            if (!_isInit)
-            {
-                _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
-                InitConnectionPool(config.MaxConnections, _packetContainer, _connectionObserver);
-                _connectionObserver.Setup(_asyncOpPool);
-                _isInit = true;
-            }
+            _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
+            InitConnectionPool(config.MaxConnections, _packetContainer);
             
-            _socketListener.Setup(config);
+            _socketListener.Setup(config, _connectionPool);
         }
 
         public void Update()
         {
-            //if (!IsWorking)
-            //    return;
-
-            //var packet = _packetContainer.NextPacket();
-
-            //if (packet.IsNull || packet.Connection.IsNull)
-            //    _packetContainer.RecyclePacket(packet);
-            //else
-            //{
-            //    _packetHandler.Parse(packet);
-            //}
         }
 
         public void Stop()
         {
             _socketListener.Stop();
-            _connectionObserver.Reset();
             _packetContainer.Clear();
             IsWorking = false;
         }
 
         public bool IsWorking { get; private set; }
+
+        #endregion
+
+        #region IConnectionSubject Members
+
+        public void Register(IConnectionObserver observer)
+        {
+            _socketListener.Register(observer);
+        }
+
+        public void Unregister(IConnectionObserver observer)
+        {
+            _socketListener.Unregister(observer);
+        }
+
+        public void Notify(Connection connection, bool isConnect)
+        {
+            _socketListener.Notify(connection, isConnect);
+        }
 
         #endregion
     }

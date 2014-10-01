@@ -50,7 +50,7 @@
   <ItemGroup>
     <Compile Include="BufferPool.cs" />
     <Compile Include="ClientConfig.cs" />
-    <Compile Include="ConnectionObserver.cs" />
+    <Compile Include="ConnectService.cs" />
     <Compile Include="DatabaseConfig.cs" />
     <Compile Include="Interface\IService.cs" />
     <Compile Include="PacketType.cs" />

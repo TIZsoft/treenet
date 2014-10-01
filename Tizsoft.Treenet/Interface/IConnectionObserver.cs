@@ -1,9 +1,7 @@
-﻿using System.Net.Sockets;
-
-namespace Tizsoft.Treenet.Interface
+﻿namespace Tizsoft.Treenet.Interface
 {
     public interface IConnectionObserver
     {
-        void GetConnectionEvent(Socket socket, bool isConnect);
+        void GetConnectionEvent(Connection connection, bool isConnect);
     }
 }

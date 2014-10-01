@@ -93,8 +93,6 @@ namespace Tizsoft.Treenet
                 return;
             }
 
-            Notify(_socket, false);
-
             try
             {
                 if (_socket != null)
@@ -180,6 +178,7 @@ namespace Tizsoft.Treenet
             CloseAsyncSocket();
             ClearSocketAsyncEventArgs(ref _receiveAsyncArgs);
             ClearSocketAsyncEventArgs(ref _sendAsyncArgs);
+            Notify(this, false);
         }
 
         #endregion
@@ -214,15 +213,12 @@ namespace Tizsoft.Treenet
             _observers.RemoveAll(observer => observer == null);
         }
 
-        public virtual void Notify(Socket socket, bool isConnect)
+        public virtual void Notify(Connection connection, bool isConnect)
         {
-            if (socket == null)
-                return;
-
             RemoveNullObservers();
 
             foreach (var observer in _observers)
-                observer.GetConnectionEvent(socket, isConnect);
+                observer.GetConnectionEvent(connection, isConnect);
         }
 
         #endregion

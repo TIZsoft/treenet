@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Tizsoft.Collections
 {
-    public class SimpleObjPool<T> where T : IDisposable
+    public class FixedSizeObjPool<T> where T : class 
     {
         readonly Stack<T> _pool;
 
@@ -11,23 +11,9 @@ namespace Tizsoft.Collections
         /// Initializes the object pool to the specified size.<br />
         /// </summary>
         /// <param name="capacity">The maximum number of objects the pool can hold.</param>
-        public SimpleObjPool(int capacity)
+        public FixedSizeObjPool(int capacity)
         {
             _pool = new Stack<T>(capacity);
-        }
-
-        ~SimpleObjPool()
-        {
-            lock (_pool)
-            {
-                while (_pool.Count > 0)
-                {
-                    IDisposable disposableObj = _pool.Pop();
-
-                    if (disposableObj != null)
-                        disposableObj.Dispose();
-                }
-            }
         }
 
         /// <summary>
@@ -36,7 +22,7 @@ namespace Tizsoft.Collections
         /// <param name="item">The T instance to add to the pool.</param>
         public void Push(T item)
         {
-            if (ReferenceEquals(item, null)) { throw new ArgumentNullException("item", "Items added to a SimpleObjPool cannot be null"); }
+            if (ReferenceEquals(item, null)) { throw new ArgumentNullException("item", "Items added to a FixedSizeObjPool cannot be null"); }
             lock (_pool)
             {
                 if (!_pool.Contains(item))

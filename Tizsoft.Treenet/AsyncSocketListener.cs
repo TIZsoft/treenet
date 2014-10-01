@@ -2,25 +2,28 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
+using Tizsoft.Collections;
 using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
-    public class AsyncSocketListener : IConnectionSubject
+    public class AsyncSocketListener : IConnectionSubject, IConnectionObserver
     {
         Socket _listenSocket;
         Semaphore _maxNumberAcceptedClients;
         SocketAsyncEventArgs _acceptAsyncOp;
         ServerConfig _config;
-        readonly List<IConnectionObserver> _observers;
+        FixedSizeObjPool<Connection> _connectionPool;
+        readonly List<IConnectionObserver> _observers = new List<IConnectionObserver>();
+        readonly List<Connection> _workingConnections = new List<Connection>();
 
         /// <summary>
         /// Begins an operation to accept a connection request from the client.
         /// </summary>
         /// <param name="args">
         /// The context object to use when issuing the accept operation on
-        /// the server's listening socket.
+        /// the server's listening connection.
         /// </param>
         void StartAccept(SocketAsyncEventArgs args)
         {
@@ -43,7 +46,7 @@ namespace Tizsoft.Treenet
         }
 
         /// <summary>
-        /// This method is called whenever a receive or send operation is completed on a socket
+        /// This method is called whenever a receive or send operation is completed on a connection
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args">SocketAsyncEventArg associated with the completed receive operation.</param>
@@ -59,12 +62,20 @@ namespace Tizsoft.Treenet
         {
             if (args.SocketError == SocketError.Success)
             {
-                Notify(args.AcceptSocket, true);
+                if (_connectionPool.Count <= 0)
+                {
+                    Logger.LogWarning("連線數已達上限!");
+                    return;
+                }
+
+                var newConnection = NewConnection(args.AcceptSocket);
+                _workingConnections.Add(newConnection);
+                Logger.Log(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
+                Logger.Log(string.Format("目前連線數: {0}", _workingConnections.Count));
+                Notify(newConnection, true);
             }
             else
             {
-                Notify(args.AcceptSocket, false);
-
                 // Server close on purpose.
                 if (args.SocketError == SocketError.OperationAborted)
                     return;
@@ -72,6 +83,13 @@ namespace Tizsoft.Treenet
 
             // Accept the next connection request.
             StartAccept(args);
+        }
+
+        Connection NewConnection(Socket socket)
+        {
+            var connection = _connectionPool.Pop();
+            connection.SetConnection(socket);
+            return connection;
         }
 
         void CloseSemaphore()
@@ -134,21 +152,13 @@ namespace Tizsoft.Treenet
             }
         }
 
-        public AsyncSocketListener()
-        {
-            _observers = new List<IConnectionObserver>();
-        }
-
-        public void Setup(ServerConfig config)
+        public void Setup(ServerConfig config, FixedSizeObjPool<Connection> connectionPool)
         {
             _config = config;
+            _connectionPool = connectionPool;
 
             if (_listenSocket != null)
-            {
-                CloseListenSocket();
-                CloseAsyncAcceptOp(_acceptAsyncOp);
-                CloseSemaphore();
-            }
+                FreeAcceptComponents();
 
             _maxNumberAcceptedClients = new Semaphore(config.MaxConnections, config.MaxConnections);
             var endPoint = Network.GetIpEndPoint(config.Address, config.Port);
@@ -164,6 +174,20 @@ namespace Tizsoft.Treenet
         }
 
         public void Stop()
+        {
+            FreeAcceptComponents();
+            FreeWorkingConnections();
+        }
+
+        void FreeWorkingConnections()
+        {
+            _workingConnections.RemoveAll(observer => observer == null);
+
+            foreach (var workingConnection in _workingConnections.ToArray())
+                workingConnection.Dispose();
+        }
+
+        void FreeAcceptComponents()
         {
             CloseListenSocket();
             CloseAsyncAcceptOp(_acceptAsyncOp);
@@ -191,15 +215,31 @@ namespace Tizsoft.Treenet
             _observers.RemoveAll(observer => observer == null);
         }
 
-        public void Notify(Socket socket, bool isConnect)
+        public void Notify(Connection connection, bool isConnect)
         {
-            if (socket == null)
+            if (connection == null)
                 return;
 
             RemoveNullObservers();
 
             foreach (var observer in _observers)
-                observer.GetConnectionEvent(socket, isConnect);
+                observer.GetConnectionEvent(connection, isConnect);
+        }
+
+        #endregion
+
+        #region IConnectionObserver Members
+
+        public void GetConnectionEvent(Connection connection, bool isConnect)
+        {
+            if (!isConnect)
+            {
+                _workingConnections.Remove(connection);
+                _connectionPool.Push(connection);
+                Logger.Log(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
+                Logger.Log(string.Format("目前連線數: {0}", _workingConnections.Count));
+                Notify(connection, isConnect);
+            }
         }
 
         #endregion

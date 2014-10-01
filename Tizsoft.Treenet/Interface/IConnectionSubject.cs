@@ -1,6 +1,4 @@
-﻿using System.Net.Sockets;
-
-namespace Tizsoft.Treenet.Interface
+﻿namespace Tizsoft.Treenet.Interface
 {
     public interface IConnectionSubject
     {
@@ -8,6 +6,6 @@ namespace Tizsoft.Treenet.Interface
 
         void Unregister(IConnectionObserver observer);
 
-        void Notify(Socket socket, bool isConnect);
+        void Notify(Connection connection, bool isConnect);
     }
 }
