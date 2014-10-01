@@ -1,87 +1,72 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Globalization;
 
 namespace Tizsoft
 {
-    public interface ITizId
-    {
-        void Init(uint current = 0);
-        uint Next();
-        uint Current();
-    }
-
     public abstract class TizId
     {
         // 0000000001~999999999
         protected const uint MinId = 1;
         protected const uint MaxId = 999999999;
         
-        protected uint _current;
+        protected uint CurrentId;
 
-        public static string StringId(uint id)
+        public static string Format(uint id, string format = "")
         {
-            return string.Format("{0:000000000}", id);
+            return string.IsNullOrWhiteSpace(format)
+                ? id.ToString(CultureInfo.InvariantCulture)
+                : string.Format(format, id);
         }
+
+        public abstract uint Next();
+        public abstract uint Current();
     }
 
-    public class TizIdForward : TizId, ITizId
+    public class TizIdIncrement : TizId
     {
-        public TizIdForward(uint current = 0)
+        public TizIdIncrement(uint current = MinId)
         {
-            Init(current);
+            CurrentId = current;
         }
 
-        public void Init(uint current = 0)
+        public override uint Next()
         {
-            _current = current;
-        }
-
-        public uint Next()
-        {
-            if (_current == MaxId)
+            if (CurrentId == MaxId)
             {
-                throw new ArgumentOutOfRangeException("current",
+                throw new ArgumentOutOfRangeException("CurrentId",
                     string.Format("The value is maximum({0}).", MaxId));
             }
 
-            return ++_current;
+            return CurrentId++;
         }
 
-        public uint Current()
+        public override uint Current()
         {
-            return _current;
+            return CurrentId;
         }
     }
 
-    public class TizIdReverse : TizId, ITizId
+    public class TizIdDecrease : TizId
     {
-        public TizIdReverse(uint current = 0)
+        public TizIdDecrease(uint current = MaxId)
         {
-            Init(current);
+            CurrentId = current;
         }
 
-        public void Init(uint current = 0)
+        public override uint Next()
         {
-            _current = current;
-        }
-
-        public uint Next()
-        {
-            if (_current == MinId)
+            if (CurrentId == MinId)
             {
-                throw new ArgumentOutOfRangeException("current",
+                throw new ArgumentOutOfRangeException("CurrentId",
                     string.Format("The value is Minimum({0}).", MinId));
             }
 
-            return --_current;
+            return CurrentId--;
         }
 
-        public uint Current()
+        public override uint Current()
         {
-            return _current;
+            return CurrentId;
         }
     }
 }

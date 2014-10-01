@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestFormApp", "TestFormApp\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Log", "Tizsoft.Log\Tizsoft.Log.csproj", "{5E9944F3-3139-4566-A4A5-BBA5096DB799}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Security", "Tizsoft.Security\Tizsoft.Security.csproj", "{C87A4C25-27E1-4884-A9A6-0411CAAE7001}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +95,10 @@ Global
 		{5E9944F3-3139-4566-A4A5-BBA5096DB799}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E9944F3-3139-4566-A4A5-BBA5096DB799}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E9944F3-3139-4566-A4A5-BBA5096DB799}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C87A4C25-27E1-4884-A9A6-0411CAAE7001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C87A4C25-27E1-4884-A9A6-0411CAAE7001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C87A4C25-27E1-4884-A9A6-0411CAAE7001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C87A4C25-27E1-4884-A9A6-0411CAAE7001}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

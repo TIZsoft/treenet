@@ -4,59 +4,93 @@ using log4net;
 
 namespace Tizsoft.Log
 {
-    public static class LoggerEx
+    public class LoggerEx : ILogger
     {
-        static ILog _log =
-            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        readonly ILog _log;
 
-        public static void Debug(object message)
+        public LoggerEx(Type type)
         {
-            _log.Debug(message);
+            _log = LogManager.GetLogger(type);
         }
 
-        public static void DebugFormat(string format, params object[] args)
+        public void Debug(object message)
         {
-            _log.DebugFormat(format, args);
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug(message);
+            }
         }
 
-        public static void Error(object message)
+        public void DebugFormat(string format, params object[] args)
         {
-            _log.Error(message);
+            if (_log.IsDebugEnabled)
+            {
+                _log.DebugFormat(format, args);
+            }
         }
 
-        public static void ErrorFormat(string format, params object[] args)
+        public void Error(object message)
         {
-            _log.ErrorFormat(format, args);
+            if (_log.IsErrorEnabled)
+            {
+                _log.Error(message);
+            }
         }
 
-        public static void Fatal(object message)
+        public void ErrorFormat(string format, params object[] args)
         {
-            _log.Fatal(message);
+            if (_log.IsErrorEnabled)
+            {
+                _log.ErrorFormat(format, args);
+            }
         }
 
-        public static void FatalFormat(string format, params object[] args)
+        public void Fatal(object message)
         {
-            _log.FatalFormat(format, args);
+            if (_log.IsFatalEnabled)
+            {
+                _log.Fatal(message);
+            }
         }
 
-        public static void Info(object message)
+        public void FatalFormat(string format, params object[] args)
         {
-            _log.Info(message);
+            if (_log.IsFatalEnabled)
+            {
+                _log.FatalFormat(format, args);
+            }
         }
 
-        public static void InfoFormat(string format, params object[] args)
+        public void Info(object message)
         {
-            _log.InfoFormat(format, args);
+            if (_log.IsInfoEnabled)
+            {
+                _log.Info(message);
+            }
         }
 
-        public static void Warn(object message)
+        public void InfoFormat(string format, params object[] args)
         {
-            _log.Warn(message);
+            if (_log.IsInfoEnabled)
+            {
+                _log.InfoFormat(format, args);
+            }
         }
 
-        public static void WarnFormat(string format, params object[] args)
+        public void Warn(object message)
         {
-            _log.WarnFormat(format, args);
+            if (_log.IsWarnEnabled)
+            {
+                _log.Warn(message);
+            }
+        }
+
+        public void WarnFormat(string format, params object[] args)
+        {
+            if (_log.IsWarnEnabled)
+            {
+                _log.WarnFormat(format, args);
+            }
         }
     }
 
