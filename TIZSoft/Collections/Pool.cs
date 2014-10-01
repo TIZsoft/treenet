@@ -1,5 +1,14 @@
-﻿using System;
+﻿#define CONCURRENT
+#if !CONCURRENT
+    #define USE_LOCK
+#endif
+
+using System;
+#if CONCURRENT
 using System.Collections.Concurrent;
+#else
+using System.Collections.Generic;
+#endif
 
 namespace Tizsoft.Collections
 {
@@ -34,6 +43,11 @@ namespace Tizsoft.Collections
                 _pool = pool;
             }
 
+            ~PoolObject()
+            {
+                Dispose();
+            }
+
             public void Dispose()
             {
                 if (_isDisposed)
@@ -46,7 +60,11 @@ namespace Tizsoft.Collections
             }
         }
 
+#if CONCURRENT
         readonly ConcurrentBag<T> _objects;
+#else
+        readonly Queue<T> _objects;
+#endif
         readonly Func<T> _objectGenerator;
 
         /// <summary>
@@ -54,7 +72,10 @@ namespace Tizsoft.Collections
         /// </summary>
         public int Count
         {
-            get { return _objects.Count; }
+            get
+            {
+                return _objects.Count;
+            }
         }
 
         /// <summary>
@@ -68,7 +89,11 @@ namespace Tizsoft.Collections
                 throw new ArgumentNullException("objectGenerator");
             }
 
+#if CONCURRENT
             _objects = new ConcurrentBag<T>();
+#else
+            _objects = new Queue<T>();
+#endif
             _objectGenerator = objectGenerator;
         }
 
@@ -79,14 +104,45 @@ namespace Tizsoft.Collections
         public IPoolObject<T> Acquire()
         {
             T item;
-            return _objects.TryTake(out item)
-                ? new PoolObject(item, this)
-                : new PoolObject(_objectGenerator(), this);
+
+#if CONCURRENT
+            item = _objects.TryTake(out item)
+                ? item
+                : _objectGenerator();
+#else
+#if USE_LOCK
+            lock (_objects)
+            {
+#endif
+                if (_objects.Count > 0)
+                {
+                    item = _objects.Dequeue();
+                }
+                else
+                {
+                    item = _objectGenerator();
+                }
+#if USE_LOCK
+            }
+#endif
+#endif
+            return new PoolObject(item, this);
         }
 
         void Release(T item)
         {
+#if CONCURRENT
             _objects.Add(item);
+#else
+#if USE_LOCK
+            lock (_objects)
+            {
+#endif
+                _objects.Enqueue(item);
+#if USE_LOCK
+            }
+#endif
+#endif
         }
     }
 }
