@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
 
@@ -16,9 +15,7 @@ namespace Tizsoft.Treenet
         readonly AsyncSocketConnector _connector;
         readonly BufferManager _bufferManager;
         readonly IPacketContainer _packetContainer;
-        //readonly ConnectionObserver _connectionObserver;
         readonly PacketHandler _packetHandler;
-        readonly List<IConnectionObserver> _connectionObservers = new List<IConnectionObserver>();
 
         void InitConnectionPool()
         {
@@ -39,11 +36,6 @@ namespace Tizsoft.Treenet
         public void Send(byte[] contents)
         {
             _connection.Send(contents);
-        }
-
-        public Packet Receive()
-        {
-            return IsWorking ? _packetContainer.NextPacket() : Packet.NullPacket;
         }
 
         public void AddParser(PacketType type, IPacketProcessor processor)
@@ -73,6 +65,13 @@ namespace Tizsoft.Treenet
 
         public void Update()
         {
+            if (IsWorking)
+            {
+                var packet = _packetContainer.NextPacket();
+
+                if (!packet.IsNull)
+                    _packetHandler.Parse(packet);
+            }
         }
 
         public void Stop()
@@ -90,21 +89,17 @@ namespace Tizsoft.Treenet
 
         public void Register(IConnectionObserver observer)
         {
-            if (!_connectionObservers.Contains(observer))
-                _connectionObservers.Add(observer);
+            _connector.Register(observer);
         }
 
         public void Unregister(IConnectionObserver observer)
         {
-            _connectionObservers.Remove(observer);
+            _connector.Unregister(observer);
         }
 
         public void Notify(Connection connection, bool isConnect)
         {
-            foreach (var connectionObserver in _connectionObservers)
-            {
-                connectionObserver.GetConnectionEvent(connection, isConnect);
-            }
+            _connector.Notify(connection, isConnect);
         }
 
         #endregion

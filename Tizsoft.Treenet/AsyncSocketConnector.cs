@@ -14,6 +14,7 @@ namespace Tizsoft.Treenet
         readonly List<Connection> _workingConnections = new List<Connection>();
         SocketAsyncEventArgs _connectArgs;
         FixedSizeObjPool<Connection> _connectionPool;
+        ClientConfig _clientConfig;
 
         void OnConnectComplete(object sender, SocketAsyncEventArgs args)
         {
@@ -52,6 +53,7 @@ namespace Tizsoft.Treenet
 
                 default:
                     Logger.Log(string.Format("因為 {0} ，所以無法連線", args.SocketError));
+                    Notify(Connection.NullConnection, false);
                     break;
             }
         }
@@ -72,28 +74,41 @@ namespace Tizsoft.Treenet
 
         public void Connect()
         {
+            if (_connectArgs == null)
+                InitConnectArgs(_clientConfig);
+
             if (!_connectArgs.AcceptSocket.ConnectAsync(_connectArgs))
                 ConnectResult(_connectArgs);
         }
 
         public void Setup(EventArgs configArgs, FixedSizeObjPool<Connection> connectionPool)
         {
-            var config = (ClientConfig) configArgs;
+            _clientConfig = (ClientConfig) configArgs;
 
-            if (config == null)
+            if (_clientConfig == null)
                 throw new InvalidCastException("config");
 
             _connectionPool = connectionPool;
-            InitConnectArgs(config);
+            InitConnectArgs(_clientConfig);
         }
 
         public void Stop()
         {
-            if (_connectArgs != null)
-                _connectArgs.Dispose();
+            FreeConnectComponent();
+            FreeWorkingConnections();
+        }
 
+        void FreeWorkingConnections()
+        {
             foreach (var workingConnection in _workingConnections.ToArray())
                 workingConnection.Dispose();
+        }
+
+        void FreeConnectComponent()
+        {
+            if (_connectArgs != null)
+                _connectArgs.Dispose();
+            _connectArgs = null;
         }
 
         #region IConnectionSubject Members
@@ -130,11 +145,16 @@ namespace Tizsoft.Treenet
         {
             if (!isConnect)
             {
-                _workingConnections.Remove(connection);
-                _connectionPool.Push(connection);
+                FreeConnectComponent();
+                if (!connection.IsNull)
+                {
+                    _workingConnections.Remove(connection);
+                    _connectionPool.Push(connection);
+                }
+
                 Logger.Log(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
                 Logger.Log(string.Format("目前連線數: {0}", _workingConnections.Count));
-                Notify(connection, isConnect);
+                Notify(connection, isConnect);    
             }
         }
 

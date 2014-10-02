@@ -104,7 +104,8 @@ namespace Tizsoft.Treenet
             }
             finally
             {
-                _socket.Dispose();
+                if (_socket != null)
+                    _socket.Dispose();
                 _socket = null;
             }
         }

@@ -147,7 +147,9 @@ namespace Tizsoft.Treenet
             }
             finally
             {
-                _listenSocket.Dispose();
+                if (_listenSocket != null)
+                    _listenSocket.Dispose();
+
                 _listenSocket = null;
             }
         }
@@ -234,8 +236,12 @@ namespace Tizsoft.Treenet
         {
             if (!isConnect)
             {
-                _workingConnections.Remove(connection);
-                _connectionPool.Push(connection);
+                if (!connection.IsNull)
+                {
+                    _workingConnections.Remove(connection);
+                    _connectionPool.Push(connection);    
+                }
+                
                 Logger.Log(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
                 Logger.Log(string.Format("目前連線數: {0}", _workingConnections.Count));
                 Notify(connection, isConnect);

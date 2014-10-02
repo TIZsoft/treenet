@@ -32,16 +32,6 @@ namespace Tizsoft.Treenet
             _packetHandler = new PacketHandler();
         }
 
-        public void Send(Connection connection, byte[] contents)
-        {
-            connection.Send(contents);
-        }
-
-        public Packet Receive()
-        {
-            return IsWorking ? _packetContainer.NextPacket() : Packet.NullPacket;
-        }
-
         public void AddParser(PacketType type, IPacketProcessor processor)
         {
             _packetHandler.AddParser(type, processor);
@@ -70,6 +60,13 @@ namespace Tizsoft.Treenet
 
         public void Update()
         {
+            if (IsWorking)
+            {
+                var packet = _packetContainer.NextPacket();
+
+                if (!packet.IsNull)
+                    _packetHandler.Parse(packet);
+            }
         }
 
         public void Stop()
