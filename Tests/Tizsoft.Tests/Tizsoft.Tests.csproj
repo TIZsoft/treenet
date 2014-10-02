@@ -55,6 +55,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Collections\TestPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -64,6 +65,12 @@
     <Folder Include="Collections\Concurrent\" />
     <Folder Include="Extensions\" />
     <Folder Include="Helpers\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Tizsoft\Tizsoft.csproj">
+      <Project>{42DD1816-7E8D-4581-93B6-BE03F1E72652}</Project>
+      <Name>Tizsoft</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
