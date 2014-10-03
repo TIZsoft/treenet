@@ -1,8 +1,10 @@
-﻿namespace Tizsoft.Security.Cryptography
+﻿using System.Collections.Generic;
+
+namespace Tizsoft.Security.Cryptography
 {
-    interface ICrypto
+    public interface IXorCrypto
     {
-        byte[] Encrypt(byte[] data, byte[] key);
-        byte[] Decrypt(byte[] data, byte[] key);
+        byte[] Encrypt(byte[] data);
+        byte[] Decrypt(byte[] data);
     }
 }
