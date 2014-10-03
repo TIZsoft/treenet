@@ -61,5 +61,10 @@ namespace Tizsoft.Caching.Cache
 
             _cacheObjects.Remove(key);
         }
+
+        public bool Contains(string key)
+        {
+            return _cacheObjects.ContainsKey(key);
+        }
     }
 }

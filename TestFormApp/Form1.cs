@@ -23,6 +23,7 @@ namespace TestFormApp
         private LogPrinter _logPrinter;
         private ListenService _listen;
         private ConnectService _connectService;
+        CacheUserData _cacheUserData;
 
         void ReadServerConfig()
         {
@@ -65,12 +66,12 @@ namespace TestFormApp
 
         void FacebookValidateHandler(object sender, DownloadStringCompletedEventArgs args)
         {
-            var validateArgs = (FacebookValidateArgs) args.UserState;
+            var validateArgs = (FacebookValidateArgs)args.UserState;
             var response = validateArgs.Response;
 
             if (args.Error != null)
             {
-                var responseStream = ((WebException) args.Error).Response.GetResponseStream();
+                var responseStream = ((WebException)args.Error).Response.GetResponseStream();
                 using (var reader = new StreamReader(responseStream))
                 {
                     response.Add("param", new Dictionary<string, object>
@@ -108,19 +109,23 @@ namespace TestFormApp
             {
                 {"result", "login"},
             };
-            var functionToken = (string) jsonObject.SelectToken("function");
+            var functionToken = (string)jsonObject.SelectToken("function");
 
             switch (functionToken.ToLower())
             {
                 case "login":
-                    var guid = (string) jsonObject.SelectToken("param.guid");
-                    var fbtoken = (string) jsonObject.SelectToken("param.fbtoken");
+                    var guid = (string)jsonObject.SelectToken("param.guid");
+                    var fbtoken = (string)jsonObject.SelectToken("param.fbtoken");
 
                     if (string.IsNullOrEmpty(guid))
                     {
                         if (string.IsNullOrEmpty(fbtoken))
                         {
-                            var userData = _dbConnector.CreateNewUser<TestUserData>(GuidUtil.New());
+                            var userData = _cacheUserData.Get(guid);
+                            if (null == userData)
+                            {
+                                userData = _dbConnector.CreateNewUser<TestUserData>(GuidUtil.New());
+                            }
                             response.Add("param", new Dictionary<string, object>
                             {
                                 {"user", JsonConvert.SerializeObject(userData)}
@@ -135,12 +140,12 @@ namespace TestFormApp
                     else
                     {
                         TestUserData user;
-                        response.Add("param", _dbConnector.HasUserData(guid, AccountType.Guid, out user) ? 
+                        response.Add("param", _dbConnector.HasUserData(guid, AccountType.Guid, out user) ?
                             new Dictionary<string, object>
                             {
                                  {"user", JsonConvert.SerializeObject(user)}
-                            } 
-                            : 
+                            }
+                            :
                             new Dictionary<string, object>
                             {
                                 {"error", "wrong guid"}
@@ -210,17 +215,18 @@ namespace TestFormApp
             ReadServerConfig();
             _logPrinter = new LogPrinter(LogMsgrichTextBox);
             _listen = new ListenService();
+            _cacheUserData = new CacheUserData();
             InitPacketParser();
             _connectService = new ConnectService();
             InitDatabaseConnector();
             Application.ApplicationExit += AppClose;
         }
-        
+
         private void PortTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
             e.Handled = !Char.IsDigit(e.KeyChar);
         }
-        
+
         private void StartBtn_Click(object sender, EventArgs e)
         {
             bool isClient = IsClientCheckBox.Checked;
@@ -247,11 +253,11 @@ namespace TestFormApp
                 {
                     SaveServerConfig();
                     _listen.Setup(_serverConfig);
-                    _listen.Start();	
+                    _listen.Start();
                 }
             }
         }
-        
+
         private void CheckServiceStatus()
         {
             StartBtn.Text = (IsClientCheckBox.Checked ? _connectService.IsWorking : _listen.IsWorking) ? "Stop" : "Start";
@@ -287,7 +293,7 @@ namespace TestFormApp
 
             _logPrinter.Print();
         }
-        
+
         private void GameUpdateTimer_Tick(object sender, EventArgs e)
         {
             if (_connectService != null && _connectService.IsWorking)
