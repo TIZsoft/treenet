@@ -55,14 +55,13 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="Collections\TestPool.cs" />
+    <Compile Include="Collections\Concurrent\TestConcurrentPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Collections\Concurrent\" />
     <Folder Include="Extensions\" />
     <Folder Include="Helpers\" />
   </ItemGroup>

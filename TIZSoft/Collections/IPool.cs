@@ -7,6 +7,11 @@
     public interface IPool<out T>
     {
         /// <summary>
+        /// Gets the number of objects contained in the <see cref="IPool{T}"/>.
+        /// </summary>
+        int Count { get; }
+
+        /// <summary>
         /// Acquire object from pool.
         /// </summary>
         /// <returns>An instance of <typeparamref name="T"/>T.</returns>
