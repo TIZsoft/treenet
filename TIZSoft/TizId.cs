@@ -20,13 +20,18 @@ namespace Tizsoft
 
         public abstract uint Next();
         public abstract uint Current();
+
+        public void SetCurrentId(uint id)
+        {
+            CurrentId = id;
+        }
     }
 
     public class TizIdIncrement : TizId
     {
         public TizIdIncrement(uint current = MinId)
         {
-            CurrentId = current;
+            SetCurrentId(current);
         }
 
         public override uint Next()

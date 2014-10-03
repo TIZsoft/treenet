@@ -14,6 +14,11 @@ using Tizsoft.Treenet.Interface;
 
 namespace TestFormApp
 {
+    public static class DataBasePath
+    {
+        public const string ImportData = "/ImportData";
+    }
+
     public partial class Form1 : Form
     {
         Guid _guid;
@@ -24,6 +29,7 @@ namespace TestFormApp
         private ListenService _listen;
         private ConnectService _connectService;
         CacheUserData _cacheUserData;
+        TizIdManager _idManager;
 
         void ReadServerConfig()
         {
@@ -216,6 +222,7 @@ namespace TestFormApp
             _logPrinter = new LogPrinter(LogMsgrichTextBox);
             _listen = new ListenService();
             _cacheUserData = new CacheUserData();
+            _idManager = new TizIdManager();
             InitPacketParser();
             _connectService = new ConnectService();
             InitDatabaseConnector();
