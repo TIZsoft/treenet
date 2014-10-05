@@ -11,6 +11,7 @@ using Tizsoft.Database;
 using Tizsoft.Log;
 using Tizsoft.Treenet;
 using Tizsoft.Treenet.Interface;
+using Tizsoft.Treenet.PacketParser;
 
 namespace TestFormApp
 {
@@ -26,7 +27,7 @@ namespace TestFormApp
         TestUserData _testUser = new TestUserData();
         private ServerConfig _serverConfig;
         private LogPrinter _logPrinter;
-        private ListenService _listen;
+        private ListenService _listenService;
         private ConnectService _connectService;
         CacheUserData _cacheUserData;
         TizIdManager _idManager;
@@ -189,15 +190,24 @@ namespace TestFormApp
             switch (type)
             {
                 default:
-                    return new ParseJsonPacket(CheckJsonContent);
+                    //return new ParseJsonPacket(CheckJsonContent);
+                    return new ParseDefaultEchoPacket();
             }
         }
 
-        void InitPacketParser()
+        void InitListenerPacketParser()
         {
             foreach (PacketType type in Enum.GetValues(typeof(PacketType)))
             {
-                _listen.AddParser(type, CreatePacketParser(type));
+                _listenService.AddParser(type, CreatePacketParser(type));
+            }
+        }
+
+        void InitConnectorPacketParser()
+        {
+            foreach (PacketType type in Enum.GetValues(typeof(PacketType)))
+            {
+                _connectService.AddParser(type, CreatePacketParser(type));
             }
         }
 
@@ -210,8 +220,8 @@ namespace TestFormApp
             }
             else
             {
-                if (_listen != null)
-                    _listen.Stop();
+                if (_listenService != null)
+                    _listenService.Stop();
             }
         }
 
@@ -220,11 +230,12 @@ namespace TestFormApp
             InitializeComponent();
             ReadServerConfig();
             _logPrinter = new LogPrinter(LogMsgrichTextBox);
-            _listen = new ListenService();
             _cacheUserData = new CacheUserData();
             _idManager = new TizIdManager();
-            InitPacketParser();
+            _listenService = new ListenService();
+            InitListenerPacketParser();
             _connectService = new ConnectService();
+            InitConnectorPacketParser();
             InitDatabaseConnector();
             Application.ApplicationExit += AppClose;
         }
@@ -254,22 +265,22 @@ namespace TestFormApp
             }
             else
             {
-                if (_listen.IsWorking)
-                    _listen.Stop();
+                if (_listenService.IsWorking)
+                    _listenService.Stop();
                 else
                 {
                     SaveServerConfig();
-                    _listen.Setup(_serverConfig);
-                    _listen.Start();
+                    _listenService.Setup(_serverConfig);
+                    _listenService.Start();	
                 }
             }
         }
 
         private void CheckServiceStatus()
         {
-            StartBtn.Text = (IsClientCheckBox.Checked ? _connectService.IsWorking : _listen.IsWorking) ? "Stop" : "Start";
+            StartBtn.Text = (IsClientCheckBox.Checked ? _connectService.IsWorking : _listenService.IsWorking) ? "Stop" : "Start";
 
-            if (_listen.IsWorking)
+            if (_listenService.IsWorking)
             {
                 StatusprogressBar.MarqueeAnimationSpeed = StatusprogressBar.Maximum;
                 StatusprogressBar.Value = (StatusprogressBar.Value + 1) % StatusprogressBar.Maximum;
@@ -293,7 +304,7 @@ namespace TestFormApp
 
         private void statusTimer_Tick(object sender, EventArgs e)
         {
-            if (_listen != null)
+            if (_listenService != null)
             {
                 CheckServiceStatus();
             }
@@ -306,8 +317,8 @@ namespace TestFormApp
             if (_connectService != null && _connectService.IsWorking)
                 _connectService.Update();
 
-            if (_listen != null && _listen.IsWorking)
-                _listen.Update();
+            if (_listenService != null && _listenService.IsWorking)
+                _listenService.Update();
         }
 
         private void QueryGuidBtn_Click(object sender, EventArgs e)
@@ -326,9 +337,14 @@ namespace TestFormApp
 
         private void button1_Click(object sender, EventArgs e)
         {
-            string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"12345\"}}";
-            JObject jObject = JObject.Parse(json);
-            CheckJsonContent(jObject, Connection.NullConnection);
+            //string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"12345\"}}";
+            //JObject jObject = JObject.Parse(json);
+            //CheckJsonContent(jObject, Connection.NullConnection);
+
+            string test = "hello world!";
+
+            if (IsClientCheckBox.Checked)
+                _connectService.Send(Encoding.UTF8.GetBytes(test));
         }
     }
 }

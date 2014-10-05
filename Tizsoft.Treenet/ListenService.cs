@@ -7,10 +7,12 @@ namespace Tizsoft.Treenet
     public class ListenService : IService, IConnectionSubject
     {
         FixedSizeObjPool<Connection> _connectionPool;
-        readonly BufferManager _bufferManager;
+        readonly BufferManager _receiveBufferManager;
+        readonly BufferManager _sendBufferManager;
         readonly AsyncSocketListener _socketListener;
         readonly IPacketContainer _packetContainer;
         readonly PacketHandler _packetHandler;
+        readonly PacketSender _packetSender;
 
         void InitConnectionPool(int maxConnections, IPacketContainer packetContainer)
         {
@@ -18,7 +20,7 @@ namespace Tizsoft.Treenet
 
             for (var i = 0; i < maxConnections; ++i)
             {
-                var connection = new Connection(_bufferManager, packetContainer);
+                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender);
                 connection.Register(_socketListener);
                 _connectionPool.Push(connection);
             }
@@ -26,10 +28,12 @@ namespace Tizsoft.Treenet
 
         public ListenService()
         {
-            _bufferManager = new BufferManager();
+            _receiveBufferManager = new BufferManager();
+            _sendBufferManager = new BufferManager();
             _socketListener = new AsyncSocketListener();
             _packetContainer = new PacketContainer();
             _packetHandler = new PacketHandler();
+            _packetSender = new PacketSender();
         }
 
         public void AddParser(PacketType type, IPacketProcessor processor)
@@ -52,8 +56,10 @@ namespace Tizsoft.Treenet
             if (config == null)
                 throw new InvalidCastException("configArgs");
 
-            _bufferManager.InitBuffer(config.MaxConnections * config.BufferSize * 2, config.BufferSize);
+            _receiveBufferManager.InitBuffer(config.MaxConnections * config.BufferSize, config.BufferSize);
             InitConnectionPool(config.MaxConnections, _packetContainer);
+            _sendBufferManager.InitBuffer(config.MaxConnections / 10 * config.BufferSize, config.BufferSize);
+            _packetSender.Setup(_sendBufferManager, config.MaxConnections / 10);
             
             _socketListener.Setup(config, _connectionPool);
         }

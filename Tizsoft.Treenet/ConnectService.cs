@@ -13,13 +13,15 @@ namespace Tizsoft.Treenet
         ClientConfig _config;
         FixedSizeObjPool<Connection> _connectionPool;
         readonly AsyncSocketConnector _connector;
-        readonly BufferManager _bufferManager;
+        readonly BufferManager _receiveBufferManager;
+        readonly BufferManager _sendBufferManager;
         readonly IPacketContainer _packetContainer;
         readonly PacketHandler _packetHandler;
+        readonly PacketSender _packetSender;
 
         void InitConnectionPool()
         {
-            _connection = new Connection(_bufferManager, _packetContainer);
+            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender);
             _connection.Register(_connector);
             _connectionPool = new FixedSizeObjPool<Connection>(1);
             _connectionPool.Push(_connection);
@@ -29,8 +31,10 @@ namespace Tizsoft.Treenet
         {
             _connector = new AsyncSocketConnector();
             _packetContainer = new PacketContainer();
-            _bufferManager = new BufferManager();
+            _receiveBufferManager = new BufferManager();
+            _sendBufferManager = new BufferManager();
             _packetHandler = new PacketHandler();
+            _packetSender = new PacketSender();
         }
 
         public void Send(byte[] contents)
@@ -58,8 +62,10 @@ namespace Tizsoft.Treenet
             if (_config == null)
                 throw new InvalidCastException("configArgs");
 
+            _receiveBufferManager.InitBuffer(_config.BufferSize, _config.BufferSize);
+            _sendBufferManager.InitBuffer(_config.BufferSize, _config.BufferSize);
+            _packetSender.Setup(_sendBufferManager, 1);
             InitConnectionPool();
-            _bufferManager.InitBuffer(_config.BufferSize * 2, _config.BufferSize);
             _connector.Setup(_config, _connectionPool);
         }
 
