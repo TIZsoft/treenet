@@ -56,6 +56,8 @@ namespace Tizsoft.Collections.Concurrent
         readonly IProducerConsumerCollection<T> _collection;
         readonly Func<T> _objectGenerator;
 
+        int _capacity;
+        
         /// <summary>
         /// Gets the number of objects contained in the <see cref="ConcurrentPool{T}"/>.
         /// </summary>
@@ -66,6 +68,33 @@ namespace Tizsoft.Collections.Concurrent
                 return _collection.Count;
             }
         }
+
+        /// <summary>
+        /// Gets or sets the total number of items the pool can hold.
+        /// Set the property to 0 to mark the pool as unlimited.
+        /// </summary>
+        /// <remarks>
+        /// Retrieving the value of this property is an O(1) operation;
+        /// setting the property is an O(n) operation, where n is the new capacity.
+        /// </remarks>
+        public int Capacity
+        {
+            get { return _capacity; }
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException("value", "Capacity must greater than or equal to zero.");
+                }
+
+                _capacity = value;
+                Trim(value);
+            }
+        }
+
+        bool IsLimited { get { return Capacity > 0; } }
+
+        bool IsFull { get { return IsLimited && Capacity <= _collection.Count; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentPool{T}"/> class.
@@ -82,6 +111,23 @@ namespace Tizsoft.Collections.Concurrent
             // Queue > Bag >> Stack (Testing failed)
             _collection = new ConcurrentQueue<T>();
             _objectGenerator = objectGenerator;
+        }
+
+        /// <summary>
+        /// Allocates a number of items and push them into the pool.
+        /// </summary>
+        /// <param name="count"></param>
+        public void Allocate(int count)
+        {
+            if (count < 0)
+            {
+                throw new ArgumentException("Count must greater than or equal to zero.");
+            }
+
+            for (var i = 0; i != count; ++i)
+            {
+                Release(_objectGenerator());
+            }
         }
 
         /// <summary>
@@ -102,6 +148,11 @@ namespace Tizsoft.Collections.Concurrent
 
         void Release(T item)
         {
+            if (IsFull)
+            {
+                return;
+            }
+
             var spin = new SpinWait();
 
             while (true)
@@ -112,6 +163,21 @@ namespace Tizsoft.Collections.Concurrent
                 }
 
                 spin.SpinOnce();
+            }
+        }
+
+        void Trim(int capacity)
+        {
+            // 0 := Unlimited
+            if (capacity <= 0)
+            {
+                return;
+            }
+
+            while (_collection.Count > capacity)
+            {
+                T item;
+                _collection.TryTake(out item);
             }
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace Tizsoft.Collections
 {
+    // TODO: Use lock-free (Interlocked) or Concurrent collections instead.
     public class FixedSizeObjPool<T> where T : class 
     {
         readonly Stack<T> _pool;
