@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CacheUserData.cs" />
+    <Compile Include="DatabasePath.cs" />
     <Compile Include="FacebookValidateArgs.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -120,6 +121,10 @@
     <ProjectReference Include="..\Tizsoft.Database\Tizsoft.Database.csproj">
       <Project>{7d67265a-ab2e-4b91-8a67-0025d01509bb}</Project>
       <Name>Tizsoft.Database</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tizsoft.IO\Tizsoft.IO.csproj">
+      <Project>{206DAAAD-628B-46A9-8366-8CCA080B1991}</Project>
+      <Name>Tizsoft.IO</Name>
     </ProjectReference>
     <ProjectReference Include="..\Tizsoft.Log\Tizsoft.Log.csproj">
       <Project>{5E9944F3-3139-4566-A4A5-BBA5096DB799}</Project>
