@@ -46,6 +46,8 @@
             this.AddressTextBox = new System.Windows.Forms.TextBox();
             this.statusTimer = new System.Windows.Forms.Timer(this.components);
             this.panel1 = new System.Windows.Forms.Panel();
+            this.SetLevelBtn = new System.Windows.Forms.Button();
+            this.QueryGuidBtn = new System.Windows.Forms.Button();
             this.DBPwdtextBox = new System.Windows.Forms.TextBox();
             this.NewGuidBtn = new System.Windows.Forms.Button();
             this.DBPwdlabel = new System.Windows.Forms.Label();
@@ -57,9 +59,8 @@
             this.ConnectionCountLabel = new System.Windows.Forms.Label();
             this.GameUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.IsClientCheckBox = new System.Windows.Forms.CheckBox();
-            this.QueryGuidBtn = new System.Windows.Forms.Button();
-            this.SetLevelBtn = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.PacketTypeListBox = new System.Windows.Forms.ListBox();
             this.ConnectionPanel.SuspendLayout();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -135,6 +136,7 @@
             this.ListenNoTextBox.TabIndex = 4;
             this.ListenNoTextBox.Text = "200";
             this.ListenNoTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.ListenNoTextBox.Visible = false;
             // 
             // ListenNoLabel
             // 
@@ -144,6 +146,7 @@
             this.ListenNoLabel.Size = new System.Drawing.Size(53, 12);
             this.ListenNoLabel.TabIndex = 14;
             this.ListenNoLabel.Text = "Listen No.";
+            this.ListenNoLabel.Visible = false;
             // 
             // BufferSizeTextBox
             // 
@@ -246,6 +249,26 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(240, 256);
             this.panel1.TabIndex = 4;
+            // 
+            // SetLevelBtn
+            // 
+            this.SetLevelBtn.Location = new System.Drawing.Point(98, 114);
+            this.SetLevelBtn.Name = "SetLevelBtn";
+            this.SetLevelBtn.Size = new System.Drawing.Size(75, 23);
+            this.SetLevelBtn.TabIndex = 22;
+            this.SetLevelBtn.Text = "Level = 10";
+            this.SetLevelBtn.UseVisualStyleBackColor = true;
+            this.SetLevelBtn.Click += new System.EventHandler(this.SetLevelBtn_Click);
+            // 
+            // QueryGuidBtn
+            // 
+            this.QueryGuidBtn.Enabled = false;
+            this.QueryGuidBtn.Location = new System.Drawing.Point(17, 143);
+            this.QueryGuidBtn.Name = "QueryGuidBtn";
+            this.QueryGuidBtn.Size = new System.Drawing.Size(75, 69);
+            this.QueryGuidBtn.TabIndex = 21;
+            this.QueryGuidBtn.UseVisualStyleBackColor = true;
+            this.QueryGuidBtn.Click += new System.EventHandler(this.QueryGuidBtn_Click);
             // 
             // DBPwdtextBox
             // 
@@ -351,29 +374,9 @@
             this.IsClientCheckBox.Text = "IsClient";
             this.IsClientCheckBox.UseVisualStyleBackColor = true;
             // 
-            // QueryGuidBtn
-            // 
-            this.QueryGuidBtn.Enabled = false;
-            this.QueryGuidBtn.Location = new System.Drawing.Point(17, 143);
-            this.QueryGuidBtn.Name = "QueryGuidBtn";
-            this.QueryGuidBtn.Size = new System.Drawing.Size(75, 69);
-            this.QueryGuidBtn.TabIndex = 21;
-            this.QueryGuidBtn.UseVisualStyleBackColor = true;
-            this.QueryGuidBtn.Click += new System.EventHandler(this.QueryGuidBtn_Click);
-            // 
-            // SetLevelBtn
-            // 
-            this.SetLevelBtn.Location = new System.Drawing.Point(98, 114);
-            this.SetLevelBtn.Name = "SetLevelBtn";
-            this.SetLevelBtn.Size = new System.Drawing.Size(75, 23);
-            this.SetLevelBtn.TabIndex = 22;
-            this.SetLevelBtn.Text = "Level = 10";
-            this.SetLevelBtn.UseVisualStyleBackColor = true;
-            this.SetLevelBtn.Click += new System.EventHandler(this.SetLevelBtn_Click);
-            // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(537, 40);
+            this.button1.Location = new System.Drawing.Point(603, 10);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 23;
@@ -381,18 +384,31 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // PacketTypeListBox
+            // 
+            this.PacketTypeListBox.FormattingEnabled = true;
+            this.PacketTypeListBox.ItemHeight = 12;
+            this.PacketTypeListBox.Items.AddRange(new object[] {
+            "Echo",
+            "Json"});
+            this.PacketTypeListBox.Location = new System.Drawing.Point(537, 40);
+            this.PacketTypeListBox.Name = "PacketTypeListBox";
+            this.PacketTypeListBox.Size = new System.Drawing.Size(141, 88);
+            this.PacketTypeListBox.TabIndex = 24;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 562);
+            this.Controls.Add(this.PacketTypeListBox);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.IsClientCheckBox);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.ConnectionPanel);
             this.Controls.Add(this.LogMsgrichTextBox);
             this.Name = "Form1";
-            this.Text = "Puzzle Battle Server";
+            this.Text = "Treenet";
             this.ConnectionPanel.ResumeLayout(false);
             this.ConnectionPanel.PerformLayout();
             this.panel1.ResumeLayout(false);
@@ -435,6 +451,7 @@
         private System.Windows.Forms.Button QueryGuidBtn;
         private System.Windows.Forms.Button SetLevelBtn;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.ListBox PacketTypeListBox;
     }
 }
 

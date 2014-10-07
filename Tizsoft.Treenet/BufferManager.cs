@@ -82,5 +82,7 @@ namespace Tizsoft.Treenet
                 _freeIndexPool.Push(args.Offset);
             }
         }
+
+        public int BufferSize {get { return _bufferSize; }}
     }
 }

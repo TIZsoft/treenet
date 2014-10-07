@@ -1,18 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.Net.Sockets;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
     public class PacketContainer : IPacketContainer
     {
-        public PacketContainer()
-        {
-            _waitToParsePackets = new Queue<Packet>();
-            _unusedPackets = new Queue<Packet>();
-        }
-
-        readonly Queue<Packet> _waitToParsePackets;
+        readonly Queue<Packet> _queueingPackets;
         readonly Queue<Packet> _unusedPackets;
 
         Packet GetUnusedPacket()
@@ -20,13 +13,19 @@ namespace Tizsoft.Treenet
             return _unusedPackets.Count != 0 ? _unusedPackets.Dequeue() : new Packet();
         }
 
+        public PacketContainer()
+        {
+            _queueingPackets = new Queue<Packet>();
+            _unusedPackets = new Queue<Packet>();
+        }
+
         #region IPacketContainer Members
 
-        public void AddPacket(Connection connection, SocketAsyncEventArgs asyncArgs)
+        public void AddPacket(Connection connection, byte[] contents, PacketType packetType)
         {
             var packet = GetUnusedPacket();
-            packet.SetContent(connection, asyncArgs);
-            _waitToParsePackets.Enqueue(packet);
+            packet.SetContent(connection, contents, packetType);
+            _queueingPackets.Enqueue(packet);
         }
 
         public void RecyclePacket(Packet packet)
@@ -39,13 +38,13 @@ namespace Tizsoft.Treenet
 
         public void Clear()
         {
-            while (_waitToParsePackets.Count > 0)
-                RecyclePacket(_waitToParsePackets.Dequeue());
+            while (_queueingPackets.Count > 0)
+                RecyclePacket(_queueingPackets.Dequeue());
         }
 
         public Packet NextPacket()
         {
-            return _waitToParsePackets.Count > 0 ? _waitToParsePackets.Dequeue() : Packet.NullPacket;
+            return _queueingPackets.Count > 0 ? _queueingPackets.Dequeue() : Packet.NullPacket;
         }
 
         #endregion

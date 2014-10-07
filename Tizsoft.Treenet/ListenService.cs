@@ -58,7 +58,8 @@ namespace Tizsoft.Treenet
 
             _receiveBufferManager.InitBuffer(config.MaxConnections * config.BufferSize, config.BufferSize);
             InitConnectionPool(config.MaxConnections, _packetContainer);
-            _sendBufferManager.InitBuffer(config.MaxConnections / 10 * config.BufferSize, config.BufferSize);
+            var sendConnection = Math.Max(1, config.MaxConnections / 10);
+            _sendBufferManager.InitBuffer(sendConnection * config.BufferSize, config.BufferSize);
             _packetSender.Setup(_sendBufferManager, config.MaxConnections / 10);
             
             _socketListener.Setup(config, _connectionPool);
