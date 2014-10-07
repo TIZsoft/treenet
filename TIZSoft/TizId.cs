@@ -8,7 +8,7 @@ namespace Tizsoft
         // 0000000001~999999999
         public const uint MinId = 1;
         public const uint MaxId = 999999999;
-        
+
         protected uint IdCounter;
 
         public static string Format(uint id, string format = "")
