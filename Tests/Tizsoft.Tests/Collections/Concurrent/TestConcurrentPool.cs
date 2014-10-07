@@ -12,7 +12,7 @@ namespace Tizsoft.Tests.Collections.Concurrent
     [TestFixture]
     public class TestConcurrentPool
     {
-        IPool<object> _pool;
+        ConcurrentPool<object> _pool;
 
         [SetUp]
         public void Setup()
@@ -65,6 +65,49 @@ namespace Tizsoft.Tests.Collections.Concurrent
             ReleaseAllocations(objects);
 
             Assert.LessOrEqual(_pool.Count, acquireAmount);
+            CheckPoolHasDuplicatedObjects(_pool);
+        }
+
+        [TestCase(10000000)]
+        [TestCase(10000)]
+        [TestCase(10)]
+        [TestCase(1)]
+        public void TestCapacity(int capacity)
+        {
+            _pool.Capacity = capacity;
+            _pool.Allocate(capacity);
+            Assert.AreEqual(capacity, _pool.Capacity);
+            Assert.AreEqual(capacity, _pool.Count);
+
+            _pool.Allocate(1);
+            Assert.AreEqual(capacity, _pool.Capacity);
+            Assert.AreEqual(capacity, _pool.Count);
+
+            CheckPoolHasDuplicatedObjects(_pool);
+        }
+
+        [TestCase(10000000)]
+        [TestCase(10000)]
+        [TestCase(10)]
+        [TestCase(1)]
+        public void TestTrimCapacity(int capacity)
+        {
+            _pool.Allocate(capacity + 1);
+            _pool.Capacity = capacity;
+            Assert.AreEqual(capacity, _pool.Capacity);
+            Assert.AreEqual(capacity, _pool.Count);
+
+            CheckPoolHasDuplicatedObjects(_pool);
+        }
+
+        [TestCase(10000000)]
+        [TestCase(10000)]
+        [TestCase(10)]
+        [TestCase(1)]
+        public void TestAllocate(int count)
+        {
+            _pool.Allocate(count);
+            Assert.AreEqual(count, _pool.Count);
             CheckPoolHasDuplicatedObjects(_pool);
         }
 
@@ -131,6 +174,78 @@ namespace Tizsoft.Tests.Collections.Concurrent
             ReleaseAllocations(acquiredObjects);
 
             Assert.AreEqual(totalAmount, _pool.Count);
+            CheckPoolHasDuplicatedObjects(_pool);
+        }
+
+        [TestCase(1250000, 8)]
+        [TestCase(2500000, 4)]
+        [TestCase(10000000, 1)]
+        [TestCase(10000, 8)]
+        [TestCase(10000, 4)]
+        [TestCase(10000, 1)]
+        [TestCase(10, 8)]
+        [TestCase(10, 4)]
+        [TestCase(10, 1)]
+        [TestCase(1, 8)]
+        [TestCase(1, 4)]
+        [TestCase(1, 1)]
+        public void TestCapacityThreading(int capacity, int taskCount)
+        {
+            var actualCapacity = capacity * taskCount;
+            _pool.Capacity = actualCapacity;
+
+            var tasks = new Task[taskCount];
+
+            for (var ti = 0; ti != taskCount; ++ti)
+            {
+                var task = Task.Run(() => _pool.Allocate(capacity + 1));
+                tasks[ti] = task;
+            }
+
+            Task.WaitAll(tasks);
+            Assert.AreEqual(actualCapacity, _pool.Capacity);
+            Assert.AreEqual(actualCapacity, _pool.Count);
+            CheckPoolHasDuplicatedObjects(_pool);
+        }
+
+        [TestCase(1250000, 8)]
+        [TestCase(2500000, 4)]
+        [TestCase(10000000, 1)]
+        [TestCase(10000, 8)]
+        [TestCase(10000, 4)]
+        [TestCase(10000, 1)]
+        [TestCase(10, 8)]
+        [TestCase(10, 4)]
+        [TestCase(10, 1)]
+        [TestCase(1, 8)]
+        [TestCase(1, 4)]
+        [TestCase(1, 1)]
+        public void TestTrimCapacityThreading(int capacity, int taskCount)
+        {
+            var actualCapacity = capacity * taskCount;
+            _pool.Capacity = actualCapacity;
+
+            var tasks = new Task[taskCount];
+
+            for (var ti = 0; ti != taskCount; ++ti)
+            {
+                var task = Task.Run(() => _pool.Allocate(capacity));
+                tasks[ti] = task;
+            }
+
+            Task.WaitAll(tasks);
+            Assert.AreEqual(actualCapacity, _pool.Capacity);
+            Assert.AreEqual(actualCapacity, _pool.Count);
+
+            for (var ti = 0; ti != taskCount; ++ti)
+            {
+                var task = Task.Run(() => _pool.Allocate(1));
+                tasks[ti] = task;
+            }
+
+            Task.WaitAll(tasks);
+            Assert.AreEqual(actualCapacity, _pool.Capacity);
+            Assert.AreEqual(actualCapacity, _pool.Count);
             CheckPoolHasDuplicatedObjects(_pool);
         }
 

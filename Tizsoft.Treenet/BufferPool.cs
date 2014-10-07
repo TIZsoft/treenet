@@ -97,7 +97,6 @@ namespace Tizsoft.Treenet
 
         void AllocateSegments(int startIndex, int length, int bufferSize)
         {
-            // TODO: Paralle?
             for (var i = startIndex; i < length; i += bufferSize)
             {
                 _freeSegments.Push(new Segment(i, bufferSize, this));

@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using Tizsoft;
+using Tizsoft.IO;
 
 namespace TestFormApp
 {
@@ -17,14 +19,8 @@ namespace TestFormApp
 
     public class TizIdManager
     {
-        const string Filename = "iddata.json";
-        TizIdData _data;
-        TizId _tizId;
-
-        static string CombineFilePath(string a, string b)
-        {
-            return string.Format("{0}/{1}", a, b);
-        }
+        const string DataFilename = "iddata.json";
+        readonly TizId _tizId;
 
         public TizIdManager()
         {
@@ -33,21 +29,26 @@ namespace TestFormApp
 
         public void Save(string dirPath)
         {
-            _data = new TizIdData(_tizId.Current());
+            var data = new TizIdData(_tizId.Current());
+            var jsonStr = JsonConvert.SerializeObject(data);
+            var filePath = IOUtil.CombinePathAndFile(dirPath, DataFilename);
+            if (!IOUtil.CheckAndCreateDirectory(filePath))
+            {
+                return;
+            }
 
-            var jsonStr = JsonConvert.SerializeObject(_data);
-            File.WriteAllText(CombineFilePath(dirPath, Filename), jsonStr, Encoding.UTF8);
+            File.WriteAllText(filePath, jsonStr, Encoding.UTF8);
         }
 
         public void Read(string dirPath)
         {
-            if (!File.Exists(CombineFilePath(dirPath, Filename)))
+            var filePath = IOUtil.CombinePathAndFile(dirPath, DataFilename);
+            if (!File.Exists(filePath))
             {
-                _data = null;
                 return;
             }
 
-            using (var file = File.OpenText(CombineFilePath(dirPath, Filename)))
+            using (var file = File.OpenText(filePath))
             {
                 var content = file.ReadToEnd();
 
@@ -55,7 +56,8 @@ namespace TestFormApp
                 {
                     return;
                 }
-                _data = JsonConvert.DeserializeObject<TizIdData>(content);
+                var data = JsonConvert.DeserializeObject<TizIdData>(content);
+                _tizId.SetCurrentId(data.Id);
             }
         }
     }

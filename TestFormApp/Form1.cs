@@ -24,7 +24,7 @@ namespace TestFormApp
         private LogPrinter _logPrinter;
         private ListenService _listenService;
         private ConnectService _connectService;
-        CacheUserData _cacheUserData;
+        readonly CacheUserData _cacheUserData;
         TizIdManager _idManager;
 
         void ReadServerConfig()
@@ -43,6 +43,20 @@ namespace TestFormApp
             _serverConfig.MaxConnections = int.Parse(MaxConnsTextBox.Text);
             _serverConfig.BufferSize = int.Parse(BufferSizeTextBox.Text);
             ServerConfig.Save(Application.StartupPath, _serverConfig);
+        }
+
+        void InitTizIdManager()
+        {
+            if (null == _idManager)
+            {
+                _idManager = new TizIdManager();
+            }
+            _idManager.Read(Application.StartupPath + DatabasePath.ImportData);
+        }
+
+        void SaveTizIdManager()
+        {
+            _idManager.Save(Application.StartupPath + DatabasePath.ImportData);
         }
 
         ClientConfig GetConnectServiceConfig(bool autoReconnect)
@@ -220,6 +234,7 @@ namespace TestFormApp
                 if (_listenService != null)
                     _listenService.Stop();
             }
+            SaveTizIdManager();
         }
 
         public Form1()
@@ -227,8 +242,8 @@ namespace TestFormApp
             InitializeComponent();
             ReadServerConfig();
             _logPrinter = new LogPrinter(LogMsgrichTextBox, 100);
+            InitTizIdManager();
             _cacheUserData = new CacheUserData();
-            _idManager = new TizIdManager();
             _listenService = new ListenService();
             InitListenerPacketParser();
             _connectService = new ConnectService();
@@ -267,6 +282,7 @@ namespace TestFormApp
                 else
                 {
                     SaveServerConfig();
+                    SaveTizIdManager();
                     _listenService.Setup(_serverConfig);
                     _listenService.Start();	
                 }
@@ -337,10 +353,5 @@ namespace TestFormApp
                 _connectService.Send(Encoding.UTF8.GetBytes(test), packetType);
             }
         }
-    }
-
-    public static class DataBasePath
-    {
-        public const string ImportData = "/ImportData";
     }
 }
