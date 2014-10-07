@@ -64,9 +64,6 @@ namespace Tizsoft.Treenet
                 if (args.BytesTransferred > Network.PacketMinSize)
                 {
                     ValidatePacket(args);
-                    //byte[] contents = new byte[args.BytesTransferred];
-                    //Buffer.BlockCopy(args.Buffer, args.Offset, contents, 0, args.BytesTransferred);
-                    //_packetContainer.AddPacket(this, contents);
                 }
 
                 StartReceive();

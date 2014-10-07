@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using Newtonsoft.Json.Linq;
+using Tizsoft.Log;
 using Tizsoft.Treenet;
 using Tizsoft.Treenet.Interface;
 
@@ -25,10 +26,14 @@ namespace TestFormApp
             try
             {
                 jsonObject = JObject.Parse(jsonStr);
-                var jtoken = (string)jsonObject.SelectToken("function");
+                var jtoken = (string) jsonObject.SelectToken("function");
 
                 if (string.IsNullOrEmpty(jtoken))
                     jsonObject = null;
+            }
+            catch (Exception e)
+            {
+                Logger.Log(string.Format("invalidate json string <color=cyan>{0}</color> caused exception <color=cyan>{1}</color>", jsonStr, e.Message));
             }
             finally
             {
