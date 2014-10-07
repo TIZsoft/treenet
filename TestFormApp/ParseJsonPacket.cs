@@ -33,7 +33,7 @@ namespace TestFormApp
             }
             catch (Exception e)
             {
-                GLogger.Error("invalidate json string <color=cyan>{0}</color> caused exception <color=cyan>{1}</color>", jsonStr, e.Message);
+                GLogger.Debug(string.Format("invalidate json string <color=cyan>{0}</color> caused exception <color=cyan>{1}</color>", jsonStr, e.Message));
             }
             finally
             {
