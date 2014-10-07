@@ -352,4 +352,9 @@ namespace TestFormApp
             }
         }
     }
+
+    public static class DataBasePath
+    {
+        public const string ImportData = "/ImportData";
+    }
 }
