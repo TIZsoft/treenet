@@ -4,11 +4,11 @@ using log4net;
 
 namespace Tizsoft.Log
 {
-    public class LoggerEx : ILogger
+    public class Logger : ILogger
     {
         readonly ILog _log;
 
-        public LoggerEx(Type type)
+        public Logger(Type type)
         {
             _log = LogManager.GetLogger(type);
         }
@@ -21,7 +21,7 @@ namespace Tizsoft.Log
             }
         }
 
-        public void DebugFormat(string format, params object[] args)
+        public void Debug(string format, params object[] args)
         {
             if (_log.IsDebugEnabled)
             {
@@ -37,7 +37,7 @@ namespace Tizsoft.Log
             }
         }
 
-        public void ErrorFormat(string format, params object[] args)
+        public void Error(string format, params object[] args)
         {
             if (_log.IsErrorEnabled)
             {
@@ -53,7 +53,7 @@ namespace Tizsoft.Log
             }
         }
 
-        public void FatalFormat(string format, params object[] args)
+        public void Fatal(string format, params object[] args)
         {
             if (_log.IsFatalEnabled)
             {
@@ -69,7 +69,7 @@ namespace Tizsoft.Log
             }
         }
 
-        public void InfoFormat(string format, params object[] args)
+        public void Info(string format, params object[] args)
         {
             if (_log.IsInfoEnabled)
             {
@@ -85,7 +85,7 @@ namespace Tizsoft.Log
             }
         }
 
-        public void WarnFormat(string format, params object[] args)
+        public void Warn(string format, params object[] args)
         {
             if (_log.IsWarnEnabled)
             {
@@ -94,30 +94,88 @@ namespace Tizsoft.Log
         }
     }
 
-    public class Logger
+    public static class GLogger
     {
-        static readonly Queue<string> MsgQueue = new Queue<string>();
+        static readonly ILog Log = LogManager.GetLogger(typeof(GLogger));
 
-        public static void Log(string msg)
+        public static void Debug(object message)
         {
-            MsgQueue.Enqueue(msg);
+            if (Log.IsDebugEnabled)
+            {
+                Log.Debug(message);
+            }
         }
 
-        public static void LogWarning(string msg)
+        public static void Debug(string format, params object[] args)
         {
-            MsgQueue.Enqueue("warning: " + msg);
+            if (Log.IsDebugEnabled)
+            {
+                Log.DebugFormat(format, args);
+            }
         }
 
-        public static void LogError(string msg)
+        public static void Error(object message)
         {
-            MsgQueue.Enqueue("error: " + msg);
+            if (Log.IsErrorEnabled)
+            {
+                Log.Error(message);
+            }
         }
 
-        public static void LogException(Exception e)
+        public static void Error(string format, params object[] args)
         {
-            MsgQueue.Enqueue("exception: " + e.Message);
+            if (Log.IsErrorEnabled)
+            {
+                Log.ErrorFormat(format, args);
+            }
         }
 
-        public static Queue<string> Msgs { get { return MsgQueue; } }
+        public static void Fatal(object message)
+        {
+            if (Log.IsFatalEnabled)
+            {
+                Log.Fatal(message);
+            }
+        }
+
+        public static void Fatal(string format, params object[] args)
+        {
+            if (Log.IsFatalEnabled)
+            {
+                Log.FatalFormat(format, args);
+            }
+        }
+
+        public static void Info(object message)
+        {
+            if (Log.IsInfoEnabled)
+            {
+                Log.Info(message);
+            }
+        }
+
+        public static void Info(string format, params object[] args)
+        {
+            if (Log.IsInfoEnabled)
+            {
+                Log.InfoFormat(format, args);
+            }
+        }
+
+        public static void Warn(object message)
+        {
+            if (Log.IsWarnEnabled)
+            {
+                Log.Warn(message);
+            }
+        }
+
+        public static void Warn(string format, params object[] args)
+        {
+            if (Log.IsWarnEnabled)
+            {
+                Log.WarnFormat(format, args);
+            }
+        }
     }
 }

@@ -42,7 +42,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception e)
             {
-                Logger.LogException(e);
+                GLogger.Fatal(e);
             }
         }
 

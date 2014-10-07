@@ -169,12 +169,12 @@ namespace TestFormApp
                     }
 
                     var responseStr = JsonConvert.SerializeObject(response);
-                    Logger.Log(responseStr);
+                    GLogger.Debug(responseStr);
                     connection.Send(Encoding.UTF8.GetBytes(responseStr), PacketType.KeyValue);
                     break;
 
                 default:
-                    Logger.LogWarning(string.Format("未定義的function: <color=cyan>{0}</color>", functionToken));
+                    GLogger.Warn(string.Format("未定義的function: <color=cyan>{0}</color>", functionToken));
                     break;
             }
         }
@@ -312,8 +312,6 @@ namespace TestFormApp
             {
                 CheckServiceStatus();
             }
-
-            _logPrinter.Print();
         }
 
         private void GameUpdateTimer_Tick(object sender, EventArgs e)

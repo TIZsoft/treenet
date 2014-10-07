@@ -36,7 +36,7 @@ namespace Tizsoft.Treenet
 
         void OnAsyncReceiveComplete(object sender, SocketAsyncEventArgs args)
         {
-            Logger.Log(string.Format("async {0} complete with result {1}", args.LastOperation, args.SocketError));
+            GLogger.Debug(string.Format("async {0} complete with result {1}", args.LastOperation, args.SocketError));
 
             switch (args.LastOperation)
             {
@@ -97,7 +97,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception e)
             {
-                Logger.LogException(e);
+                GLogger.Fatal(e);
             }
             finally
             {

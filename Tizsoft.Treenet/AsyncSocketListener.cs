@@ -64,14 +64,14 @@ namespace Tizsoft.Treenet
             {
                 if (_connectionPool.Count <= 0)
                 {
-                    Logger.LogWarning("連線數已達上限!");
+                    GLogger.Warn("連線數已達上限!");
                     return;
                 }
 
                 var newConnection = NewConnection(args.AcceptSocket);
                 _workingConnections.Add(newConnection);
-                Logger.Log(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
-                Logger.Log(string.Format("目前連線數: {0}", _workingConnections.Count));
+                GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
+                GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
                 Notify(newConnection, true);
             }
             else
@@ -100,7 +100,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception exception)
             {
-                Logger.LogException(exception);
+                GLogger.Fatal(exception);
             }
             finally
             {
@@ -122,7 +122,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception exception)
             {
-                Logger.LogException(exception);
+                GLogger.Fatal(exception);
             }
             finally
             {
@@ -143,7 +143,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception exception)
             {
-                Logger.LogException(exception);
+                GLogger.Fatal(exception);
             }
             finally
             {
@@ -172,7 +172,7 @@ namespace Tizsoft.Treenet
         {
             _listenSocket.Listen(_config.MaxConnections);
             StartAccept(null);
-            Logger.Log("Server try accept...");
+            GLogger.Debug("Server try accept...");
         }
 
         public void Stop()
@@ -242,8 +242,8 @@ namespace Tizsoft.Treenet
                     _connectionPool.Push(connection);    
                 }
                 
-                Logger.Log(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
-                Logger.Log(string.Format("目前連線數: {0}", _workingConnections.Count));
+                GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
+                GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
                 Notify(connection, isConnect);
             }
         }

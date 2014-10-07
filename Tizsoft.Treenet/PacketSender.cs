@@ -36,11 +36,11 @@ namespace Tizsoft.Treenet
 
             if (args.SocketError == SocketError.Success)
             {
-                Logger.Log(string.Format("already send <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>", args.BytesTransferred, connection.DestAddress));
+                GLogger.Debug(string.Format("already send <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>", args.BytesTransferred, connection.DestAddress));
             }
             else
             {
-                Logger.LogError(String.Format("send msg to <color=cyan>{0}</color> faild due to <color=cyan>{1}</color>", connection.DestAddress, args.SocketError));
+                GLogger.Error(String.Format("send msg to <color=cyan>{0}</color> faild due to <color=cyan>{1}</color>", connection.DestAddress, args.SocketError));
                 connection.Dispose();
             }
 
@@ -108,7 +108,7 @@ namespace Tizsoft.Treenet
                 }
                 catch (Exception e)
                 {
-                    Logger.LogException(e);
+                    GLogger.Fatal(e);
                     throw;
                 }
                 finally

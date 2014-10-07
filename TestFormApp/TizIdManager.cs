@@ -60,5 +60,15 @@ namespace TestFormApp
                 _tizId.SetCurrentId(data.Id);
             }
         }
+
+        public uint Next()
+        {
+            return (null == _tizId) ? 0 : _tizId.Next();
+        }
+
+        public uint Current()
+        {
+            return (null == _tizId) ? 0 : _tizId.Current();
+        }
     }
 }

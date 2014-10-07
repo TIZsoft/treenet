@@ -6,8 +6,8 @@ namespace Tizsoft
     public abstract class TizId
     {
         // 0000000001~999999999
-        protected const uint MinId = 1;
-        protected const uint MaxId = 999999999;
+        public const uint MinId = 1;
+        public const uint MaxId = 999999999;
         
         protected uint CurrentId;
 
@@ -36,7 +36,7 @@ namespace Tizsoft
 
         public override uint Next()
         {
-            if (CurrentId == MaxId)
+            if (CurrentId > MaxId)
             {
                 throw new ArgumentOutOfRangeException("CurrentId",
                     string.Format("The value is maximum({0}).", MaxId));
@@ -60,7 +60,7 @@ namespace Tizsoft
 
         public override uint Next()
         {
-            if (CurrentId == MinId)
+            if (CurrentId < MinId)
             {
                 throw new ArgumentOutOfRangeException("CurrentId",
                     string.Format("The value is Minimum({0}).", MinId));

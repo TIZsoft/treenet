@@ -102,7 +102,7 @@ namespace Tizsoft.Database
             }
             catch (Exception exception)
             {
-                Logger.LogException(exception);
+                GLogger.Fatal(exception);
             }
 
             return 0;
@@ -133,7 +133,7 @@ namespace Tizsoft.Database
             }
             catch (Exception exception)
             {
-                Logger.LogException(exception);
+                GLogger.Fatal(exception);
             }
         }
 
@@ -225,7 +225,7 @@ namespace Tizsoft.Database
             }
             catch (Exception exception)
             {
-                Logger.LogException(exception);
+                GLogger.Fatal(exception);
                 throw;
             }
             finally

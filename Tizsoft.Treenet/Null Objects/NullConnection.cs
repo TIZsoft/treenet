@@ -26,7 +26,7 @@ namespace Tizsoft.Treenet
         public void SetConnection(Socket socket, bool connected)
         {
             // Purposefully provides no behaviour.
-            Logger.LogWarning("SetConnection in NullConnection");
+            GLogger.Warn("SetConnection in NullConnection");
         }
 
         public bool IsConnected { get; private set; }
@@ -52,7 +52,7 @@ namespace Tizsoft.Treenet
         public override void Dispose()
         {
             // Purposefully provides no behaviour.
-            Logger.LogWarning("Dispose in NullConnection");
+            GLogger.Warn("Dispose in NullConnection");
         }
 
         #endregion

@@ -63,21 +63,5 @@ namespace TestFormApp
             _richTextBox = richTextBox;
             _maxPrintCount = maxPrintCount;
         }
-
-        public void Print()
-        {
-            if (_richTextBox.Lines.Length > _maxPrintCount)
-            {
-                _richTextBox.SaveFile(string.Format(@"{0}\log_{1}{2}{3}{4}{5}{6}.rtf", Application.StartupPath,
-                    DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second));
-
-                _richTextBox.Clear();
-            }
-
-            Queue<string> msgs = Logger.Msgs;
-
-            while (msgs.Count > 0)
-                AddLogMsg(msgs.Dequeue());
-        }
     }
 }
