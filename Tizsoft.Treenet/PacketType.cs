@@ -1,9 +1,8 @@
 ﻿namespace Tizsoft.Treenet
 {
-    public enum PacketType : byte
+    public enum PacketType
     {
-        Echo,
-        KeyValue,
-        Stream,
+        KeyValue = -1,
+        Stream = 0,
     }
 }

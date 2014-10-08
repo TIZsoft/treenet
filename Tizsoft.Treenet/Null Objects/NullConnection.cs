@@ -43,7 +43,7 @@ namespace Tizsoft.Treenet
         {
         }
 
-        public override void Send(byte[] content, PacketType packetType)
+        public override void Send(byte[] content)
         {
         }
 

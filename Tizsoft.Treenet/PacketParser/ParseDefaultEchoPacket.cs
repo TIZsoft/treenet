@@ -1,4 +1,3 @@
-using System.IO;
 using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
 
@@ -11,7 +10,7 @@ namespace Tizsoft.Treenet.PacketParser
         public void Process(Packet packet)
         {
             GLogger.Debug("parse by default: echo back!");
-            packet.Connection.Send(packet.Content, packet.PacketType);
+            packet.Connection.Send(packet.Content);
         }
 
         #endregion

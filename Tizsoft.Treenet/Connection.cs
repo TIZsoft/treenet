@@ -11,28 +11,10 @@ namespace Tizsoft.Treenet
         Socket _socket;
         readonly SocketAsyncEventArgs _receiveAsyncArgs;
         readonly PacketSender _packetSender;
+        readonly BufferManager _bufferManager;
         readonly IPacketContainer _packetContainer;
         readonly List<IConnectionObserver> _observers;
         bool _isActive = false;
-
-        void ValidatePacket(SocketAsyncEventArgs args)
-        {
-            var offset = args.Offset;
-
-            if (Network.HasValidHeader(args.Buffer, args.Offset, args.BytesTransferred))
-            {
-                offset += Network.CheckFlagSize;
-                var compressionFlag = BitConverter.ToBoolean(args.Buffer, offset);
-                offset += sizeof (bool);
-                var packetType = Enum.IsDefined(typeof(PacketType), args.Buffer[offset]) ? (PacketType)args.Buffer[offset] : PacketType.Echo;
-                offset += sizeof (byte);
-                var contentSize = BitConverter.ToInt32(args.Buffer, offset);
-                offset += sizeof (int);
-                var contentBuffer = new byte[contentSize];
-                Buffer.BlockCopy(args.Buffer, offset, contentBuffer, 0, contentSize);
-                _packetContainer.AddPacket(this, contentBuffer, packetType);
-            }
-        }
 
         void OnAsyncReceiveComplete(object sender, SocketAsyncEventArgs args)
         {
@@ -61,15 +43,11 @@ namespace Tizsoft.Treenet
                     Dispose();
                     return;
                 }
-                if (args.BytesTransferred > Network.PacketMinSize)
+                if (args.BytesTransferred > 0)
                 {
-                    ValidatePacket(args);
-                    //byte[] contents = new byte[args.BytesTransferred];
-                    //Buffer.BlockCopy(args.Buffer, args.Offset, contents, 0, args.BytesTransferred);
-                    //_packetContainer.AddPacket(this, contents);
+                    _packetContainer.AddPacket(this, args);
+                    StartReceive();
                 }
-
-                StartReceive();
             }
             else
             {
@@ -119,7 +97,8 @@ namespace Tizsoft.Treenet
         public Connection(BufferManager bufferManager, IPacketContainer packetContainer, PacketSender packetSender)
             : this()
         {
-            InitSocketAsyncEventArgs(ref _receiveAsyncArgs, bufferManager);
+            _bufferManager = bufferManager;
+            InitSocketAsyncEventArgs(ref _receiveAsyncArgs, _bufferManager);
             _packetContainer = packetContainer;
             _packetSender = packetSender;
         }
@@ -144,9 +123,9 @@ namespace Tizsoft.Treenet
             StartReceive();
         }
 
-        public virtual void Send(byte[] content, PacketType packetType)
+        public virtual void Send(byte[] content)
         {
-            _packetSender.SendMsg(this, content, packetType);
+            _packetSender.SendMsg(this, content);
         }
 
         public string DestAddress { get; private set; }

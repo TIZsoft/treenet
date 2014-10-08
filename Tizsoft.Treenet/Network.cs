@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
@@ -7,8 +6,6 @@ namespace Tizsoft.Treenet
 {
     public class Network
     {
-        static byte[] _packetHeader;
-
         public const int DefaultClientMaxConn = 1;
 
         public const int DefaultServerMaxConn = 200;
@@ -19,44 +16,15 @@ namespace Tizsoft.Treenet
 
         public const int DefaultPortNumber = 5566;
 
-        public static byte[] CheckFlags
-        {
-            get
-            {
-                if (_packetHeader == null)
-                {
-                    using (var stream = new MemoryStream())
-                    {
-                        using (var writer = new BinaryWriter(stream))
-                        {
-                            writer.Write(0x54);
-                            writer.Write("鈦");
-                            writer.Write(0x33);
-                            writer.Write("甲");
-                            writer.Write(0x23);
-                            writer.Write("數");
-                            writer.Write(0x37);
-                            writer.Write("位");
-                            writer.Write(0x02);
-                            writer.Write("科");
-                            writer.Write(0x8770);
-                            writer.Write("技");
-                            writer.Write(0x7592);
-                            _packetHeader = stream.ToArray();
-                        }
-                    }
-                }
+        public static readonly byte[] NetPacketHeader = { 0x54, 0x33, 0x23, 0x37 };
 
-                return _packetHeader;
-            }
-        }
+        public static int PacketHeaderSize { get { return NetPacketHeader.Length; } }
 
-        public static int CheckFlagSize { get { return CheckFlags.Length; } }
+        public static int ProtocolTypeSize { get { return sizeof(int); } }
 
-        /// <summary>
-        /// PacketMinSize = CheckFlagSize + compression flag(bool) + packet type(byte) + content size(int)
-        /// </summary>
-        public static int PacketMinSize = CheckFlagSize + sizeof(bool) + sizeof(byte) + sizeof(int);
+        public static int PacketLengthTypeSize { get { return sizeof(int); } }
+
+        public static int PacketMinSize = PacketHeaderSize + ProtocolTypeSize + PacketLengthTypeSize;
 
         /// <summary>
         /// 建立 keepalive 作業所需的輸入資料
@@ -89,25 +57,15 @@ namespace Tizsoft.Treenet
             return new IPEndPoint(new IPAddress(new byte[] { 1, 0, 0, 127 }), 5566);
         }
 
-        public static bool HasValidHeader(byte[] msg, int msgOffset, int msgCount)
+        public static bool HasValidHeader(byte[] msg)
         {
-            if (msgOffset + msgCount >= CheckFlagSize)
-            {
-                for (var i = 0; i < CheckFlags.Length; i++)
-                {
-                    if (msg[msgOffset + i] != CheckFlags[i])
-                        return false;
-                }
-
-                return true;
-            }
-
-            return false;
+            return (msg.Length > PacketHeaderSize - 1 && msg[0] == NetPacketHeader[0] && msg[1] == NetPacketHeader[1] &&
+                    msg[2] == NetPacketHeader[2] && msg[3] == NetPacketHeader[3]);
         }
 
         public static bool IsEmptyHeader(byte[] msg)
         {
-            return (msg.Length > CheckFlagSize - 1 && msg[0] == 0 && msg[1] == 0 && msg[2] == 0 && msg[3] == 0);
+            return (msg.Length > PacketHeaderSize - 1 && msg[0] == 0 && msg[1] == 0 && msg[2] == 0 && msg[3] == 0);
         }
     }
 }

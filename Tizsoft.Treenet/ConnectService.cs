@@ -37,9 +37,9 @@ namespace Tizsoft.Treenet
             _packetSender = new PacketSender();
         }
 
-        public void Send(byte[] contents, PacketType packetType)
+        public void Send(byte[] contents)
         {
-            _connection.Send(contents, packetType);
+            _connection.Send(contents);
         }
 
         public void AddParser(PacketType type, IPacketProcessor processor)

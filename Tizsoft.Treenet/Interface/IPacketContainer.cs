@@ -1,8 +1,10 @@
-﻿namespace Tizsoft.Treenet.Interface
+﻿using System.Net.Sockets;
+
+namespace Tizsoft.Treenet.Interface
 {
     public interface IPacketContainer
     {
-        void AddPacket(Connection connection, byte[] contents, PacketType packetType);
+        void AddPacket(Connection connection, SocketAsyncEventArgs aysncArgs);
 
         void RecyclePacket(Packet packet);
 
