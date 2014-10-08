@@ -22,7 +22,7 @@ namespace Tizsoft.Treenet
             Connection = Connection.NullConnection;
         }
 
-        public override void SetContent(Connection connection, SocketAsyncEventArgs asyncArgs)
+        public override void SetContent(Connection connection, byte[] contents, PacketType packetType)
         {
         }
 

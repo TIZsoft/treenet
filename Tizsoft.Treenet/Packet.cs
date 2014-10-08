@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net.Sockets;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -8,21 +7,19 @@ namespace Tizsoft.Treenet
     public class Packet : INullObj
     {
         readonly MemoryStream _buffer;
-        PacketType _packetType;
 
         public Packet()
         {
             _buffer = new MemoryStream();
-            _packetType = PacketType.Stream;
             Connection = Connection.NullConnection;
         }
 
-        public virtual void SetContent(Connection connection, SocketAsyncEventArgs asyncArgs)
+        public virtual void SetContent(Connection connection, byte[] contents, PacketType packetType)
         {
             _buffer.SetLength(0);
-            _buffer.Write(asyncArgs.Buffer, asyncArgs.Offset, asyncArgs.BytesTransferred);
+            _buffer.Write(contents, 0, contents.Length);
             _buffer.Seek(0, SeekOrigin.Begin);
-
+            PacketType = packetType;
             Connection = connection;
         }
 
@@ -32,11 +29,7 @@ namespace Tizsoft.Treenet
             Connection = Connection.NullConnection;
         }
 
-        public virtual PacketType PacketType
-        {
-            get { return Enum.IsDefined(typeof(PacketType), _packetType) ? _packetType : PacketType.Stream; }
-            protected set { _packetType = value; }
-        }
+        public virtual PacketType PacketType { get; protected set; }
 
         public virtual byte[] Content { get { return _buffer.ToArray(); } }
 

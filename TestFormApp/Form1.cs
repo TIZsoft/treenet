@@ -97,7 +97,7 @@ namespace TestFormApp
                 }
 
                 var responseStr = JsonConvert.SerializeObject(response);
-                validateArgs.Connection.Send(Encoding.UTF8.GetBytes(responseStr));
+                validateArgs.Connection.Send(Encoding.UTF8.GetBytes(responseStr), PacketType.KeyValue);
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace TestFormApp
             {
                 {"user", JsonConvert.SerializeObject(userData)}
             });
-            validateArgs.Connection.Send(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response)));
+            validateArgs.Connection.Send(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response)), PacketType.KeyValue);
         }
 
         void CheckJsonContent(JObject jsonObject, Connection connection)
@@ -170,7 +170,7 @@ namespace TestFormApp
 
                     var responseStr = JsonConvert.SerializeObject(response);
                     GLogger.Debug(responseStr);
-                    connection.Send(Encoding.UTF8.GetBytes(responseStr));
+                    connection.Send(Encoding.UTF8.GetBytes(responseStr), PacketType.KeyValue);
                     break;
 
                 default:
@@ -198,8 +198,10 @@ namespace TestFormApp
         {
             switch (type)
             {
+                case PacketType.KeyValue:
+                    return new ParseJsonPacket(CheckJsonContent);
+
                 default:
-                    //return new ParseJsonPacket(CheckJsonContent);
                     return new ParseDefaultEchoPacket();
             }
         }
@@ -289,18 +291,9 @@ namespace TestFormApp
 
         private void CheckServiceStatus()
         {
-            StartBtn.Text = (IsClientCheckBox.Checked ? _connectService.IsWorking : _listenService.IsWorking) ? "Stop" : "Start";
-
-            if (_listenService.IsWorking)
-            {
-                StatusprogressBar.MarqueeAnimationSpeed = StatusprogressBar.Maximum;
-                StatusprogressBar.Value = (StatusprogressBar.Value + 1) % StatusprogressBar.Maximum;
-            }
-            else
-            {
-                StatusprogressBar.MarqueeAnimationSpeed = StatusprogressBar.Minimum;
-                StatusprogressBar.Value = StatusprogressBar.Minimum;
-            }
+            var service = IsClientCheckBox.Checked ? _connectService as IService : _listenService as IService;
+            StartBtn.Text = service.IsWorking ? "Stop" : "Start";
+            StatusprogressBar.Value = service.IsWorking ? (StatusprogressBar.Value + 1) % StatusprogressBar.Maximum : StatusprogressBar.Minimum;
         }
 
         private void NewGuidBtn_Click(object sender, EventArgs e)
@@ -353,7 +346,15 @@ namespace TestFormApp
             string test = "hello world!";
 
             if (IsClientCheckBox.Checked)
-                _connectService.Send(Encoding.UTF8.GetBytes(test));
+            {
+                var packetType = PacketTypeListBox.SelectedIndex == -1 ? PacketType.Echo : (PacketType)PacketTypeListBox.SelectedIndex;
+                _connectService.Send(Encoding.UTF8.GetBytes(test), packetType);
+            }
         }
+    }
+
+    public static class DataBasePath
+    {
+        public const string ImportData = "/ImportData";
     }
 }
