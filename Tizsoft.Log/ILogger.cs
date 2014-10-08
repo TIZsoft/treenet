@@ -1,6 +1,6 @@
 ﻿namespace Tizsoft.Log
 {
-    interface ILogger
+    public interface ILogger
     {
         void Debug(object message);
         void Debug(string format, params object[] args);

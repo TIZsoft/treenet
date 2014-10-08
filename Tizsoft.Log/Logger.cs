@@ -1,15 +1,81 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IO;
 using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Layout;
+using log4net.Repository.Hierarchy;
 
 namespace Tizsoft.Log
 {
+    public static class LoggerManager
+    {
+        const string ConfigFile = @"log4net.config";
+
+        public static void DefaultSetup()
+        {
+            var hierarchy = (Hierarchy)LogManager.GetRepository();
+
+            var patternLayout = new PatternLayout
+            {
+                ConversionPattern =
+                    "%date [%thread] %-5level %logger [%property{NDC}] [%property{MDC}] (%file:%line) %stacktrace{5} - %message%newline"
+            };
+            patternLayout.ActivateOptions();
+
+            var roller = new RollingFileAppender
+            {
+                AppendToFile = true,
+                File = @"logs\log.txt",
+                Layout = patternLayout,
+                MaximumFileSize = "1GB",
+                MaxSizeRollBackups = 5,
+                RollingStyle = RollingFileAppender.RollingMode.Size,
+                StaticLogFileName = true
+            };
+            roller.ActivateOptions();
+            hierarchy.Root.AddAppender(roller);
+
+            hierarchy.Root.Level = Level.Info;
+            hierarchy.Configured = true;
+        }
+
+        public static bool LoadConfig(string path)
+        {
+            var filepath = path.EndsWith("/")
+                ? string.Format("{0}{1}", path, ConfigFile)
+                : string.Format("{0}/{1}", path, ConfigFile);
+
+            if (File.Exists(filepath))
+            {
+                log4net.Config.XmlConfigurator.Configure(new FileInfo(filepath));
+                return true;
+            }
+
+            return false;
+        }
+
+        public static int GetCurrentLoggersCount()
+        {
+            return LogManager.GetCurrentLoggers().Length;
+        }
+    }
+
     public class Logger : ILogger
     {
         readonly ILog _log;
 
         public Logger(Type type)
         {
+            if (LoggerManager.GetCurrentLoggersCount() == 0)
+            {
+                var filepath = System.Reflection.Assembly.GetAssembly(typeof (Logger)).Location;
+                filepath = Path.GetDirectoryName(filepath);
+                if (!LoggerManager.LoadConfig(filepath))
+                {
+                    LoggerManager.DefaultSetup();
+                }
+            }
             _log = LogManager.GetLogger(type);
         }
 
@@ -96,86 +162,56 @@ namespace Tizsoft.Log
 
     public static class GLogger
     {
-        static readonly ILog Log = LogManager.GetLogger(typeof(GLogger));
+        static readonly ILogger Log =  new Logger(typeof(GLogger));
 
         public static void Debug(object message)
         {
-            if (Log.IsDebugEnabled)
-            {
-                Log.Debug(message);
-            }
+            Log.Debug(message);
         }
 
         public static void Debug(string format, params object[] args)
         {
-            if (Log.IsDebugEnabled)
-            {
-                Log.DebugFormat(format, args);
-            }
+            Log.Debug(format, args);
         }
 
         public static void Error(object message)
         {
-            if (Log.IsErrorEnabled)
-            {
-                Log.Error(message);
-            }
+            Log.Error(message);
         }
 
         public static void Error(string format, params object[] args)
         {
-            if (Log.IsErrorEnabled)
-            {
-                Log.ErrorFormat(format, args);
-            }
+            Log.Error(format, args);
         }
 
         public static void Fatal(object message)
         {
-            if (Log.IsFatalEnabled)
-            {
-                Log.Fatal(message);
-            }
+            Log.Fatal(message);
         }
 
         public static void Fatal(string format, params object[] args)
         {
-            if (Log.IsFatalEnabled)
-            {
-                Log.FatalFormat(format, args);
-            }
+            Log.Fatal(format, args);
         }
 
         public static void Info(object message)
         {
-            if (Log.IsInfoEnabled)
-            {
-                Log.Info(message);
-            }
+            Log.Info(message);
         }
 
         public static void Info(string format, params object[] args)
         {
-            if (Log.IsInfoEnabled)
-            {
-                Log.InfoFormat(format, args);
-            }
+            Log.Info(format, args);
         }
 
         public static void Warn(object message)
         {
-            if (Log.IsWarnEnabled)
-            {
-                Log.Warn(message);
-            }
+            Log.Warn(message);
         }
 
         public static void Warn(string format, params object[] args)
         {
-            if (Log.IsWarnEnabled)
-            {
-                Log.WarnFormat(format, args);
-            }
+            Log.Warn(format, args);
         }
     }
 }

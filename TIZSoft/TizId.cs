@@ -9,7 +9,7 @@ namespace Tizsoft
         public const uint MinId = 1;
         public const uint MaxId = 999999999;
         
-        protected uint CurrentId;
+        protected uint IdCounter;
 
         public static string Format(uint id, string format = "")
         {
@@ -21,57 +21,57 @@ namespace Tizsoft
         public abstract uint Next();
         public abstract uint Current();
 
-        public void SetCurrentId(uint id)
+        public void SetIdCounter(uint id)
         {
-            CurrentId = id;
+            IdCounter = id;
         }
     }
 
     public class TizIdIncrement : TizId
     {
-        public TizIdIncrement(uint current = MinId)
+        public TizIdIncrement(uint id = MinId)
         {
-            SetCurrentId(current);
+            SetIdCounter(id);
         }
 
         public override uint Next()
         {
-            if (CurrentId > MaxId)
+            if (IdCounter > MaxId)
             {
-                throw new ArgumentOutOfRangeException("CurrentId",
+                throw new ArgumentOutOfRangeException("IdCounter",
                     string.Format("The value is maximum({0}).", MaxId));
             }
 
-            return CurrentId++;
+            return IdCounter++;
         }
 
         public override uint Current()
         {
-            return CurrentId;
+            return IdCounter - 1;
         }
     }
 
     public class TizIdDecrease : TizId
     {
-        public TizIdDecrease(uint current = MaxId)
+        public TizIdDecrease(uint id = MaxId)
         {
-            CurrentId = current;
+            SetIdCounter(id);
         }
 
         public override uint Next()
         {
-            if (CurrentId < MinId)
+            if (IdCounter < MinId)
             {
-                throw new ArgumentOutOfRangeException("CurrentId",
+                throw new ArgumentOutOfRangeException("IdCounter",
                     string.Format("The value is Minimum({0}).", MinId));
             }
 
-            return CurrentId--;
+            return IdCounter--;
         }
 
         public override uint Current()
         {
-            return CurrentId;
+            return IdCounter + 1;
         }
     }
 }

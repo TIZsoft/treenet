@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using Tizsoft;
@@ -57,7 +56,7 @@ namespace TestFormApp
                     return;
                 }
                 var data = JsonConvert.DeserializeObject<TizIdData>(content);
-                _tizId.SetCurrentId(data.Id);
+                _tizId.SetIdCounter(data.Id);
             }
         }
 

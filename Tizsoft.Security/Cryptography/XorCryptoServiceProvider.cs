@@ -21,18 +21,11 @@ namespace Tizsoft.Security.Cryptography
 
             var count = rawData.Length;
             var result = new byte[count];
-            for (var i = 0; i < count; )
+            var keylen = key.Length;
+            for (var i = 0; i < count; i++)
             {
-                foreach (var k in key)
-                {
-                    if (i >= count)
-                    {
-                        break;
-                    }
-
-                    result[i] = (byte)(rawData[i] ^ k);
-                    i++;
-                }
+                var idx = i%keylen;
+                result[i] = (byte)(rawData[i] ^ key[idx]);
             }
 
             return result;
