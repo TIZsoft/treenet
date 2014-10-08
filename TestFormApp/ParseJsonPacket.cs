@@ -26,7 +26,7 @@ namespace TestFormApp
             try
             {
                 jsonObject = JObject.Parse(jsonStr);
-                var jtoken = (string)jsonObject.SelectToken("function");
+                var jtoken = (string) jsonObject.SelectToken("function");
 
                 if (string.IsNullOrEmpty(jtoken))
                     jsonObject = null;
