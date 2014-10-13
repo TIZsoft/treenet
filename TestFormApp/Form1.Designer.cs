@@ -34,8 +34,8 @@
             this.ConnectionPanel = new System.Windows.Forms.Panel();
             this.label1 = new System.Windows.Forms.Label();
             this.StatusprogressBar = new System.Windows.Forms.ProgressBar();
-            this.ListenNoTextBox = new System.Windows.Forms.TextBox();
-            this.ListenNoLabel = new System.Windows.Forms.Label();
+            this.TimeOutTextBox = new System.Windows.Forms.TextBox();
+            this.TimeOutLabel = new System.Windows.Forms.Label();
             this.BufferSizeTextBox = new System.Windows.Forms.TextBox();
             this.BufferSizeLabel = new System.Windows.Forms.Label();
             this.MaxConnsTextBox = new System.Windows.Forms.TextBox();
@@ -93,8 +93,8 @@
             this.ConnectionPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.ConnectionPanel.Controls.Add(this.label1);
             this.ConnectionPanel.Controls.Add(this.StatusprogressBar);
-            this.ConnectionPanel.Controls.Add(this.ListenNoTextBox);
-            this.ConnectionPanel.Controls.Add(this.ListenNoLabel);
+            this.ConnectionPanel.Controls.Add(this.TimeOutTextBox);
+            this.ConnectionPanel.Controls.Add(this.TimeOutLabel);
             this.ConnectionPanel.Controls.Add(this.BufferSizeTextBox);
             this.ConnectionPanel.Controls.Add(this.BufferSizeLabel);
             this.ConnectionPanel.Controls.Add(this.MaxConnsTextBox);
@@ -127,26 +127,24 @@
             this.StatusprogressBar.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
             this.StatusprogressBar.TabIndex = 5;
             // 
-            // ListenNoTextBox
+            // TimeOutTextBox
             // 
-            this.ListenNoTextBox.AcceptsReturn = true;
-            this.ListenNoTextBox.Location = new System.Drawing.Point(83, 139);
-            this.ListenNoTextBox.Name = "ListenNoTextBox";
-            this.ListenNoTextBox.Size = new System.Drawing.Size(130, 22);
-            this.ListenNoTextBox.TabIndex = 4;
-            this.ListenNoTextBox.Text = "200";
-            this.ListenNoTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.ListenNoTextBox.Visible = false;
+            this.TimeOutTextBox.AcceptsReturn = true;
+            this.TimeOutTextBox.Location = new System.Drawing.Point(83, 139);
+            this.TimeOutTextBox.Name = "TimeOutTextBox";
+            this.TimeOutTextBox.Size = new System.Drawing.Size(130, 22);
+            this.TimeOutTextBox.TabIndex = 4;
+            this.TimeOutTextBox.Text = "5000";
+            this.TimeOutTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // ListenNoLabel
+            // TimeOutLabel
             // 
-            this.ListenNoLabel.AutoSize = true;
-            this.ListenNoLabel.Location = new System.Drawing.Point(15, 142);
-            this.ListenNoLabel.Name = "ListenNoLabel";
-            this.ListenNoLabel.Size = new System.Drawing.Size(53, 12);
-            this.ListenNoLabel.TabIndex = 14;
-            this.ListenNoLabel.Text = "Listen No.";
-            this.ListenNoLabel.Visible = false;
+            this.TimeOutLabel.AutoSize = true;
+            this.TimeOutLabel.Location = new System.Drawing.Point(15, 142);
+            this.TimeOutLabel.Name = "TimeOutLabel";
+            this.TimeOutLabel.Size = new System.Drawing.Size(70, 12);
+            this.TimeOutLabel.TabIndex = 14;
+            this.TimeOutLabel.Text = "Time Out(ms)";
             // 
             // BufferSizeTextBox
             // 
@@ -429,8 +427,8 @@
         private System.Windows.Forms.Label PortLabel;
         private System.Windows.Forms.TextBox MaxConnsTextBox;
         private System.Windows.Forms.Label MaxConnLabel;
-        private System.Windows.Forms.TextBox ListenNoTextBox;
-        private System.Windows.Forms.Label ListenNoLabel;
+        private System.Windows.Forms.TextBox TimeOutTextBox;
+        private System.Windows.Forms.Label TimeOutLabel;
         private System.Windows.Forms.TextBox BufferSizeTextBox;
         private System.Windows.Forms.Label BufferSizeLabel;
         private System.Windows.Forms.Timer statusTimer;

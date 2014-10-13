@@ -37,10 +37,6 @@
       <Private>True</Private>
       <HintPath>..\packages\MySql.Data.6.9.3\lib\net45\MySql.Data.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Newtonsoft.Json.6.0.5\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -50,19 +46,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DatabaseConfig.cs" />
     <Compile Include="DatabaseConnector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SchemaConst.cs" />
     <Compile Include="AccountType.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tizsoft.Log\Tizsoft.Log.csproj">
       <Project>{5E9944F3-3139-4566-A4A5-BBA5096DB799}</Project>
       <Name>Tizsoft.Log</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Tizsoft.Treenet\Tizsoft.Treenet.csproj">
-      <Project>{1D6374E8-979F-457C-A649-3E3369373365}</Project>
-      <Name>Tizsoft.Treenet</Name>
     </ProjectReference>
     <ProjectReference Include="..\Tizsoft\Tizsoft.csproj">
       <Project>{42dd1816-7e8d-4581-93b6-be03f1e72652}</Project>

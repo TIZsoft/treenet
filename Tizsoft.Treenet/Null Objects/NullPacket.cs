@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-
+﻿
 namespace Tizsoft.Treenet
 {
     public class NullPacket : Packet

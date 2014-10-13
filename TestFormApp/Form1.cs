@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using TestFormApp.Database;
 using Tizsoft;
 using Tizsoft.Database;
 using Tizsoft.Log;
@@ -18,7 +19,7 @@ namespace TestFormApp
     public partial class Form1 : Form
     {
         Guid _guid;
-        DatabaseConnector _dbConnector;
+        DatabaseQuery _dbQuery;
         TestUserData _testUser = new TestUserData();
         private ServerConfig _serverConfig;
         private LogPrinter _logPrinter;
@@ -34,6 +35,7 @@ namespace TestFormApp
             PortTextBox.Text = _serverConfig.Port.ToString();
             MaxConnsTextBox.Text = _serverConfig.MaxConnections.ToString();
             BufferSizeTextBox.Text = _serverConfig.BufferSize.ToString();
+            TimeOutTextBox.Text = _serverConfig.TimeOut.ToString();
         }
 
         void SaveServerConfig()
@@ -42,6 +44,7 @@ namespace TestFormApp
             _serverConfig.Port = int.Parse(PortTextBox.Text);
             _serverConfig.MaxConnections = int.Parse(MaxConnsTextBox.Text);
             _serverConfig.BufferSize = int.Parse(BufferSizeTextBox.Text);
+            _serverConfig.TimeOut = int.Parse(TimeOutTextBox.Text);
             ServerConfig.Save(Application.StartupPath, _serverConfig);
         }
 
@@ -76,8 +79,7 @@ namespace TestFormApp
             string user = DBUsertextBox.Text;
             string password = DBPwdtextBox.Text;
 
-            _dbConnector = new DatabaseConnector();
-            _dbConnector.Connect(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning", string.Empty));
+            _dbQuery = new DatabaseQuery(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning", string.Empty));
         }
 
         void FacebookValidateHandler(object sender, DownloadStringCompletedEventArgs args)
@@ -106,8 +108,8 @@ namespace TestFormApp
 
             TestUserData userData;
 
-            if (!_dbConnector.HasUserData<TestUserData>(fbid, AccountType.Facebook, out userData))
-                userData = _dbConnector.CreateNewUser<TestUserData>(fbid, AccountType.Facebook);
+            if (!_dbQuery.HasUserData<TestUserData>(fbid, AccountType.Facebook, out userData))
+                userData = _dbQuery.CreateNewUser<TestUserData>(fbid, AccountType.Facebook);
 
             response.Add("param", new Dictionary<string, object>
             {
@@ -140,7 +142,7 @@ namespace TestFormApp
                             var userData = _cacheUserData.Get(guid);
                             if (null == userData)
                             {
-                                userData = _dbConnector.CreateNewUser<TestUserData>(GuidUtil.New());
+                                userData = _dbQuery.CreateNewUser<TestUserData>(GuidUtil.New());
                             }
                             response.Add("param", new Dictionary<string, object>
                             {
@@ -156,7 +158,7 @@ namespace TestFormApp
                     else
                     {
                         TestUserData user;
-                        response.Add("param", _dbConnector.HasUserData(guid, AccountType.Guid, out user) ?
+                        response.Add("param", _dbQuery.HasUserData(guid, AccountType.Guid, out user) ?
                             new Dictionary<string, object>
                             {
                                  {"user", JsonConvert.SerializeObject(user)}
@@ -248,7 +250,7 @@ namespace TestFormApp
             InitListenerPacketParser();
             _connectService = new ConnectService();
             InitConnectorPacketParser();
-            InitDatabaseConnector();
+            //InitDatabaseConnector();
             Application.ApplicationExit += AppClose;
         }
 
@@ -259,32 +261,32 @@ namespace TestFormApp
 
         private void StartBtn_Click(object sender, EventArgs e)
         {
-            bool isClient = IsClientCheckBox.Checked;
+            var isClient = IsClientCheckBox.Checked;
+            IService service = isClient ? _connectService as IService : _listenService as IService;
 
             if (isClient)
             {
-                if (_connectService.IsWorking)
+                if (service.IsWorking)
                 {
-                    _connectService.Setup(GetConnectServiceConfig(false));
-                    _connectService.Stop();
+                    service.Setup(GetConnectServiceConfig(false));
+                    service.Stop();
                 }
                 else
                 {
-                    ClientConfig config = GetConnectServiceConfig(true);
-                    _connectService.Setup(config);
-                    _connectService.Start();
+                    service.Setup(GetConnectServiceConfig(true));
+                    service.Start();
                 }
             }
             else
             {
-                if (_listenService.IsWorking)
-                    _listenService.Stop();
+                if (service.IsWorking)
+                    service.Stop();
                 else
                 {
                     SaveServerConfig();
                     SaveTizIdManager();
-                    _listenService.Setup(_serverConfig);
-                    _listenService.Start();	
+                    service.Setup(_serverConfig);
+                    service.Start();
                 }
             }
         }
@@ -299,7 +301,7 @@ namespace TestFormApp
         private void NewGuidBtn_Click(object sender, EventArgs e)
         {
             _guid = GuidUtil.New();
-            _testUser = _dbConnector.GetUserData<TestUserData>(_guid);
+            _testUser = _dbQuery.GetUserData<TestUserData>(_guid);
             LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
             QueryGuidBtn.Text = string.Format("Query\n{0}", GuidUtil.ToBase64(_guid));
             QueryGuidBtn.Enabled = true;
@@ -325,36 +327,31 @@ namespace TestFormApp
 
         private void QueryGuidBtn_Click(object sender, EventArgs e)
         {
-            _testUser = _dbConnector.GetUserData<TestUserData>(_guid);
+            _testUser = _dbQuery.GetUserData<TestUserData>(_guid);
             LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
         }
 
         private void SetLevelBtn_Click(object sender, EventArgs e)
         {
             _testUser.level = 10;
-            _dbConnector.WriteUserData(_testUser);
-            _testUser = _dbConnector.GetUserData<TestUserData>(_testUser.guid);
+            _dbQuery.WriteUserData(_testUser);
+            _testUser = _dbQuery.GetUserData<TestUserData>(_testUser.guid);
             LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            //string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"12345\"}}";
-            //JObject jObject = JObject.Parse(json);
-            //CheckJsonContent(jObject, Connection.NullConnection);
+            string json = "{\"function\": \"login\", \"param\": { \"guid\": \"123123123123\", \"fbtoken\": \"\"}}";
+            JObject jObject = JObject.Parse(json);
+            CheckJsonContent(jObject, Connection.NullConnection);
 
-            string test = "hello world!";
+            //string test = "hello world!";
 
-            if (IsClientCheckBox.Checked)
-            {
-                var packetType = PacketTypeListBox.SelectedIndex == -1 ? PacketType.Echo : (PacketType)PacketTypeListBox.SelectedIndex;
-                _connectService.Send(Encoding.UTF8.GetBytes(test), packetType);
-            }
+            //if (IsClientCheckBox.Checked)
+            //{
+            //    var packetType = PacketTypeListBox.SelectedIndex == -1 ? PacketType.Echo : (PacketType)PacketTypeListBox.SelectedIndex;
+            //    _connectService.Send(Encoding.UTF8.GetBytes(test), packetType);
+            //}
         }
-    }
-
-    public static class DataBasePath
-    {
-        public const string ImportData = "/ImportData";
     }
 }

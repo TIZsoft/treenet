@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Tizsoft
+namespace Tizsoft.Database
 {
     public class DatabaseConfig : EventArgs
     {

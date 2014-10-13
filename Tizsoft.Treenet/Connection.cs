@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using Tizsoft.Log;
+using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -9,15 +10,20 @@ namespace Tizsoft.Treenet
     public class Connection : IDisposable, INullObj, IConnectionSubject
     {
         Socket _socket;
+        bool _isActive = false;
+        IXorCrypto _crypto;
+
         readonly SocketAsyncEventArgs _receiveAsyncArgs;
         readonly PacketSender _packetSender;
         readonly IPacketContainer _packetContainer;
         readonly List<IConnectionObserver> _observers;
-        bool _isActive = false;
 
         void ValidatePacket(SocketAsyncEventArgs args)
         {
             var offset = args.Offset;
+
+            if (_crypto != null)
+                _crypto.Decrypt(args.Buffer, args.Offset, args.BytesTransferred);
 
             if (Network.HasValidHeader(args.Buffer, args.Offset, args.BytesTransferred))
             {

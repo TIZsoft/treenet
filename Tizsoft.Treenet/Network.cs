@@ -19,6 +19,8 @@ namespace Tizsoft.Treenet
 
         public const int DefaultPortNumber = 5566;
 
+        public const double DefaultTimeOut = 5000f;
+
         public static byte[] CheckFlags
         {
             get
@@ -91,11 +93,11 @@ namespace Tizsoft.Treenet
 
         public static bool HasValidHeader(byte[] msg, int msgOffset, int msgCount)
         {
-            if (msgOffset + msgCount >= CheckFlagSize)
+            if (msgCount >= CheckFlagSize)
             {
                 for (var i = 0; i < CheckFlags.Length; i++)
                 {
-                    if (msg[msgOffset + i] != CheckFlags[i])
+                    if (msg[i + msgOffset] != CheckFlags[i])
                         return false;
                 }
 

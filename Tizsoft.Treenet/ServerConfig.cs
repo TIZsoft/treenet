@@ -21,6 +21,10 @@ namespace Tizsoft.Treenet
 
         public ProtocolType UseProtocol { get; set; }
 
+        public double TimeOut { get; set; }
+
+        public byte[] Header { get; set; }
+
         const string ConfigFilename = "ServerConfig.json";
 
         private static string ConfigFullPath(string appPath)
@@ -31,6 +35,7 @@ namespace Tizsoft.Treenet
         public ServerConfig()
         {
             Address = "127.0.0.1";
+            TimeOut = Network.PacketMinSize;
         }
 
         public static ServerConfig Read(string appPath)

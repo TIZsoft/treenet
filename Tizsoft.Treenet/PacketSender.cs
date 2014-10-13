@@ -36,7 +36,7 @@ namespace Tizsoft.Treenet
 
             if (args.SocketError == SocketError.Success)
             {
-                GLogger.Debug(string.Format("already send <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>", args.BytesTransferred, connection.DestAddress));
+                GLogger.Debug(string.Format("send <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color> finish!", args.BytesTransferred, connection.DestAddress));
             }
             else
             {

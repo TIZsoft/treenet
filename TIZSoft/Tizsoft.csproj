@@ -33,6 +33,9 @@
     <DocumentationFile>..\build\$(Configuration)\Tizsoft.Core.xml</DocumentationFile>
     <RegisterForComInterop>false</RegisterForComInterop>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />

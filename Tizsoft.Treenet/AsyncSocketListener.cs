@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
+using System.Timers;
 using Tizsoft.Collections;
 using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
+using Timer = System.Timers.Timer;
 
 namespace Tizsoft.Treenet
 {
@@ -15,6 +17,7 @@ namespace Tizsoft.Treenet
         SocketAsyncEventArgs _acceptAsyncOp;
         ServerConfig _config;
         FixedSizeObjPool<Connection> _connectionPool;
+        Timer _heartBeatTimer;
         readonly List<IConnectionObserver> _observers = new List<IConnectionObserver>();
         readonly List<Connection> _workingConnections = new List<Connection>();
 
@@ -166,6 +169,32 @@ namespace Tizsoft.Treenet
             var endPoint = Network.GetIpEndPoint(config.Address, config.Port);
             _listenSocket = new Socket(endPoint.AddressFamily, config.TransferType, config.UseProtocol);
             _listenSocket.Bind(endPoint);
+            
+            InitialHeartBeatTime();
+        }
+
+        void InitialHeartBeatTime()
+        {
+            if (_heartBeatTimer != null)
+                _heartBeatTimer.Dispose();
+
+            _heartBeatTimer = new Timer(_config.TimeOut);
+            _heartBeatTimer.AutoReset = true;
+            _heartBeatTimer.Elapsed += HeartBeatTimerOnElapsed;
+            _heartBeatTimer.Start();
+        }
+
+        void HeartBeatTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            if (_workingConnections.Count == 0)
+                return;
+
+            _heartBeatTimer.Stop();
+
+            foreach (var workingConnection in _workingConnections)
+            {
+                workingConnection.Send(null, PacketType.Stream);
+            }
         }
 
         public void Start()

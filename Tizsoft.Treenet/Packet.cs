@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -17,7 +16,10 @@ namespace Tizsoft.Treenet
         public virtual void SetContent(Connection connection, byte[] contents, PacketType packetType)
         {
             _buffer.SetLength(0);
-            _buffer.Write(contents, 0, contents.Length);
+
+            if (contents != null)
+                _buffer.Write(contents, 0, contents.Length);
+
             _buffer.Seek(0, SeekOrigin.Begin);
             PacketType = packetType;
             Connection = connection;

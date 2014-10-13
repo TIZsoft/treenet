@@ -7,7 +7,7 @@ namespace Tizsoft.Security.Cryptography
     {
         readonly byte[] _key;
 
-        static byte[] XorBytes(byte[] key, byte[] rawData)
+        byte[] XorBytes(byte[] key, byte[] rawData, int offset, int count)
         {
             if (null == rawData)
             {
@@ -19,16 +19,24 @@ namespace Tizsoft.Security.Cryptography
                 throw new ArgumentNullException("key");
             }
 
-            var count = rawData.Length;
-            var result = new byte[count];
+            if (offset < 0 || offset > rawData.Length)
+            {
+                throw new ArgumentOutOfRangeException("offset");
+            }
+
+            if (count < 0 || offset + count > rawData.Length)
+            {
+                throw new ArgumentOutOfRangeException("count");
+            }
+
             var keylen = key.Length;
             for (var i = 0; i < count; i++)
             {
-                var idx = i%keylen;
-                result[i] = (byte)(rawData[i] ^ key[idx]);
+                var keyidx = i%keylen;
+                rawData[i + offset] = (byte)(rawData[i + offset] ^ key[keyidx]);
             }
 
-            return result;
+            return rawData;
         }
 
         public XorCryptoServiceProvider(string key)
@@ -59,12 +67,22 @@ namespace Tizsoft.Security.Cryptography
 
         public byte[] Decrypt(byte[] data)
         {
-            return XorBytes(_key, data);
+            return Decrypt(data, 0, data.Length);
+        }
+
+        public byte[] Decrypt(byte[] data, int offset, int count)
+        {
+            return XorBytes(_key, data, offset, count);
         }
 
         public byte[] Encrypt(byte[] data)
         {
-            return XorBytes(_key, data);
+            return Encrypt(data, 0, data.Length);
+        }
+
+        public byte[] Encrypt(byte[] data, int offset, int count)
+        {
+            return XorBytes(_key, data, offset, count);
         }
     }
 }
