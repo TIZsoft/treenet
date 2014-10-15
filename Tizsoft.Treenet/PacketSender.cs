@@ -21,7 +21,7 @@ namespace Tizsoft.Treenet
             switch (args.LastOperation)
             {
                 case SocketAsyncOperation.Send:
-                    SendResult(args);
+                    ProcessSend(args);
                     break;
             }
         }
@@ -30,27 +30,29 @@ namespace Tizsoft.Treenet
         /// This method is invoked when an asynchronous send operation completes.
         /// The method issues another receive on the socket to read any additional data sent from the client.
         /// </summary>
-        void SendResult(SocketAsyncEventArgs args)
+        void ProcessSend(SocketAsyncEventArgs e)
         {
-            var connection = (Connection)args.UserToken;
+            var connection = (Connection)e.UserToken;
 
-            if (args.SocketError == SocketError.Success)
+            if (e.SocketError == SocketError.Success)
             {
-                GLogger.Debug(string.Format("send <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color> finish!", args.BytesTransferred, connection.DestAddress));
+                GLogger.Debug(string.Format("send <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color> finish!", e.BytesTransferred, connection.DestAddress));
             }
             else
             {
-                GLogger.Error(String.Format("send msg to <color=cyan>{0}</color> faild due to <color=cyan>{1}</color>", connection.DestAddress, args.SocketError));
+                GLogger.Error(String.Format("send msg to <color=cyan>{0}</color> failed due to <color=cyan>{1}</color>", connection.DestAddress, e.SocketError));
                 connection.Dispose();
             }
 
-            args.UserToken = null;
-            args.AcceptSocket = null;
-            _asyncSendOpPool.Push(args);
-            _workingAsyncSendOps.Remove(args);
+            e.UserToken = null;
+            e.AcceptSocket = null;
+            _asyncSendOpPool.Push(e);
+            _workingAsyncSendOps.Remove(e);
             StartSend();
         }
 
+        // TODO: “TCP does not operate on packets of data. TCP operates on streams of data.”
+        // TODO: Message framing.
         void StartSend()
         {
             if (_asyncSendOpPool.Count == 0)
@@ -76,16 +78,18 @@ namespace Tizsoft.Treenet
                 }
             }
 
+            // BUG: Possible expected an InvalidOperationException when send operation called too many times at same time.
             var asyncSendOp = _asyncSendOpPool.Pop();
             asyncSendOp.SetBuffer(asyncSendOp.Offset, msgSize);
             Buffer.BlockCopy(_sendBuffer, 0, asyncSendOp.Buffer, asyncSendOp.Offset, msgSize);
             asyncSendOp.UserToken = packet.Connection;
             _workingAsyncSendOps.Add(asyncSendOp);
+            
+            var connector = packet.Connection.ConnectSocket;
 
-            var connector = packet.Connection.Connector;
-
+            // BUG: Possible connection is not connected or has been closed/disposed or is a null reference.
             if (!connector.SendAsync(asyncSendOp))
-                SendResult(asyncSendOp);
+                ProcessSend(asyncSendOp);
         }
 
         void FreeWorkingAsyncSendOps()

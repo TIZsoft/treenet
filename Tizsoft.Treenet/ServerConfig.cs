@@ -13,6 +13,8 @@ namespace Tizsoft.Treenet
 
         public int Port { get; set; }
 
+        public int Backlog { get; set; }
+
         public int MaxConnections { get; set; }
 
         public int BufferSize { get; set; }
@@ -35,6 +37,7 @@ namespace Tizsoft.Treenet
         public ServerConfig()
         {
             Address = "127.0.0.1";
+            Backlog = 10;
             TimeOut = Network.PacketMinSize;
         }
 

@@ -199,7 +199,7 @@ namespace Tizsoft.Treenet
 
         public void Start()
         {
-            _listenSocket.Listen(_config.MaxConnections);
+            _listenSocket.Listen(_config.Backlog);
             StartAccept(null);
             GLogger.Debug("Server try accept...");
         }

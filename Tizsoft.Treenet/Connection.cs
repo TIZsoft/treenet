@@ -7,9 +7,12 @@ using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
+    // TODO: “TCP does not operate on packets of data. TCP operates on streams of data.”
+    // TODO: Message framing.
+    // TODO: Current version possible cannot handle multiple connection requests efficiently.
+    // TODO: Implement async disconnect operation.
     public class Connection : IDisposable, INullObj, IConnectionSubject
     {
-        Socket _socket;
         bool _isActive = false;
         ICryptoProvider _crypto;
 
@@ -29,12 +32,15 @@ namespace Tizsoft.Treenet
             {
                 offset += Network.CheckFlagSize;
                 var compressionFlag = BitConverter.ToBoolean(args.Buffer, offset);
-                offset += sizeof (bool);
+                offset += sizeof(bool);
                 var packetType = Enum.IsDefined(typeof(PacketType), args.Buffer[offset]) ? (PacketType)args.Buffer[offset] : PacketType.Echo;
-                offset += sizeof (byte);
+                offset += sizeof(byte);
                 var contentSize = BitConverter.ToInt32(args.Buffer, offset);
-                offset += sizeof (int);
+                offset += sizeof(int);
                 var contentBuffer = new byte[contentSize];
+
+                // BUG: Expected an ArgumentException when a remote sent data more than buffer size.
+                //       Buffer size is 512 but a remote send 1024 bytes in one send operation.
                 Buffer.BlockCopy(args.Buffer, offset, contentBuffer, 0, contentSize);
                 _packetContainer.AddPacket(this, contentBuffer, packetType);
             }
@@ -82,23 +88,23 @@ namespace Tizsoft.Treenet
 
         void StartReceive()
         {
-            if (!_socket.ReceiveAsync(_receiveAsyncArgs))
+            if (!ConnectSocket.ReceiveAsync(_receiveAsyncArgs))
                 ReceiveResult(_receiveAsyncArgs);
         }
 
         void CloseAsyncSocket()
         {
-            if (_socket == null)
+            if (ConnectSocket == null)
             {
                 return;
             }
 
             try
             {
-                if (_socket != null)
+                if (ConnectSocket != null)
                 {
-                    _socket.Shutdown(SocketShutdown.Both);
-                    _socket.Dispose();
+                    ConnectSocket.Shutdown(SocketShutdown.Both);
+                    ConnectSocket.Dispose();
                 }
             }
             catch (Exception e)
@@ -107,7 +113,7 @@ namespace Tizsoft.Treenet
             }
             finally
             {
-                _socket = null;
+                ConnectSocket = null;
             }
         }
 
@@ -141,8 +147,8 @@ namespace Tizsoft.Treenet
         public virtual void SetConnection(Socket socket)
         {
             _isActive = true;
-            _socket = socket;
-            DestAddress = _socket.RemoteEndPoint.ToString();
+            ConnectSocket = socket;
+            DestAddress = ConnectSocket.RemoteEndPoint.ToString();
             _receiveAsyncArgs.Completed += OnAsyncReceiveComplete;
             StartReceive();
         }
@@ -156,7 +162,7 @@ namespace Tizsoft.Treenet
 
         public static Connection NullConnection { get { return Treenet.NullConnection.Instance; } }
 
-        public Socket Connector {get { return _socket; }}
+        public Socket ConnectSocket { get; private set; }
 
         #region IDisposable Members
 
@@ -205,6 +211,7 @@ namespace Tizsoft.Treenet
 
         public virtual void Notify(Connection connection, bool isConnect)
         {
+            // TODO: Possible occurs a performance issue when the server is accepted many connections.
             RemoveNullObservers();
 
             foreach (var observer in _observers)

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Sockets;
 using Tizsoft.Collections;
 using Tizsoft.Log;
@@ -67,8 +66,9 @@ namespace Tizsoft.Treenet
             {
                 AcceptSocket = new Socket(AddressFamily.InterNetwork, config.TransferType, config.UseProtocol)
             };
-            var ipAddress = IPAddress.Parse(config.Address);
-            _connectArgs.RemoteEndPoint = new IPEndPoint(ipAddress, config.Port);
+
+            var endPoint = Network.GetIpEndPoint(config.Address, config.Port);
+            _connectArgs.RemoteEndPoint = endPoint;
             _connectArgs.Completed += OnConnectComplete;
         }
 
