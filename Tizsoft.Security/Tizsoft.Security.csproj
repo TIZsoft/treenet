@@ -39,8 +39,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Cryptography\ICrypto.cs" />
-    <Compile Include="Cryptography\XorCryptoServiceProvider.cs" />
+    <Compile Include="Cryptography\ICryptoProvider.cs" />
+    <Compile Include="Cryptography\XorCryptoProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
