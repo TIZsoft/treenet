@@ -7,12 +7,12 @@ namespace Tizsoft.Security.Tests.Cryptography
     [TestFixture]
     public class TestXorCryptoServiceProvider
     {
-        XorCryptoServiceProvider xor;
+        XorCryptoProvider xor;
 
         [SetUp]
         public void Setup()
         {
-            xor = new XorCryptoServiceProvider("Test");
+            xor = new XorCryptoProvider("Test");
         }
 
         [TearDown]
@@ -28,7 +28,7 @@ namespace Tizsoft.Security.Tests.Cryptography
         [ExpectedException(typeof(ArgumentException))]
         public void TestConstructorWithInvalidArgumentByString(string key)
         {
-            xor = new XorCryptoServiceProvider(key);
+            xor = new XorCryptoProvider(key);
             Assert.Fail("Should throw an ArgumentException.");
         }
 
@@ -37,7 +37,7 @@ namespace Tizsoft.Security.Tests.Cryptography
         [ExpectedException(typeof(ArgumentNullException))]
         public void TestConstructorWithNullArgumentByByte()
         {
-            xor = new XorCryptoServiceProvider((byte[])null);
+            xor = new XorCryptoProvider((byte[])null);
             Assert.Fail("Should throw an ArgumentNullException.");
         }
 
@@ -46,7 +46,7 @@ namespace Tizsoft.Security.Tests.Cryptography
         [ExpectedException(typeof(ArgumentException))]
         public void TestConstructorWithEmptyArgumentByByte()
         {
-            xor = new XorCryptoServiceProvider(new byte[0]);
+            xor = new XorCryptoProvider(new byte[0]);
             Assert.Fail("Should throw an ArgumentException.");
         }
 

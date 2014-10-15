@@ -3,11 +3,11 @@ using System.Text;
 
 namespace Tizsoft.Security.Cryptography
 {
-    public class XorCryptoServiceProvider : IXorCrypto
+    public class XorCryptoProvider : ICryptoProvider
     {
         readonly byte[] _key;
 
-        byte[] XorBytes(byte[] key, byte[] rawData, int offset, int count)
+        static byte[] XorBytes(byte[] key, byte[] rawData, int offset, int count)
         {
             if (null == rawData)
             {
@@ -39,7 +39,7 @@ namespace Tizsoft.Security.Cryptography
             return rawData;
         }
 
-        public XorCryptoServiceProvider(string key)
+        public XorCryptoProvider(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -50,7 +50,7 @@ namespace Tizsoft.Security.Cryptography
             _key = byteConverter.GetBytes(key);
         }
 
-        public XorCryptoServiceProvider(byte[] key)
+        public XorCryptoProvider(byte[] key)
         {
             if (null == key)
             {

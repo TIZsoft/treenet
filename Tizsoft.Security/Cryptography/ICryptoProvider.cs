@@ -1,6 +1,6 @@
 ﻿namespace Tizsoft.Security.Cryptography
 {
-    public interface IXorCrypto
+    public interface ICryptoProvider
     {
         byte[] Encrypt(byte[] data);
         byte[] Encrypt(byte[] data, int offset, int count);

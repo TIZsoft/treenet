@@ -11,7 +11,7 @@ namespace Tizsoft.Treenet
     {
         Socket _socket;
         bool _isActive = false;
-        IXorCrypto _crypto;
+        ICryptoProvider _crypto;
 
         readonly SocketAsyncEventArgs _receiveAsyncArgs;
         readonly PacketSender _packetSender;
