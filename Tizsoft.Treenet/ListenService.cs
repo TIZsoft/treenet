@@ -6,17 +6,17 @@ namespace Tizsoft.Treenet
 {
     public class ListenService : IService, IConnectionSubject
     {
-        FixedSizeObjPool<Connection> _connectionPool;
-        readonly BufferManager _receiveBufferManager;
-        readonly BufferManager _sendBufferManager;
-        readonly AsyncSocketListener _socketListener;
-        readonly IPacketContainer _packetContainer;
-        readonly PacketHandler _packetHandler;
-        readonly PacketSender _packetSender;
+        FixedSizeObjPool<IConnection> _connectionPool;
+        readonly BufferManager _receiveBufferManager = new BufferManager();
+        readonly BufferManager _sendBufferManager = new BufferManager();
+        readonly AsyncSocketListener _socketListener = new AsyncSocketListener();
+        readonly IPacketContainer _packetContainer = new PacketContainer();
+        readonly PacketHandler _packetHandler = new PacketHandler();
+        readonly PacketSender _packetSender = new PacketSender();
 
         void InitConnectionPool(int maxConnections, IPacketContainer packetContainer)
         {
-            _connectionPool = new FixedSizeObjPool<Connection>(maxConnections);
+            _connectionPool = new FixedSizeObjPool<IConnection>(maxConnections);
 
             for (var i = 0; i < maxConnections; ++i)
             {
@@ -24,16 +24,6 @@ namespace Tizsoft.Treenet
                 connection.Register(_socketListener);
                 _connectionPool.Push(connection);
             }
-        }
-
-        public ListenService()
-        {
-            _receiveBufferManager = new BufferManager();
-            _sendBufferManager = new BufferManager();
-            _socketListener = new AsyncSocketListener();
-            _packetContainer = new PacketContainer();
-            _packetHandler = new PacketHandler();
-            _packetSender = new PacketSender();
         }
 
         public void AddParser(PacketType type, IPacketProcessor processor)
@@ -71,7 +61,7 @@ namespace Tizsoft.Treenet
             {
                 var packet = _packetContainer.NextPacket();
 
-                if (!packet.IsNull)
+                if (packet != Packet.Null)
                     _packetHandler.Parse(packet);
             }
         }
@@ -99,9 +89,9 @@ namespace Tizsoft.Treenet
             _socketListener.Unregister(observer);
         }
 
-        public void Notify(Connection connection, bool isConnect)
+        public void Notify(IConnection connection, bool isConnected)
         {
-            _socketListener.Notify(connection, isConnect);
+            _socketListener.Notify(connection, isConnected);
         }
 
         #endregion

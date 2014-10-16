@@ -7,7 +7,7 @@ namespace Tizsoft.Treenet.PacketParser
     {
         #region IPacketProcessor Members
 
-        public void Process(Packet packet)
+        public void Process(IPacket packet)
         {
             GLogger.Debug("parse by default: echo back!");
             packet.Connection.Send(packet.Content, packet.PacketType);

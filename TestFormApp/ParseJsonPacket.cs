@@ -9,16 +9,16 @@ namespace TestFormApp
 {
     public class ParseJsonPacket : IPacketProcessor
     {
-        Action<JObject, Connection> _action;
+        readonly Action<JObject, IConnection> _action;
 
-        public ParseJsonPacket(Action<JObject, Connection> action)
+        public ParseJsonPacket(Action<JObject, IConnection> action)
         {
             _action = action;
         }
 
         #region IPacketProcessor Members
 
-        public void Process(Packet packet)
+        public void Process(IPacket packet)
         {
             var jsonStr = Encoding.UTF8.GetString(packet.Content);
             JObject jsonObject = null;

@@ -13,7 +13,7 @@ namespace Tizsoft.Treenet
             _parsers = new Dictionary<PacketType, IPacketProcessor>();
         }
 
-        public void Parse(Packet packet)
+        public void Parse(IPacket packet)
         {
             IPacketProcessor processor;
 

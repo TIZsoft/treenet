@@ -2,6 +2,6 @@
 {
     public interface IConnectionObserver
     {
-        void GetConnectionEvent(Connection connection, bool isConnect);
+        void GetConnectionEvent(IConnection connection, bool isConnect);
     }
 }

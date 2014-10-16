@@ -16,10 +16,10 @@ namespace Tizsoft.Treenet
         Semaphore _maxNumberAcceptedClients;
         SocketAsyncEventArgs _acceptAsyncOp;
         ServerConfig _config;
-        FixedSizeObjPool<Connection> _connectionPool;
+        FixedSizeObjPool<IConnection> _connectionPool;
         Timer _heartBeatTimer;
         readonly List<IConnectionObserver> _observers = new List<IConnectionObserver>();
-        readonly List<Connection> _workingConnections = new List<Connection>();
+        readonly List<IConnection> _workingConnections = new List<IConnection>();
 
         /// <summary>
         /// Begins an operation to accept a connection request from the client.
@@ -88,7 +88,7 @@ namespace Tizsoft.Treenet
             StartAccept(args);
         }
 
-        Connection NewConnection(Socket socket)
+        IConnection NewConnection(Socket socket)
         {
             var connection = _connectionPool.Pop();
             connection.SetConnection(socket);
@@ -157,7 +157,7 @@ namespace Tizsoft.Treenet
             }
         }
 
-        public void Setup(ServerConfig config, FixedSizeObjPool<Connection> connectionPool)
+        public void Setup(ServerConfig config, FixedSizeObjPool<IConnection> connectionPool)
         {
             _config = config;
             _connectionPool = connectionPool;
@@ -246,7 +246,7 @@ namespace Tizsoft.Treenet
             _observers.RemoveAll(observer => observer == null);
         }
 
-        public void Notify(Connection connection, bool isConnect)
+        public void Notify(IConnection connection, bool isConnected)
         {
             if (connection == null)
                 return;
@@ -254,27 +254,27 @@ namespace Tizsoft.Treenet
             RemoveNullObservers();
 
             foreach (var observer in _observers)
-                observer.GetConnectionEvent(connection, isConnect);
+                observer.GetConnectionEvent(connection, isConnected);
         }
 
         #endregion
 
         #region IConnectionObserver Members
 
-        public void GetConnectionEvent(Connection connection, bool isConnect)
+        public void GetConnectionEvent(IConnection connection, bool isConnect)
         {
-            if (!isConnect)
+            if (isConnect)
+                return;
+
+            if (!connection.IsNull)
             {
-                if (!connection.IsNull)
-                {
-                    _workingConnections.Remove(connection);
-                    _connectionPool.Push(connection);    
-                }
-                
-                GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
-                GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
-                Notify(connection, isConnect);
+                _workingConnections.Remove(connection);
+                _connectionPool.Push(connection);    
             }
+                
+            GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
+            GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+            Notify(connection, false);
         }
 
         #endregion

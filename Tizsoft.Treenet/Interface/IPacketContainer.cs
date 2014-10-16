@@ -2,12 +2,12 @@
 {
     public interface IPacketContainer
     {
-        void AddPacket(Connection connection, byte[] contents, PacketType packetType);
+        void AddPacket(IConnection connection, byte[] contents, PacketType packetType);
 
-        void RecyclePacket(Packet packet);
+        void RecyclePacket(IPacket packet);
 
         void Clear();
 
-        Packet NextPacket();
+        IPacket NextPacket();
     }
 }

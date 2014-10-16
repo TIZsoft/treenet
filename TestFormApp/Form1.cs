@@ -118,7 +118,7 @@ namespace TestFormApp
             validateArgs.Connection.Send(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response)), PacketType.KeyValue);
         }
 
-        void CheckJsonContent(JObject jsonObject, Connection connection)
+        void CheckJsonContent(JObject jsonObject, IConnection connection)
         {
             if (jsonObject == null)
                 return;
@@ -181,7 +181,7 @@ namespace TestFormApp
             }
         }
 
-        void ValidateFacebookTokenAsync(Connection connection, string fbtoken, Dictionary<string, object> response)
+        void ValidateFacebookTokenAsync(IConnection connection, string fbtoken, Dictionary<string, object> response)
         {
             using (var wc = new WebClient())
             {
@@ -376,7 +376,7 @@ namespace TestFormApp
             //string json = "{\"function\": \"login\", \"param\": { \"guid\": \"123123123123\", \"fbtoken\": \"\"}}";
             string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"\"}}";
             JObject jObject = JObject.Parse(json);
-            CheckJsonContent(jObject, Connection.NullConnection);
+            CheckJsonContent(jObject, Connection.Null);
         }
     }
 }

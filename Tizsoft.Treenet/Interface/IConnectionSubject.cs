@@ -6,6 +6,6 @@
 
         void Unregister(IConnectionObserver observer);
 
-        void Notify(Connection connection, bool isConnect);
+        void Notify(IConnection connection, bool isConnected);
     }
 }

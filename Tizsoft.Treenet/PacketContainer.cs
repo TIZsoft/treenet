@@ -1,38 +1,39 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
     public class PacketContainer : IPacketContainer
     {
-        readonly Queue<Packet> _queueingPackets;
-        readonly Queue<Packet> _unusedPackets;
+        readonly Queue<IPacket> _queueingPackets = new Queue<IPacket>();
+        readonly Queue<IPacket> _unusedPackets = new Queue<IPacket>();
 
-        Packet GetUnusedPacket()
+        IPacket GetUnusedPacket()
         {
             return _unusedPackets.Count != 0 ? _unusedPackets.Dequeue() : new Packet();
         }
 
-        public PacketContainer()
-        {
-            _queueingPackets = new Queue<Packet>();
-            _unusedPackets = new Queue<Packet>();
-        }
 
         #region IPacketContainer Members
 
-        public void AddPacket(Connection connection, byte[] contents, PacketType packetType)
+        public void AddPacket(IConnection connection, byte[] contents, PacketType packetType)
         {
             var packet = GetUnusedPacket();
             packet.SetContent(connection, contents, packetType);
             _queueingPackets.Enqueue(packet);
         }
 
-        public void RecyclePacket(Packet packet)
+        public void RecyclePacket(IPacket packet)
         {
+            if (packet == null)
+            {
+                throw new ArgumentNullException("packet");
+            }
+
             packet.Clear();
 
-            if (!packet.IsNull)
+            if (packet != Packet.Null)
                 _unusedPackets.Enqueue(packet);
         }
 
@@ -42,9 +43,9 @@ namespace Tizsoft.Treenet
                 RecyclePacket(_queueingPackets.Dequeue());
         }
 
-        public Packet NextPacket()
+        public IPacket NextPacket()
         {
-            return _queueingPackets.Count > 0 ? _queueingPackets.Dequeue() : Packet.NullPacket;
+            return _queueingPackets.Count > 0 ? _queueingPackets.Dequeue() : Packet.Null;
         }
 
         #endregion

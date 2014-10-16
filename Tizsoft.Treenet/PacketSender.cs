@@ -12,7 +12,7 @@ namespace Tizsoft.Treenet
     {
         FixedSizeObjPool<SocketAsyncEventArgs> _asyncSendOpPool;
         List<SocketAsyncEventArgs> _workingAsyncSendOps;
-        IPacketContainer _sendPacketContainer = new PacketContainer();
+        readonly IPacketContainer _sendPacketContainer = new PacketContainer();
         byte[] _sendBuffer;
         int _bufferSize;
 
@@ -60,7 +60,8 @@ namespace Tizsoft.Treenet
 
             var packet = _sendPacketContainer.NextPacket();
 
-            if (packet.IsNull || packet.Connection.IsNull)
+            if (packet.IsNull ||
+                packet.Connection.IsNull)
                 return;
 
             int msgSize;

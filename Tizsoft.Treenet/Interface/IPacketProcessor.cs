@@ -2,6 +2,6 @@
 {
     public interface IPacketProcessor
     {
-        void Process(Packet packet);
+        void Process(IPacket packet);
     }
 }

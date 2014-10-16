@@ -11,30 +11,20 @@ namespace Tizsoft.Treenet
     {
         Connection _connection;
         ClientConfig _config;
-        FixedSizeObjPool<Connection> _connectionPool;
-        readonly AsyncSocketConnector _connector;
-        readonly BufferManager _receiveBufferManager;
-        readonly BufferManager _sendBufferManager;
-        readonly IPacketContainer _packetContainer;
-        readonly PacketHandler _packetHandler;
-        readonly PacketSender _packetSender;
+        FixedSizeObjPool<IConnection> _connectionPool;
+        readonly AsyncSocketConnector _connector = new AsyncSocketConnector();
+        readonly BufferManager _receiveBufferManager = new BufferManager();
+        readonly BufferManager _sendBufferManager = new BufferManager();
+        readonly IPacketContainer _packetContainer = new PacketContainer();
+        readonly PacketHandler _packetHandler = new PacketHandler();
+        readonly PacketSender _packetSender = new PacketSender();
 
         void InitConnectionPool()
         {
             _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender);
             _connection.Register(_connector);
-            _connectionPool = new FixedSizeObjPool<Connection>(1);
+            _connectionPool = new FixedSizeObjPool<IConnection>(1);
             _connectionPool.Push(_connection);
-        }
-
-        public ConnectService()
-        {
-            _connector = new AsyncSocketConnector();
-            _packetContainer = new PacketContainer();
-            _receiveBufferManager = new BufferManager();
-            _sendBufferManager = new BufferManager();
-            _packetHandler = new PacketHandler();
-            _packetSender = new PacketSender();
         }
 
         public void Send(byte[] contents, PacketType packetType)
@@ -103,9 +93,9 @@ namespace Tizsoft.Treenet
             _connector.Unregister(observer);
         }
 
-        public void Notify(Connection connection, bool isConnect)
+        public void Notify(IConnection connection, bool isConnected)
         {
-            _connector.Notify(connection, isConnect);
+            _connector.Notify(connection, isConnected);
         }
 
         #endregion

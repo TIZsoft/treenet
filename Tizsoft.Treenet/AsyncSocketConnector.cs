@@ -10,9 +10,9 @@ namespace Tizsoft.Treenet
     public class AsyncSocketConnector : IConnectionSubject, IConnectionObserver
     {
         readonly List<IConnectionObserver> _connectionObservers = new List<IConnectionObserver>();
-        readonly List<Connection> _workingConnections = new List<Connection>();
+        readonly List<IConnection> _workingConnections = new List<IConnection>();
         SocketAsyncEventArgs _connectArgs;
-        FixedSizeObjPool<Connection> _connectionPool;
+        FixedSizeObjPool<IConnection> _connectionPool;
         ClientConfig _clientConfig;
 
         void OnConnectComplete(object sender, SocketAsyncEventArgs args)
@@ -25,7 +25,7 @@ namespace Tizsoft.Treenet
             }
         }
 
-        Connection NewConnection(Socket socket)
+        IConnection NewConnection(Socket socket)
         {
             var connection = _connectionPool.Pop();
             connection.SetConnection(socket);
@@ -52,7 +52,7 @@ namespace Tizsoft.Treenet
 
                 default:
                     GLogger.Debug(string.Format("因為 {0} ，所以無法連線", args.SocketError));
-                    Notify(Connection.NullConnection, false);
+                    Notify(Connection.Null, false);
                     break;
             }
         }
@@ -81,7 +81,7 @@ namespace Tizsoft.Treenet
                 ConnectResult(_connectArgs);
         }
 
-        public void Setup(EventArgs configArgs, FixedSizeObjPool<Connection> connectionPool)
+        public void Setup(EventArgs configArgs, FixedSizeObjPool<IConnection> connectionPool)
         {
             _clientConfig = (ClientConfig) configArgs;
 
@@ -129,33 +129,33 @@ namespace Tizsoft.Treenet
             _connectionObservers.RemoveAll(observer => observer == null);
         }
 
-        public void Notify(Connection connection, bool isConnect)
+        public void Notify(IConnection connection, bool isConnected)
         {
             RemoveNullConnectionObservers();
 
             foreach (var connectionObserver in _connectionObservers)
-                connectionObserver.GetConnectionEvent(connection, isConnect);
+                connectionObserver.GetConnectionEvent(connection, isConnected);
         }
 
         #endregion
 
         #region IConnectionObserver Members
 
-        public void GetConnectionEvent(Connection connection, bool isConnect)
+        public void GetConnectionEvent(IConnection connection, bool isConnect)
         {
-            if (!isConnect)
-            {
-                FreeConnectComponent();
-                if (!connection.IsNull)
-                {
-                    _workingConnections.Remove(connection);
-                    _connectionPool.Push(connection);
-                }
+            if (isConnect)
+                return;
 
-                GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
-                GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
-                Notify(connection, isConnect);    
+            FreeConnectComponent();
+            if (!connection.IsNull)
+            {
+                _workingConnections.Remove(connection);
+                _connectionPool.Push(connection);
             }
+
+            GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
+            GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+            Notify(connection, false);
         }
 
         #endregion

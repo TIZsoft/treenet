@@ -51,7 +51,11 @@
     <Compile Include="BufferPool.cs" />
     <Compile Include="ClientConfig.cs" />
     <Compile Include="ConnectService.cs" />
+    <Compile Include="IConnection.cs" />
     <Compile Include="Interface\IService.cs" />
+    <Compile Include="IPacket.cs" />
+    <Compile Include="NullConnection.cs" />
+    <Compile Include="NullPacket.cs" />
     <Compile Include="PacketSender.cs" />
     <Compile Include="PacketType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -63,8 +67,6 @@
     <Compile Include="Interface\INullObj.cs" />
     <Compile Include="Interface\IPacketContainer.cs" />
     <Compile Include="Interface\IPacketProcessor.cs" />
-    <Compile Include="Null Objects\NullConnection.cs" />
-    <Compile Include="Null Objects\NullPacket.cs" />
     <Compile Include="PacketContainer.cs" />
     <Compile Include="PacketHandler.cs" />
     <Compile Include="PacketParser\ParseDefaultEchoPacket.cs" />
@@ -76,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Diagnostics\" />
+    <Folder Include="Null Objects\" />
     <Folder Include="Security\" />
     <Folder Include="Web\" />
   </ItemGroup>

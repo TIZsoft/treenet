@@ -1,19 +1,29 @@
 ﻿using System.IO;
-using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
-    public class Packet : INullObj
+    public class Packet : IPacket
     {
-        readonly MemoryStream _buffer;
+        static readonly IPacket NullPacket = new NullPacket();
+
+        public static IPacket Null { get { return NullPacket; } }
+
+        readonly MemoryStream _buffer = new MemoryStream();
+
+        public bool IsNull { get { return false; } }
+
+        public PacketType PacketType { get; protected set; }
+
+        public byte[] Content { get { return _buffer.ToArray(); } }
+
+        public IConnection Connection { get; protected set; }
 
         public Packet()
         {
-            _buffer = new MemoryStream();
-            Connection = Connection.NullConnection;
+            Connection = Treenet.Connection.Null;
         }
 
-        public virtual void SetContent(Connection connection, byte[] contents, PacketType packetType)
+        public void SetContent(IConnection connection, byte[] contents, PacketType packetType)
         {
             _buffer.SetLength(0);
 
@@ -25,27 +35,10 @@ namespace Tizsoft.Treenet
             Connection = connection;
         }
 
-        public virtual void Clear()
+        public void Clear()
         {
             _buffer.SetLength(0);
-            Connection = Connection.NullConnection;
+            Connection = Treenet.Connection.Null;
         }
-
-        public virtual PacketType PacketType { get; protected set; }
-
-        public virtual byte[] Content { get { return _buffer.ToArray(); } }
-
-        public Connection Connection { get; protected set; }
-
-        public static Packet NullPacket { get { return Treenet.NullPacket.Instance; } }
-
-        #region INullObj Members
-
-        public virtual bool IsNull
-        {
-            get { return false; }
-        }
-
-        #endregion
     }
 }
