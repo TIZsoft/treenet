@@ -1,19 +1,20 @@
-﻿using Tizsoft.Caching.Cache;
+﻿using TestFormApp.User;
+using Tizsoft.Caching.Cache;
 
 namespace TestFormApp
 {
     public class CacheUserData
     {
-        readonly Cache<TestUserData> _cache;
+        readonly Cache<UserData> _cache;
 
         public CacheUserData()
         {
-            _cache = new Cache<TestUserData>();
+            _cache = new Cache<UserData>();
         }
 
-        public TestUserData Get(string guid)
+        public UserData Get(string guid)
         {
-            TestUserData data;
+            UserData data;
             if (_cache.TryGet(guid, out data))
             {
                 return data;
@@ -21,17 +22,17 @@ namespace TestFormApp
             return null;
         }
 
-        public void Add(TestUserData data)
+        public void Add(UserData data)
         {
-            _cache.Add(data.guid, data);
+            _cache.Add(data.Guid, data);
         }
 
-        public TestUserData Update(TestUserData data)
+        public UserData Update(UserData data)
         {
-            if (_cache.Contains(data.guid))
+            if (_cache.Contains(data.Guid))
             {
-                _cache.Update(data.guid, data);
-                return _cache.Get(data.guid);
+                _cache.Update(data.Guid, data);
+                return _cache.Get(data.Guid);
             }
 
             return null;

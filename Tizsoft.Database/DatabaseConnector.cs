@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
+using System.Linq;
+using System.Runtime.Remoting;
 using System.Text;
+using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using Tizsoft.Log;
 
@@ -48,6 +52,11 @@ namespace Tizsoft.Database
 
         public void Create(string table, List<string> columns, List<object> values)
         {
+            CreateOnDuplicate(table, columns, values, string.Empty);
+        }
+
+        public void CreateOnDuplicate(string table, List<string> columns, List<object> values, string duplicateKeyClause)
+        {
             if (_mySqlConnection == null)
                 throw new Exception("Connection doesn't establish yet.");
 
@@ -55,23 +64,70 @@ namespace Tizsoft.Database
                 return;
 
             ResetQueryBuilder();
-            _queryBuilder.AppendFormat("INSERT INTO {0} (", table);
+            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
 
             for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
-                _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
+                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
 
             _queryBuilder.Append(") VALUES(");
 
             for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
                 _queryBuilder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
 
-            _queryBuilder.Append(")");
+            _queryBuilder.Append(") ");
+
+            if (!string.IsNullOrEmpty(duplicateKeyClause))
+                _queryBuilder.Append(duplicateKeyClause);
 
             var createCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
             createCommand.ExecuteNonQueryAsync();
         }
 
-        public MySqlDataReader Request(string table, List<string> columns, string whereClause)
+        public void MultiCreate(string table, List<string> columns, List<List<object>> multiValueLists)
+        {
+            MultiCreateOnDuplicate(table, columns, multiValueLists, string.Empty);
+        }
+
+        public void MultiCreateOnDuplicate(string table, List<string> columns, List<List<object>> multiValueLists, string duplicateKeyClause)
+        {
+            if (_mySqlConnection == null)
+                throw new Exception("Connection doesn't establish yet.");
+
+            if (columns == null || multiValueLists == null || columns.Count == 0 || multiValueLists.Count == 0)
+                return;
+
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
+            var minColumnCount = Math.Min(columns.Count, multiValueLists[0].Count);
+            for (var i = 0; i < minColumnCount; ++i)
+                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == minColumnCount - 1 ? ") " : ",");
+
+            _queryBuilder.Append("VALUES");
+
+            for (var i = 0; i < multiValueLists.Count; ++i)
+            {
+                var valueList = multiValueLists[i];
+
+                if (valueList != null && valueList.Count > 0)
+                {
+                    _queryBuilder.Append("(");
+
+                    for (var j = 0; j < minColumnCount; ++j)
+                        _queryBuilder.AppendFormat(@"'{0}'{1}", valueList[j],
+                            j == minColumnCount - 1 ? ")" : ",");
+
+                    _queryBuilder.Append(i == multiValueLists.Count - 1 ? " " : ",");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(duplicateKeyClause))
+                _queryBuilder.AppendFormat(@"ON DUPLICATE KEY UPDATE {0}", duplicateKeyClause);
+
+            var createCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
+            createCommand.ExecuteNonQueryAsync();
+        }
+
+        public List<Dictionary<string, object>> Request(string table, List<string> columns, string whereClause)
         {
             if (_mySqlConnection == null)
                 throw new Exception("Connection doesn't establish yet.");
@@ -84,16 +140,41 @@ namespace Tizsoft.Database
             else
             {
                 for (var i = 0; i < columns.Count; ++i)
-                    _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? " " : ",");
+                    _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? " " : ",");
             }
 
-            _queryBuilder.AppendFormat("FROM {0} ", table);
+            _queryBuilder.AppendFormat("FROM `{0}` ", table);
 
             if (!string.IsNullOrEmpty(whereClause))
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
+            var result = new List<Dictionary<string, object>>();
             var requestCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
-            return requestCommand.ExecuteReader();
+            var dataReader = requestCommand.ExecuteReader();
+
+            if (!dataReader.HasRows)
+            {
+                dataReader.Close();
+                return result;
+            }
+
+            while (dataReader.Read())
+            {
+                if (columns != null)
+                {
+                    var row = columns.ToDictionary(column => column, column => dataReader[column]);
+                    result.Add(row);
+                }
+                else
+                {
+                    var row = new Dictionary<string, object>();
+                    for (var i = 0; i < dataReader.FieldCount; ++i)
+                        row.Add(dataReader.GetName(i), dataReader[i]);
+                    result.Add(row);
+                }
+            }
+            dataReader.Close();
+            return result;
         }
 
         public void Update(string table, List<string> columns, List<object> values, string whereClause)
@@ -105,7 +186,7 @@ namespace Tizsoft.Database
                 return;
 
             ResetQueryBuilder();
-            _queryBuilder.AppendFormat("UPDATE {0} SET ", table);
+            _queryBuilder.AppendFormat("UPDATE `{0}` SET ", table);
             var bound = Math.Min(columns.Count, values.Count);
 
             for (var i = 0; i < bound; ++i)
@@ -128,7 +209,7 @@ namespace Tizsoft.Database
 
             ResetQueryBuilder();
 
-            _queryBuilder.AppendFormat("DELETE FROM {0} WHERE {1}", table, whereClause);
+            _queryBuilder.AppendFormat("DELETE FROM `{0}` WHERE {1}", table, whereClause);
             var deleteCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
             deleteCommand.ExecuteNonQuery();
         }
@@ -139,7 +220,7 @@ namespace Tizsoft.Database
                 throw new Exception("Connection doesn't establish yet.");
 
             ResetQueryBuilder();
-            _queryBuilder.AppendFormat(@"SELECT COUNT(*) FROM {0} WHERE `{1}`='{2}'", table, whereClause.Key, whereClause.Value);
+            _queryBuilder.AppendFormat(@"SELECT COUNT(*) FROM `{0}` WHERE `{1}`='{2}'", table, whereClause.Key, whereClause.Value);
 
             try
             {
@@ -154,124 +235,5 @@ namespace Tizsoft.Database
 
             return 0;
         }
-
-        //public T GetUserData<T>(string guid)
-        //{
-        //    return GetUserDataByToken<T>(guid, AccountType.Guid);
-        //}
-
-        //public T GetUserData<T>(Guid guid)
-        //{
-        //    T userData;
-        //    return HasUserData(GuidUtil.ToBase64(guid), AccountType.Guid, out userData) ? userData : default(T);
-        //}
-
-        //public bool HasUserData<T>(string account, AccountType type, out T userData)
-        //{
-        //    userData = default(T);
-
-        //    if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(AccountField(type), account)) == 0)
-        //        return false;
-
-        //    userData = GetUserDataByToken<T>(account, type);
-        //    return true;
-        //}
-
-        //public T CreateNewUser<T>(string guid)
-        //{
-        //    return CreateNewUser<T>(guid, AccountType.Guid);
-        //}
-
-        //public T CreateNewUser<T>(Guid guid)
-        //{
-        //    return CreateNewUser<T>(GuidUtil.ToBase64(guid), AccountType.Guid);
-        //}
-
-        //public T CreateNewUser<T>(string account, AccountType type)
-        //{
-        //    if (_mySqlConnection == null)
-        //        throw new Exception("not connect yet!");
-
-        //    var fieldColumns = new List<string>() { AccountField(type) };
-        //    var valueColumns = new List<object>() { account };
-
-        //    if (type != AccountType.Guid)
-        //    {
-        //        fieldColumns.Add(SchemaConst.GuidField);
-        //        valueColumns.Add(GuidUtil.ToBase64(GuidUtil.New()));
-        //    }
-
-        //    Create(SchemaConst.AccountTable, fieldColumns, valueColumns);
-        //    return GetUserDataByToken<T>(account, type);
-        //}
-
-        //string AccountField(AccountType type)
-        //{
-        //    switch (type)
-        //    {
-        //        case AccountType.Facebook:
-        //            return SchemaConst.FbIdField;
-
-        //        default:
-        //            return SchemaConst.GuidField;
-        //    }
-        //}
-
-        //public T GetUserDataByToken<T>(string account, AccountType type)
-        //{
-        //    if (_mySqlConnection == null)
-        //        throw new Exception("not connect yet!");
-
-        //    if (Count(SchemaConst.AccountTable, new KeyValuePair<string, string>(AccountField(type), account)) == 0)
-        //        return default(T);
-
-        //    string json = string.Empty;
-        //    MySqlDataReader dataReader = null;
-
-        //    try
-        //    {
-        //        dataReader = Request(SchemaConst.AccountTable, null,
-        //            string.Format(@"`{0}`='{1}'", AccountField(type), account));
-
-        //        dataReader.Read();
-        //        var dictionary = SchemaConst.AccountFields.ToDictionary(accountField => accountField, accountField => dataReader[accountField]);
-        //        //var dictionary = new Dictionary<string, object>();
-        //        //foreach (var accountField in SchemaConst.AccountFields)
-        //        //    dictionary.Add(accountField, dataReader[accountField]);
-
-        //        json = JsonConvert.SerializeObject(dictionary);
-        //    }
-        //    catch (Exception exception)
-        //    {
-        //        GLogger.Fatal(exception);
-        //        throw;
-        //    }
-        //    finally
-        //    {
-        //        if (dataReader != null)
-        //            dataReader.Close();
-        //    }
-
-        //    return JsonConvert.DeserializeObject<T>(json);
-        //}
-
-        //public void WriteUserData(object userData)
-        //{
-        //    try
-        //    {
-        //        string jsonStr = JsonConvert.SerializeObject(userData);
-        //        var userdataJObject = JObject.Parse(jsonStr);
-        //        var values = new List<object>(SchemaConst.AccountFields.Count);
-
-        //        foreach (var accountField in SchemaConst.AccountFields)
-        //            values.Add(userdataJObject[accountField]);
-
-        //        Update(SchemaConst.AccountTable, SchemaConst.AccountFields, values, string.Format("`{0}`='{1}'", SchemaConst.GuidField, userdataJObject[SchemaConst.GuidField]));
-        //    }
-        //    catch (Exception exception)
-        //    {
-        //        throw exception;
-        //    }
-        //}
     }
 }
