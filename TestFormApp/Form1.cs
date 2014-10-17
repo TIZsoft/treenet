@@ -341,12 +341,12 @@ namespace TestFormApp
 
         private void button1_Click(object sender, EventArgs e)
         {
-            //LoginJsonTest();
-            //PacketTest();
-            UserDataWriteBackTest();
+            TestCreateAccount();
+            //TestSendEchoPack();
+            //TestWriteUserDataBack();
         }
 
-        void UserDataWriteBackTest()
+        void TestWriteUserDataBack()
         {
             UserData user = _dbQuery.CreateNewUser(GuidUtil.New());
             user.Ap = 0;
@@ -358,7 +358,7 @@ namespace TestFormApp
             _dbQuery.WriteUserData(user);
         }
 
-        void PacketTest()
+        void TestSendEchoPack()
         {
             string test = "hello world!";
 
@@ -371,9 +371,10 @@ namespace TestFormApp
             }
         }
 
-        void LoginJsonTest()
+        void TestCreateAccount()
         {
-            string json = "{\"function\": \"login\", \"param\": { \"guid\": \"123123123123\", \"fbtoken\": \"\"}}";
+            //string json = "{\"function\": \"login\", \"param\": { \"guid\": \"123123123123\", \"fbtoken\": \"\"}}";
+            string json = "{\"function\": \"login\", \"param\": { \"guid\": \"\", \"fbtoken\": \"\"}}";
             JObject jObject = JObject.Parse(json);
             CheckJsonContent(jObject, Connection.NullConnection);
         }
