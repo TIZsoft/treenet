@@ -51,7 +51,9 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="MockClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestAsyncSocketListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Tizsoft.Log\Tizsoft.Log.csproj">
