@@ -130,13 +130,13 @@ namespace TestFormApp
                 result.SetPlayerData(sqlResult[0]);
 
                 sqlResult = _dbConnector.Request(CharacterTable.Name, null, condition);
-                result.SetCharacterData(sqlResult);
+                result.SetIdLevelData(sqlResult, UserData.IdLevelType.Character);
 
                 sqlResult = _dbConnector.Request(SkateBoardTable.Name, null, condition);
-                result.SetSkateBoardData(sqlResult);
+                result.SetIdLevelData(sqlResult, UserData.IdLevelType.Skateboard);
 
                 sqlResult = _dbConnector.Request(TreasureTable.Name, null, condition);
-                result.SetTreasureData(sqlResult);
+                result.SetIdLevelData(sqlResult, UserData.IdLevelType.Treasure);
             }
             catch (Exception exception)
             {

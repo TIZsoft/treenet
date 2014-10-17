@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using Tizsoft.Log;
-using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -10,7 +9,6 @@ namespace Tizsoft.Treenet
     // TODO: “TCP does not operate on packets of data. TCP operates on streams of data.”
     // TODO: Message framing.
     // TODO: Current version possible cannot handle multiple connection requests efficiently.
-    // TODO: Implement async disconnect operation.
     public class Connection : IConnection
     {
         static readonly IConnection NullConnection = new NullConnection();
@@ -18,7 +16,6 @@ namespace Tizsoft.Treenet
         public static IConnection Null { get { return NullConnection; } }
 
         bool _isActive;
-        ICryptoProvider _crypto;
 
         readonly SocketAsyncEventArgs _receiveAsyncArgs;
         readonly PacketSender _packetSender;
@@ -30,31 +27,6 @@ namespace Tizsoft.Treenet
         public string DestAddress { get; private set; }
 
         public Socket ConnectSocket { get; private set; }
-
-        void ValidatePacket(SocketAsyncEventArgs args)
-        {
-            var offset = args.Offset;
-
-            if (_crypto != null)
-                _crypto.Decrypt(args.Buffer, args.Offset, args.BytesTransferred);
-
-            if (Network.HasValidHeader(args.Buffer, args.Offset, args.BytesTransferred))
-            {
-                offset += Network.CheckFlagSize;
-                var compressionFlag = BitConverter.ToBoolean(args.Buffer, offset);
-                offset += sizeof(bool);
-                var packetType = Enum.IsDefined(typeof(PacketType), args.Buffer[offset]) ? (PacketType)args.Buffer[offset] : PacketType.Echo;
-                offset += sizeof(byte);
-                var contentSize = BitConverter.ToInt32(args.Buffer, offset);
-                offset += sizeof(int);
-                var contentBuffer = new byte[contentSize];
-
-                // BUG: Expected an ArgumentException when a remote sent data more than buffer size.
-                //       Buffer size is 512 but a remote sent 1024 bytes in one send operation.
-                Buffer.BlockCopy(args.Buffer, offset, contentBuffer, 0, contentSize);
-                _packetContainer.AddPacket(this, contentBuffer, packetType);
-            }
-        }
 
         void OnAsyncReceiveComplete(object sender, SocketAsyncEventArgs args)
         {
@@ -85,7 +57,9 @@ namespace Tizsoft.Treenet
                 }
                 if (args.BytesTransferred > Network.PacketMinSize)
                 {
-                    ValidatePacket(args);
+                    var buffer = new byte[args.BytesTransferred];
+                    Buffer.BlockCopy(args.Buffer, args.Offset, buffer, 0, args.BytesTransferred);
+                    _packetContainer.ValidatePacket(this, buffer);
                 }
 
                 StartReceive();
@@ -112,16 +86,16 @@ namespace Tizsoft.Treenet
             try
             {
                 ConnectSocket.Shutdown(SocketShutdown.Both);
+                ConnectSocket.DisconnectAsync(_receiveAsyncArgs);
                 ConnectSocket.Close();
+                ConnectSocket.Dispose();
             }
             catch (Exception e)
             {
-                // TODO: Connect socket has already closed/disposed. Log level can be ERROR or do not log it.
-                GLogger.Fatal(e);
+                GLogger.Error(e);
             }
             finally
             {
-                ConnectSocket.Dispose();
                 ConnectSocket = null;
             }
         }
@@ -201,18 +175,13 @@ namespace Tizsoft.Treenet
             _observers.Remove(observer);
         }
 
-        void RemoveNullObservers()
-        {
-            _observers.RemoveAll(observer => observer == null);
-        }
-
         public void Notify(IConnection connection, bool isConnected)
         {
-            // TODO: Possible occurs a performance issue when the server is accepted many connections.
-            RemoveNullObservers();
-
             foreach (var observer in _observers)
-                observer.GetConnectionEvent(connection, isConnected);
+            {
+                if (observer != null)
+                    observer.GetConnectionEvent(connection, isConnected);
+            }
         }
 
         #endregion

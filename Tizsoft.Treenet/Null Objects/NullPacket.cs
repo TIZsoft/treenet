@@ -1,4 +1,6 @@
-﻿namespace Tizsoft.Treenet
+﻿using Tizsoft.Treenet.Interface;
+
+namespace Tizsoft.Treenet
 {
     public class NullPacket : IPacket
     {

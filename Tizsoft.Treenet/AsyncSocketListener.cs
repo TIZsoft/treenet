@@ -63,7 +63,7 @@ namespace Tizsoft.Treenet
         /// <param name="socketOperation">SocketAsyncEventArg associated with the completed receive operation.</param>
         void OnAsyncAcceptCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
-            Debug.Assert(_asyncAcceptOperation.LastOperation != SocketAsyncOperation.Accept);
+            Debug.Assert(_asyncAcceptOperation.LastOperation == SocketAsyncOperation.Accept);
             ProcessAccept(socketOperation);
         }
 
@@ -81,6 +81,7 @@ namespace Tizsoft.Treenet
                 _workingConnections.Add(newConnection);
                 GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
                 GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+                GLogger.Debug(string.Format("可連線數: {0}", _connectionPool.Count));
                 Notify(newConnection, true);
             }
             else
@@ -139,8 +140,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception exception)
             {
-                // TODO: The situation is that the socket is already closed/disposed. Log level can be ERROR.
-                GLogger.Fatal(exception);
+                GLogger.Error(exception);
             }
             finally
             {
@@ -167,8 +167,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception exception)
             {
-                // TODO: The situation is that the socket is already closed/disposed. Log level can be ERROR.
-                GLogger.Fatal(exception);
+                GLogger.Error(exception);
             }
             finally
             {
@@ -211,9 +210,9 @@ namespace Tizsoft.Treenet
                 _heartBeatTimer.Dispose();
 
             _heartBeatTimer = new Timer(_config.TimeOut);
-            _heartBeatTimer.AutoReset = true;
+            _heartBeatTimer.AutoReset = false;
             _heartBeatTimer.Elapsed += HeartBeatTimerOnElapsed;
-            _heartBeatTimer.Start();
+            //_heartBeatTimer.Start();
         }
 
         void HeartBeatTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
@@ -221,7 +220,7 @@ namespace Tizsoft.Treenet
             if (_workingConnections.Count == 0)
                 return;
 
-            _heartBeatTimer.Stop();
+            //_heartBeatTimer.Stop();
 
             foreach (var workingConnection in _workingConnections)
             {
@@ -314,6 +313,7 @@ namespace Tizsoft.Treenet
                 
             GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
             GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+            GLogger.Debug(string.Format("可連線數: {0}", _connectionPool.Count));
             Notify(connection, false);
         }
 

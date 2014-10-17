@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Sockets;
 using Tizsoft.Collections;
 using Tizsoft.Log;
+using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -14,6 +15,7 @@ namespace Tizsoft.Treenet
         List<SocketAsyncEventArgs> _workingAsyncSendOps;
         readonly IPacketContainer _sendPacketContainer = new PacketContainer();
         byte[] _sendBuffer;
+        ICryptoProvider _crypto;
         int _bufferSize;
 
         void OnAsyncComplete(object sender, SocketAsyncEventArgs args)
@@ -36,7 +38,7 @@ namespace Tizsoft.Treenet
 
             if (e.SocketError == SocketError.Success)
             {
-                GLogger.Debug(string.Format("send <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color> finish!", e.BytesTransferred, connection.DestAddress));
+                GLogger.Debug(string.Format("sent <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>", e.BytesTransferred, connection.DestAddress));
             }
             else
             {
@@ -65,6 +67,7 @@ namespace Tizsoft.Treenet
                 return;
 
             int msgSize;
+
             using (var stream = new MemoryStream(_sendBuffer))
             {
                 using (var writer = new BinaryWriter(stream))
@@ -73,11 +76,19 @@ namespace Tizsoft.Treenet
                     writer.Write(false);  //compression now set to false
                     writer.Write((byte)packet.PacketType);
                     var content = packet.Content;
-                    writer.Write(content.Length);
-                    writer.Write(content);
-                    msgSize = (int)stream.Position;
+
+                    if (content.Length + stream.Position <= _sendBuffer.Length)
+                    {
+                        writer.Write(content.Length);
+                        writer.Write(content);
+                    }
+
+                    msgSize = (int)stream.Position;    
                 }
             }
+
+            if (_crypto != null)
+                _sendBuffer = _crypto.Encrypt(_sendBuffer, 0, msgSize);
 
             // BUG: Possible expected an InvalidOperationException when send operation called too many times at same time.
             var asyncSendOp = _asyncSendOpPool.Pop();
@@ -88,9 +99,15 @@ namespace Tizsoft.Treenet
             
             var connector = packet.Connection.ConnectSocket;
 
-            // BUG: Possible connection is not connected or has been closed/disposed or is a null reference.
-            if (!connector.SendAsync(asyncSendOp))
-                ProcessSend(asyncSendOp);
+            try
+            {
+                if (!connector.SendAsync(asyncSendOp))
+                    ProcessSend(asyncSendOp);
+            }
+            catch (Exception)
+            {
+                packet.Connection.Dispose();
+            }
         }
 
         void FreeWorkingAsyncSendOps()
@@ -108,12 +125,13 @@ namespace Tizsoft.Treenet
                     if (socketAsyncEventArgse.AcceptSocket != null)
                     {
                         socketAsyncEventArgse.AcceptSocket.Shutdown(SocketShutdown.Both);
+                        socketAsyncEventArgse.AcceptSocket.Close();
                         socketAsyncEventArgse.AcceptSocket.Dispose();
                     }
                 }
                 catch (Exception e)
                 {
-                    GLogger.Fatal(e);
+                    GLogger.Error(e);
                     throw;
                 }
                 finally
@@ -125,8 +143,9 @@ namespace Tizsoft.Treenet
             _workingAsyncSendOps.Clear();
         }
 
-        public void Setup(BufferManager bufferManager, int asyncCount)
+        public void Setup(BufferManager bufferManager, int asyncCount, ICryptoProvider crypto)
         {
+            _crypto = crypto;
             _bufferSize = bufferManager.BufferSize;
             _sendBuffer = new byte[_bufferSize];
             _sendPacketContainer.Clear();

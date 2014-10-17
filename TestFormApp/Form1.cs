@@ -27,6 +27,8 @@ namespace TestFormApp
         private ConnectService _connectService;
         readonly CacheUserData _cacheUserData;
         TizIdManager _idManager;
+        byte[] _largeBytes;
+        bool _largeTest;
 
         void ReadServerConfig()
         {
@@ -143,6 +145,7 @@ namespace TestFormApp
                             if (null == userData)
                             {
                                 userData = _dbQuery.CreateNewUser(GuidUtil.New());
+                                _cacheUserData.Add(userData);
                             }
                             response.Add("param", new Dictionary<string, object>
                             {
@@ -252,6 +255,7 @@ namespace TestFormApp
             InitConnectorPacketParser();
             InitDatabaseConnector();
             Application.ApplicationExit += AppClose;
+            _largeBytes = new byte[512];
         }
 
         private void PortTextBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -314,6 +318,11 @@ namespace TestFormApp
             {
                 CheckServiceStatus();
             }
+
+            if (_connectService.IsWorking && _largeTest)
+            {
+                _connectService.Send(_largeBytes, PacketType.Stream);
+            }
         }
 
         private void GameUpdateTimer_Tick(object sender, EventArgs e)
@@ -341,9 +350,15 @@ namespace TestFormApp
 
         private void button1_Click(object sender, EventArgs e)
         {
-            TestCreateAccount();
+            TestLargePacket();
+            //TestCreateAccount();
             //TestSendEchoPack();
             //TestWriteUserDataBack();
+        }
+
+        void TestLargePacket()
+        {
+            _largeTest = !_largeTest;
         }
 
         void TestWriteUserDataBack()

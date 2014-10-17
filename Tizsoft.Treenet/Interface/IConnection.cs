@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Net.Sockets;
-using Tizsoft.Treenet.Interface;
 
-namespace Tizsoft.Treenet
+namespace Tizsoft.Treenet.Interface
 {
     public interface IConnection : IDisposable, IConnectionSubject
     {

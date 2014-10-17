@@ -21,6 +21,8 @@ namespace Tizsoft.Treenet
 
         public const double DefaultTimeOut = 5000f;
 
+        public const string DefaultXorKey = "Tizsoft";
+
         public static byte[] CheckFlags
         {
             get
@@ -31,19 +33,19 @@ namespace Tizsoft.Treenet
                     {
                         using (var writer = new BinaryWriter(stream))
                         {
-                            writer.Write(0x54);
+                            //writer.Write(0x54);
                             writer.Write("鈦");
-                            writer.Write(0x33);
+                            //writer.Write(0x33);
                             writer.Write("甲");
-                            writer.Write(0x23);
+                            //writer.Write(0x23);
                             writer.Write("數");
-                            writer.Write(0x37);
+                            //writer.Write(0x37);
                             writer.Write("位");
-                            writer.Write(0x02);
+                            //writer.Write(0x02);
                             writer.Write("科");
-                            writer.Write(0x8770);
+                            //writer.Write(0x8770);
                             writer.Write("技");
-                            writer.Write(0x7592);
+                            //writer.Write(0x7592);
                             _packetHeader = stream.ToArray();
                         }
                     }
@@ -93,11 +95,18 @@ namespace Tizsoft.Treenet
 
         public static bool HasValidHeader(byte[] msg, int msgOffset, int msgCount)
         {
-            if (msgCount >= CheckFlagSize)
+            return HasValidHeader(CheckFlags, msg, msgOffset, msgCount);
+        }
+
+        public static bool HasValidHeader(byte[] header, byte[] msg, int msgOffset, int msgCount)
+        {
+            var checkFlags = header == null ? CheckFlags : header;
+
+            if (msgCount >= checkFlags.Length)
             {
-                for (var i = 0; i < CheckFlags.Length; i++)
+                for (var i = 0; i < checkFlags.Length; i++)
                 {
-                    if (msg[i + msgOffset] != CheckFlags[i])
+                    if (msg[i + msgOffset] != checkFlags[i])
                         return false;
                 }
 

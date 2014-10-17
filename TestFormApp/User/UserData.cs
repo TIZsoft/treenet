@@ -29,6 +29,36 @@ namespace TestFormApp.User
         public List<IdLevelData> Treasures { get; private set; }
         public List<IdLevelData> Attributes { get; private set; }
 
+        string GetIdColumn(IdLevelType type)
+        {
+            switch (type)
+            {
+                case IdLevelType.Character:
+                    return CharacterTable.IdColumn;
+
+                case IdLevelType.Skateboard:
+                    return SkateBoardTable.IdColumn;
+
+                default:
+                    return TreasureTable.IdColumn;
+            }
+        }
+
+        string GetLevelColumn(IdLevelType type)
+        {
+            switch (type)
+            {
+                case IdLevelType.Character:
+                    return CharacterTable.IdColumn;
+
+                case IdLevelType.Skateboard:
+                    return SkateBoardTable.IdColumn;
+
+                default:
+                    return TreasureTable.IdColumn;
+            }
+        }
+
         public UserData()
         {
             Characters = new List<IdLevelData>(GameConfig.MaxCharactersAvailable);
@@ -74,61 +104,20 @@ namespace TestFormApp.User
             }
         }
 
-        public void SetCharacterData(List<Dictionary<string, object>> data)
+        public void SetIdLevelData(List<Dictionary<string, object>> data, IdLevelType type)
         {
-            if (data == null)
-                return;
+            var source = GetIdLevelDataByType(type);
 
-            Characters.Clear();
+            source.Clear();
 
-            foreach (var character in data)
+            foreach (var idLevelData in data)
             {
-                if (character != null)
+                if (idLevelData != null)
                 {
-                    Characters.Add(new IdLevelData()
+                    source.Add(new IdLevelData()
                     {
-                        Id = (byte)character[CharacterTable.IdColumn],
-                        Level = (byte)character[CharacterTable.LevelColumn]
-                    });    
-                }
-            }
-        }
-
-        public void SetSkateBoardData(List<Dictionary<string, object>> data)
-        {
-            if (data == null)
-                return;
-
-            SkateBoards.Clear();
-
-            foreach (var skateboard in data)
-            {
-                if (skateboard != null)
-                {
-                    SkateBoards.Add(new IdLevelData()
-                    {
-                        Id = (byte)skateboard[SkateBoardTable.IdColumn],
-                        Level = (byte)skateboard[SkateBoardTable.LevelColumn]
-                    });
-                }
-            }
-        }
-
-        public void SetTreasureData(List<Dictionary<string, object>> data)
-        {
-            if (data == null)
-                return;
-
-            Treasures.Clear();
-
-            foreach (var treasure in data)
-            {
-                if (treasure != null)
-                {
-                    Treasures.Add(new IdLevelData()
-                    {
-                        Id = (byte)treasure[TreasureTable.IdColumn],
-                        Level = (byte)treasure[TreasureTable.LevelColumn]
+                        Id = (byte)idLevelData[GetIdColumn(type)],
+                        Level = (byte)idLevelData[GetLevelColumn(type)]
                     });
                 }
             }
@@ -162,29 +151,7 @@ namespace TestFormApp.User
         public List<List<object>> GetIdLevelDataWriteBackList(IdLevelType type)
         {
             var result = new List<List<object>>();
-            List<IdLevelData> source = null;
-            switch (type)
-            {
-                case IdLevelType.Character:
-                    source = Characters;
-                    break;
-
-                case IdLevelType.Skateboard:
-                    source = SkateBoards;
-                    break;
-
-                case IdLevelType.Item:
-                    source = Items;
-                    break;
-
-                case IdLevelType.Treasure:
-                    source = Treasures;
-                    break;
-
-                default:
-                    source = Attributes;
-                    break;
-            }
+            var source = GetIdLevelDataByType(type);
 
             foreach (var data in source)
             {
@@ -196,6 +163,27 @@ namespace TestFormApp.User
             }
 
             return result;
+        }
+
+        List<IdLevelData> GetIdLevelDataByType(IdLevelType type)
+        {
+            switch (type)
+            {
+                case IdLevelType.Character:
+                    return Characters;
+
+                case IdLevelType.Skateboard:
+                    return SkateBoards;
+
+                case IdLevelType.Item:
+                    return Items;
+
+                case IdLevelType.Treasure:
+                    return Treasures;
+
+                default:
+                    return Attributes;
+            }
         }
     }
 }

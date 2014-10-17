@@ -1,4 +1,4 @@
-﻿namespace Tizsoft.Treenet
+﻿namespace Tizsoft.Treenet.Interface
 {
     public interface IPacket
     {

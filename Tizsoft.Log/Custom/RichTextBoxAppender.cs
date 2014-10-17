@@ -61,6 +61,7 @@ namespace Tizsoft.Log.Custom
                 }
             }
             _richTextBox.AppendText(RenderLoggingEvent(loggingEvent));
+            _richTextBox.ScrollToCaret();
         }
 
         protected override void Append(LoggingEvent loggingEvent)

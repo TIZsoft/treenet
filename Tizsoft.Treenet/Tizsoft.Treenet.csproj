@@ -51,11 +51,11 @@
     <Compile Include="BufferPool.cs" />
     <Compile Include="ClientConfig.cs" />
     <Compile Include="ConnectService.cs" />
-    <Compile Include="IConnection.cs" />
+    <Compile Include="Interface\IConnection.cs" />
     <Compile Include="Interface\IService.cs" />
-    <Compile Include="IPacket.cs" />
-    <Compile Include="NullConnection.cs" />
-    <Compile Include="NullPacket.cs" />
+    <Compile Include="Interface\IPacket.cs" />
+    <Compile Include="Null Objects\NullConnection.cs" />
+    <Compile Include="Null Objects\NullPacket.cs" />
     <Compile Include="PacketSender.cs" />
     <Compile Include="PacketType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -78,11 +78,14 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Diagnostics\" />
-    <Folder Include="Null Objects\" />
     <Folder Include="Security\" />
     <Folder Include="Web\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Tizsoft.IO\Tizsoft.IO.csproj">
+      <Project>{206daaad-628b-46a9-8366-8cca080b1991}</Project>
+      <Name>Tizsoft.IO</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tizsoft.Log\Tizsoft.Log.csproj">
       <Project>{5E9944F3-3139-4566-A4A5-BBA5096DB799}</Project>
       <Name>Tizsoft.Log</Name>

@@ -1,5 +1,6 @@
 ﻿using System;
 using Tizsoft.Collections;
+using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -50,7 +51,8 @@ namespace Tizsoft.Treenet
             InitConnectionPool(config.MaxConnections, _packetContainer);
             var sendConnection = Math.Max(1, config.MaxConnections / 10);
             _sendBufferManager.InitBuffer(sendConnection * config.BufferSize, config.BufferSize);
-            _packetSender.Setup(_sendBufferManager, config.MaxConnections / 10);
+            _packetSender.Setup(_sendBufferManager, config.MaxConnections / 10, new XorCryptoProvider(Network.DefaultXorKey));
+            _packetContainer.Setup(new XorCryptoProvider(Network.DefaultXorKey));
             
             _socketListener.Setup(config, _connectionPool);
         }
