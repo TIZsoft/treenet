@@ -13,6 +13,16 @@ namespace Tizsoft.IO.Compression
 
         public static void Compress(Stream inStream, Stream outStream, EventHandler<EventArgs> onFinished)
         {
+            Compress(inStream, outStream,
+                CompressionLevel.Normal, CompressionMethod.Default,
+                onFinished);
+        }
+
+        public static void Compress(Stream inStream, Stream outStream,
+            CompressionLevel level,
+            CompressionMethod method,
+            EventHandler<EventArgs> onFinished)
+        {
             if (null == inStream)
             {
                 throw new ArgumentNullException("inStream");
@@ -29,6 +39,8 @@ namespace Tizsoft.IO.Compression
             {
                 compressor.CompressionFinished += onFinished;
             }
+            compressor.CompressionLevel = level;
+            compressor.CompressionMethod = method;
 
             // compress
             compressor.CompressStream(inStream, outStream);
