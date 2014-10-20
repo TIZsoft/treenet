@@ -53,6 +53,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Security.Tests", "T
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integrations", "Integrations", "{57644D4A-D8DE-4D04-8876-DD665F6F1750}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet.IntegrationTests", "Tests\Integrations\Tizsoft.Treenet.IntegrationTests\Tizsoft.Treenet.IntegrationTests.csproj", "{C4439364-EA5C-4B7A-AF77-6626EEF55F6E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -107,6 +109,10 @@ Global
 		{DF19B51C-548B-42DC-96EF-80FEA367CB82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF19B51C-548B-42DC-96EF-80FEA367CB82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF19B51C-548B-42DC-96EF-80FEA367CB82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4439364-EA5C-4B7A-AF77-6626EEF55F6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4439364-EA5C-4B7A-AF77-6626EEF55F6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4439364-EA5C-4B7A-AF77-6626EEF55F6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4439364-EA5C-4B7A-AF77-6626EEF55F6E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -116,5 +122,6 @@ Global
 		{1CC47A14-2240-4820-9943-4EFBD18613C5} = {BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}
 		{DF19B51C-548B-42DC-96EF-80FEA367CB82} = {BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}
 		{57644D4A-D8DE-4D04-8876-DD665F6F1750} = {BC4844E3-F8A4-4A6C-8388-6DDC73BD898C}
+		{C4439364-EA5C-4B7A-AF77-6626EEF55F6E} = {57644D4A-D8DE-4D04-8876-DD665F6F1750}
 	EndGlobalSection
 EndGlobal

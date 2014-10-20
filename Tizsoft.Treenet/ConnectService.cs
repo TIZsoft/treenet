@@ -42,7 +42,7 @@ namespace Tizsoft.Treenet
 
         public void Start()
         {
-            _connector.Connect();
+            _connector.StartConnect();
             IsWorking = true;
         }
 

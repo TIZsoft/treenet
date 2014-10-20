@@ -8,7 +8,6 @@ namespace Tizsoft.Treenet
 {
     // TODO: “TCP does not operate on packets of data. TCP operates on streams of data.”
     // TODO: Message framing.
-    // TODO: Current version possible cannot handle multiple connection requests efficiently.
     public class Connection : IConnection
     {
         static readonly IConnection NullConnection = new NullConnection();
@@ -17,10 +16,10 @@ namespace Tizsoft.Treenet
 
         bool _isActive;
 
-        readonly SocketAsyncEventArgs _receiveAsyncArgs;
+        readonly SocketAsyncEventArgs _socketOperation;
         readonly PacketSender _packetSender;
         readonly IPacketContainer _packetContainer;
-        readonly List<IConnectionObserver> _observers = new List<IConnectionObserver>();
+        readonly HashSet<IConnectionObserver> _observers = new HashSet<IConnectionObserver>();
 
         public bool IsNull { get { return false; } }
 
@@ -28,14 +27,14 @@ namespace Tizsoft.Treenet
 
         public Socket ConnectSocket { get; private set; }
 
-        void OnAsyncReceiveComplete(object sender, SocketAsyncEventArgs args)
+        void OnAsyncReceiveCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
-            GLogger.Debug(string.Format("async {0} complete with result {1}", args.LastOperation, args.SocketError));
+            GLogger.Debug("async {0} complete with result {1}", socketOperation.LastOperation, socketOperation.SocketError);
 
-            switch (args.LastOperation)
+            switch (socketOperation.LastOperation)
             {
                 case SocketAsyncOperation.Receive:
-                    ReceiveResult(args);
+                    ProcessReceive(socketOperation);
                     break;
             }
         }
@@ -44,21 +43,22 @@ namespace Tizsoft.Treenet
         /// This method is invoked when an asynchronous receive operation completes.<br />
         /// If the remote host closed the socket, then the socket is closed.
         /// </summary>
-        void ReceiveResult(SocketAsyncEventArgs args)
+        void ProcessReceive(SocketAsyncEventArgs receiveOperation)
         {
             // Check if the remote host closed the socket.
-            if (args.SocketError == SocketError.Success)
+            if (receiveOperation.SocketError == SocketError.Success)
             {
                 // Client has been disconnected.
-                if (args.BytesTransferred == 0)
+                if (receiveOperation.BytesTransferred == 0)
                 {
                     Dispose();
                     return;
                 }
-                if (args.BytesTransferred > Network.PacketMinSize)
+
+                if (receiveOperation.BytesTransferred > Network.PacketMinSize)
                 {
-                    var buffer = new byte[args.BytesTransferred];
-                    Buffer.BlockCopy(args.Buffer, args.Offset, buffer, 0, args.BytesTransferred);
+                    var buffer = new byte[receiveOperation.BytesTransferred];
+                    Buffer.BlockCopy(receiveOperation.Buffer, receiveOperation.Offset, buffer, 0, receiveOperation.BytesTransferred);
                     _packetContainer.ValidatePacket(this, buffer);
                 }
 
@@ -72,8 +72,14 @@ namespace Tizsoft.Treenet
 
         void StartReceive()
         {
-            if (!ConnectSocket.ReceiveAsync(_receiveAsyncArgs))
-                ReceiveResult(_receiveAsyncArgs);
+            var willRaiseEvent = ConnectSocket.ReceiveAsync(_socketOperation);
+
+            if (willRaiseEvent)
+            {
+                return;
+            }
+
+            ProcessReceive(_socketOperation);
         }
 
         void CloseConnectSocket()
@@ -86,9 +92,8 @@ namespace Tizsoft.Treenet
             try
             {
                 ConnectSocket.Shutdown(SocketShutdown.Both);
-                ConnectSocket.DisconnectAsync(_receiveAsyncArgs);
+                ConnectSocket.DisconnectAsync(_socketOperation);
                 ConnectSocket.Close();
-                ConnectSocket.Dispose();
             }
             catch (Exception e)
             {
@@ -112,8 +117,8 @@ namespace Tizsoft.Treenet
             if (packetSender == null)
                 throw new ArgumentNullException("packetSender");
             
-            _receiveAsyncArgs = new SocketAsyncEventArgs();
-            bufferManager.SetBuffer(_receiveAsyncArgs);
+            _socketOperation = new SocketAsyncEventArgs();
+            bufferManager.SetBuffer(_socketOperation);
             _packetContainer = packetContainer;
             _packetSender = packetSender;
         }
@@ -130,10 +135,15 @@ namespace Tizsoft.Treenet
 
         public void SetConnection(Socket socket)
         {
+            if (socket == null)
+            {
+                throw new ArgumentNullException("socket");
+            }
+
             _isActive = true;
             ConnectSocket = socket;
-            DestAddress = ConnectSocket.RemoteEndPoint.ToString();
-            _receiveAsyncArgs.Completed += OnAsyncReceiveComplete;
+            DestAddress = socket.RemoteEndPoint.ToString();
+            _socketOperation.Completed += OnAsyncReceiveCompleted;
             StartReceive();
         }
 
@@ -150,7 +160,7 @@ namespace Tizsoft.Treenet
             if (_isActive)
             {
                 _isActive = false;
-                _receiveAsyncArgs.Completed -= OnAsyncReceiveComplete;
+                _socketOperation.Completed -= OnAsyncReceiveCompleted;
                 CloseConnectSocket();
                 Notify(this, false);
             }
@@ -166,8 +176,7 @@ namespace Tizsoft.Treenet
             if (observer == null)
                 return;
 
-            if (!_observers.Contains(observer))
-                _observers.Add(observer);
+            _observers.Add(observer);
         }
 
         public void Unregister(IConnectionObserver observer)

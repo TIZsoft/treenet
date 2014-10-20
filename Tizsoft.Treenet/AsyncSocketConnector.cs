@@ -9,32 +9,32 @@ namespace Tizsoft.Treenet
 {
     public class AsyncSocketConnector : IConnectionSubject, IConnectionObserver
     {
-        readonly List<IConnectionObserver> _connectionObservers = new List<IConnectionObserver>();
+        readonly HashSet<IConnectionObserver> _connectionObservers = new HashSet<IConnectionObserver>();
         readonly List<IConnection> _workingConnections = new List<IConnection>();
-        SocketAsyncEventArgs _connectArgs;
+        SocketAsyncEventArgs _connectOperation;
         FixedSizeObjPool<IConnection> _connectionPool;
         ClientConfig _clientConfig;
 
-        void OnConnectComplete(object sender, SocketAsyncEventArgs args)
+        void OnConnectCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
-            switch (args.LastOperation)
+            switch (socketOperation.LastOperation)
             {
                 case SocketAsyncOperation.Connect:
-                    ConnectResult(args);
+                    ProcessConnect(socketOperation);
                     break;
             }
         }
 
-        IConnection NewConnection(Socket socket)
+        IConnection CreateNewConnection(Socket socket)
         {
             var connection = _connectionPool.Pop();
             connection.SetConnection(socket);
             return connection;
         }
 
-        void ConnectResult(SocketAsyncEventArgs args)
+        void ProcessConnect(SocketAsyncEventArgs connectOperation)
         {
-            switch (args.SocketError)
+            switch (connectOperation.SocketError)
             {
                 case SocketError.Success:
                     if (_connectionPool.Count <= 0)
@@ -43,42 +43,48 @@ namespace Tizsoft.Treenet
                         return;
                     }
 
-                    var newConnection = NewConnection(args.AcceptSocket);
+                    var newConnection = CreateNewConnection(connectOperation.AcceptSocket);
                     _workingConnections.Add(newConnection);
-                    GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
-                    GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+                    GLogger.Debug("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress);
+                    GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
                     Notify(newConnection, true);
                     break;
 
                 default:
-                    GLogger.Debug(string.Format("因為 {0} ，所以無法連線", args.SocketError));
+                    GLogger.Debug("因為 {0} ，所以無法連線", connectOperation.SocketError);
                     Notify(Connection.Null, false);
                     break;
             }
         }
 
-        void InitConnectArgs(ClientConfig config)
+        void InitConnectOperation(ClientConfig config)
         {
-            if (_connectArgs != null)
-                _connectArgs.Dispose();
+            if (_connectOperation != null)
+                _connectOperation.Dispose();
 
-            _connectArgs = new SocketAsyncEventArgs
+            _connectOperation = new SocketAsyncEventArgs
             {
                 AcceptSocket = new Socket(AddressFamily.InterNetwork, config.TransferType, config.UseProtocol)
             };
 
             var endPoint = Network.GetIpEndPoint(config.Address, config.Port);
-            _connectArgs.RemoteEndPoint = endPoint;
-            _connectArgs.Completed += OnConnectComplete;
+            _connectOperation.RemoteEndPoint = endPoint;
+            _connectOperation.Completed += OnConnectCompleted;
         }
 
-        public void Connect()
+        public void StartConnect()
         {
-            if (_connectArgs == null)
-                InitConnectArgs(_clientConfig);
+            if (_connectOperation == null)
+                InitConnectOperation(_clientConfig);
 
-            if (!_connectArgs.AcceptSocket.ConnectAsync(_connectArgs))
-                ConnectResult(_connectArgs);
+            var willRaiseEvent = _connectOperation.AcceptSocket.ConnectAsync(_connectOperation);
+
+            if (willRaiseEvent)
+            {
+                return;
+            }
+
+            ProcessConnect(_connectOperation);
         }
 
         public void Setup(EventArgs configArgs, FixedSizeObjPool<IConnection> connectionPool)
@@ -89,7 +95,7 @@ namespace Tizsoft.Treenet
                 throw new InvalidCastException("config");
 
             _connectionPool = connectionPool;
-            InitConnectArgs(_clientConfig);
+            InitConnectOperation(_clientConfig);
         }
 
         public void Stop()
@@ -106,10 +112,11 @@ namespace Tizsoft.Treenet
 
         void FreeConnectComponent()
         {
-            if (_connectArgs != null)
-                _connectArgs.Dispose();
-            _connectArgs = null;
+            if (_connectOperation != null)
+                _connectOperation.Dispose();
+            _connectOperation = null;
         }
+
 
         #region IConnectionSubject Members
 
@@ -126,7 +133,7 @@ namespace Tizsoft.Treenet
 
         void RemoveNullConnectionObservers()
         {
-            _connectionObservers.RemoveAll(observer => observer == null);
+            _connectionObservers.RemoveWhere(observer => observer == null);
         }
 
         public void Notify(IConnection connection, bool isConnected)
@@ -139,11 +146,12 @@ namespace Tizsoft.Treenet
 
         #endregion
 
+
         #region IConnectionObserver Members
 
-        public void GetConnectionEvent(IConnection connection, bool isConnect)
+        public void GetConnectionEvent(IConnection connection, bool isConnected)
         {
-            if (isConnect)
+            if (isConnected)
                 return;
 
             FreeConnectComponent();
@@ -153,8 +161,8 @@ namespace Tizsoft.Treenet
                 _connectionPool.Push(connection);
             }
 
-            GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
-            GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+            GLogger.Debug("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress);
+            GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
             Notify(connection, false);
         }
 

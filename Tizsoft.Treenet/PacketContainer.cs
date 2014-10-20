@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
@@ -7,13 +7,19 @@ namespace Tizsoft.Treenet
 {
     public class PacketContainer : IPacketContainer
     {
-        readonly Queue<IPacket> _queueingPackets = new Queue<IPacket>();
-        readonly Queue<IPacket> _unusedPackets = new Queue<IPacket>();
+        readonly ConcurrentQueue<IPacket> _queueingPackets = new ConcurrentQueue<IPacket>();
+        readonly ConcurrentQueue<IPacket> _unusedPackets = new ConcurrentQueue<IPacket>();
         ICryptoProvider _crypto;
 
         IPacket GetUnusedPacket()
         {
-            return _unusedPackets.Count != 0 ? _unusedPackets.Dequeue() : new Packet();
+            IPacket packet;
+            if (_unusedPackets.TryDequeue(out packet))
+            {
+                return packet;
+            }
+
+            return new Packet();
         }
 
         #region IPacketContainer Members
@@ -46,7 +52,13 @@ namespace Tizsoft.Treenet
         public void Clear()
         {
             while (_queueingPackets.Count > 0)
-                RecyclePacket(_queueingPackets.Dequeue());
+            {
+                IPacket packet;
+                if (_queueingPackets.TryDequeue(out packet))
+                {
+                    RecyclePacket(packet);
+                }
+            }
         }
 
         public void ValidatePacket(IConnection connection, byte[] buffer)
@@ -66,7 +78,7 @@ namespace Tizsoft.Treenet
                 var contentSize = BitConverter.ToInt32(buffer, bufferPos);
                 bufferPos += sizeof(int);
 
-                if (contentSize + bufferPos < buffer.Length)
+                if (contentSize + bufferPos <= buffer.Length)
                 {
                     var contentBuffer = new byte[contentSize];
                     Buffer.BlockCopy(buffer, bufferPos, contentBuffer, 0, contentSize);
@@ -77,7 +89,13 @@ namespace Tizsoft.Treenet
 
         public IPacket NextPacket()
         {
-            return _queueingPackets.Count > 0 ? _queueingPackets.Dequeue() : Packet.Null;
+            IPacket packet;
+            if (_queueingPackets.TryDequeue(out packet))
+            {
+                return packet;
+            }
+
+            return Packet.Null;
         }
 
         #endregion

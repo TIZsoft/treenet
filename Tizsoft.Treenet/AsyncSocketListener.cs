@@ -79,9 +79,9 @@ namespace Tizsoft.Treenet
 
                 var newConnection = CreateNewConnection(acceptOperation.AcceptSocket);
                 _workingConnections.Add(newConnection);
-                GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
-                GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
-                GLogger.Debug(string.Format("可連線數: {0}", _connectionPool.Count));
+                GLogger.Debug("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress);
+                GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+                GLogger.Debug("可連線數: {0}", _connectionPool.Count);
                 Notify(newConnection, true);
             }
             else
@@ -270,8 +270,7 @@ namespace Tizsoft.Treenet
             if (observer == null)
                 return;
 
-            if (!_observers.Contains(observer))
-                _observers.Add(observer);
+            _observers.Add(observer);
         }
 
         public void Unregister(IConnectionObserver observer)
@@ -289,6 +288,7 @@ namespace Tizsoft.Treenet
             if (connection == null)
                 return;
 
+            // O(2n) where n is count of observers.
             RemoveNullObservers();
 
             foreach (var observer in _observers)
@@ -311,9 +311,9 @@ namespace Tizsoft.Treenet
                 _connectionPool.Push(connection);    
             }
                 
-            GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
-            GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
-            GLogger.Debug(string.Format("可連線數: {0}", _connectionPool.Count));
+            GLogger.Debug("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress);
+            GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+            GLogger.Debug("可連線數: {0}", _connectionPool.Count);
             Notify(connection, false);
         }
 
