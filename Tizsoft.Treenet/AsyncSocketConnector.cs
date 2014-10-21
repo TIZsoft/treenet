@@ -114,9 +114,9 @@ namespace Tizsoft.Treenet
         {
             if (_connectOperation != null)
                 _connectOperation.Dispose();
+                
             _connectOperation = null;
         }
-
 
         #region IConnectionSubject Members
 
@@ -145,7 +145,6 @@ namespace Tizsoft.Treenet
         }
 
         #endregion
-
 
         #region IConnectionObserver Members
 

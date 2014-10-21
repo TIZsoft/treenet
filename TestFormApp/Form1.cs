@@ -22,7 +22,6 @@ namespace TestFormApp
         DatabaseQuery _dbQuery;
         UserData _user = new UserData();
         private ServerConfig _serverConfig;
-        private LogPrinter _logPrinter;
         private ListenService _listenService;
         private ConnectService _connectService;
         readonly CacheUserData _cacheUserData;
@@ -246,7 +245,7 @@ namespace TestFormApp
         {
             InitializeComponent();
             ReadServerConfig();
-            _logPrinter = new LogPrinter(LogMsgrichTextBox, 100);
+            //_logPrinter = new LogPrinter(LogMsgrichTextBox, 100);
             InitTizIdManager();
             _cacheUserData = new CacheUserData();
             _listenService = new ListenService();
@@ -350,7 +349,7 @@ namespace TestFormApp
 
         private void button1_Click(object sender, EventArgs e)
         {
-            TestLargePacket();
+            //TestLargePacket();
             //TestCreateAccount();
             //TestSendEchoPack();
             //TestWriteUserDataBack();

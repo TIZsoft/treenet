@@ -57,6 +57,7 @@ namespace Tizsoft.Treenet
 
                 if (receiveOperation.BytesTransferred > Network.PacketMinSize)
                 {
+                    IdleTime = 0;
                     var buffer = new byte[receiveOperation.BytesTransferred];
                     Buffer.BlockCopy(receiveOperation.Buffer, receiveOperation.Offset, buffer, 0, receiveOperation.BytesTransferred);
                     _packetContainer.ValidatePacket(this, buffer);
@@ -92,8 +93,8 @@ namespace Tizsoft.Treenet
             try
             {
                 ConnectSocket.Shutdown(SocketShutdown.Both);
-                ConnectSocket.DisconnectAsync(_socketOperation);
-                ConnectSocket.Close();
+                ConnectSocket.Close(0);
+                ConnectSocket.Dispose();
             }
             catch (Exception e)
             {
@@ -149,9 +150,14 @@ namespace Tizsoft.Treenet
 
         public void Send(byte[] content, PacketType packetType)
         {
-            _packetSender.SendMsg(this, content, packetType);
+            if (_isActive)
+            {
+                IdleTime = 0;
+                _packetSender.SendMsg(this, content, packetType);
+            }
         }
 
+        public double IdleTime { get; set; }
 
         #region IDisposable Members
 
@@ -160,6 +166,7 @@ namespace Tizsoft.Treenet
             if (_isActive)
             {
                 _isActive = false;
+                IdleTime = 0;
                 _socketOperation.Completed -= OnAsyncReceiveCompleted;
                 CloseConnectSocket();
                 Notify(this, false);

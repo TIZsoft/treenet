@@ -14,5 +14,7 @@ namespace Tizsoft.Treenet.Interface
         void SetConnection(Socket socket);
 
         void Send(byte[] content, PacketType packetType);
+
+        double IdleTime { get; set;}
     }
 }

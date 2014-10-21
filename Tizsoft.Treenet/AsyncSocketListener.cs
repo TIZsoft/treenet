@@ -63,7 +63,7 @@ namespace Tizsoft.Treenet
         /// <param name="socketOperation">SocketAsyncEventArg associated with the completed receive operation.</param>
         void OnAsyncAcceptCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
-            Debug.Assert(_asyncAcceptOperation.LastOperation == SocketAsyncOperation.Accept);
+            Debug.Assert(socketOperation.LastOperation == SocketAsyncOperation.Accept);
             ProcessAccept(socketOperation);
         }
 
@@ -133,7 +133,7 @@ namespace Tizsoft.Treenet
 
             try
             {
-                if (_asyncAcceptOperation.AcceptSocket != null)
+                if (_asyncAcceptOperation.AcceptSocket != null && _asyncAcceptOperation.AcceptSocket.Connected)
                 {
                     _asyncAcceptOperation.AcceptSocket.Shutdown(SocketShutdown.Both);
                 }
@@ -161,19 +161,10 @@ namespace Tizsoft.Treenet
                 return;
             }
 
-            try
-            {
-                _listenSocket.Shutdown(SocketShutdown.Both);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Error(exception);
-            }
-            finally
-            {
-                _listenSocket.Close();
-                _listenSocket = null;
-            }
+            //Since the listening socket is never actually connected (it only accepts connected sockets), there is no Disconnect operation.
+            //Rather, closing a listening socket simply informs the OS that the socket is no longer listening and frees those resources immediately.
+            _listenSocket.Close();
+            _listenSocket = null;
         }
 
         public void Setup(ServerConfig config, FixedSizeObjPool<IConnection> connectionPool)
@@ -209,10 +200,10 @@ namespace Tizsoft.Treenet
             if (_heartBeatTimer != null)
                 _heartBeatTimer.Dispose();
 
-            _heartBeatTimer = new Timer(_config.TimeOut);
-            _heartBeatTimer.AutoReset = false;
+            _heartBeatTimer = new Timer(Network.DefaultTimeOutTick);
+            _heartBeatTimer.AutoReset = true;
             _heartBeatTimer.Elapsed += HeartBeatTimerOnElapsed;
-            //_heartBeatTimer.Start();
+            _heartBeatTimer.Start();
         }
 
         void HeartBeatTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
@@ -224,7 +215,10 @@ namespace Tizsoft.Treenet
 
             foreach (var workingConnection in _workingConnections)
             {
-                workingConnection.Send(null, PacketType.Stream);
+                workingConnection.IdleTime += Network.DefaultTimeOutTick;
+
+                if (workingConnection.IdleTime > _config.TimeOut)
+                    workingConnection.Send(null, PacketType.Stream);
             }
         }
 

@@ -21,6 +21,8 @@ namespace Tizsoft.Treenet
 
         public const double DefaultTimeOut = 5000f;
 
+        public const double DefaultTimeOutTick = 1000f;
+
         public const string DefaultXorKey = "Tizsoft";
 
         public static byte[] CheckFlags

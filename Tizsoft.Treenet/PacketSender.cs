@@ -57,18 +57,16 @@ namespace Tizsoft.Treenet
         // TODO: Message framing.
         void StartSend()
         {
+            //check if there is any available async send operation first, then pop from send queue,
+            //otherwise packet will lost when pop first and there is no available async send operation.
+            if (_asyncSendOpPool.Count == 0)
+                return;
+
             var packet = _sendPacketContainer.NextPacket();
 
             if (packet.IsNull ||
                 packet.Connection.IsNull)
-            {
                 return;
-            }
-
-            if (_asyncSendOpPool.Count == 0)
-            {
-                return;
-            }
 
             int msgSize;
 
@@ -135,6 +133,7 @@ namespace Tizsoft.Treenet
                     if (sendOperation.AcceptSocket != null)
                     {
                         sendOperation.AcceptSocket.Shutdown(SocketShutdown.Both);
+                        sendOperation.AcceptSocket.Close();
                     }
                 }
                 catch (Exception e)
@@ -144,12 +143,9 @@ namespace Tizsoft.Treenet
                 }
                 finally
                 {
-                    if (sendOperation.AcceptSocket != null)
-                    {
-                        sendOperation.AcceptSocket.Close();
-                    }
-
+                    sendOperation.UserToken = null;
                     sendOperation.AcceptSocket = null;
+                    _asyncSendOpPool.Push(sendOperation);
                 }
             }
 

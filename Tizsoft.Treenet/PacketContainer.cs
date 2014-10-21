@@ -14,12 +14,7 @@ namespace Tizsoft.Treenet
         IPacket GetUnusedPacket()
         {
             IPacket packet;
-            if (_unusedPackets.TryDequeue(out packet))
-            {
-                return packet;
-            }
-
-            return new Packet();
+            return _unusedPackets.TryDequeue(out packet) ? packet : new Packet();
         }
 
         #region IPacketContainer Members
@@ -90,12 +85,7 @@ namespace Tizsoft.Treenet
         public IPacket NextPacket()
         {
             IPacket packet;
-            if (_queueingPackets.TryDequeue(out packet))
-            {
-                return packet;
-            }
-
-            return Packet.Null;
+            return _queueingPackets.TryDequeue(out packet) ? packet : Packet.Null;
         }
 
         #endregion

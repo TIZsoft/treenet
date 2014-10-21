@@ -46,5 +46,7 @@ namespace Tizsoft.Treenet
         {
 
         }
+
+        public double IdleTime { get; set; }
     }
 }
