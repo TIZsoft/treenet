@@ -25,6 +25,8 @@ namespace Tizsoft.Treenet.IntegrationTests
 
         public bool IsConnected { get; private set; }
 
+        public int SentCount { get; private set; }
+
         public SocketClient(ClientConfig config)
         {
             if (config == null)
@@ -125,9 +127,10 @@ namespace Tizsoft.Treenet.IntegrationTests
                     break;
                 }
 
+                ++SentCount;
                 ++processedCount;
                 _packetSender.SendMsg(_connection, packet.Content, packet.PacketType);
-                Debug.Print("[SEND] Message size={0}", packet.Content.Length);
+                Debug.Print("[SEND] Message size={0}, sent count={1}", packet.Content.Length, SentCount);
 
                 if (processedCount >= maxProcessCount)
                 {

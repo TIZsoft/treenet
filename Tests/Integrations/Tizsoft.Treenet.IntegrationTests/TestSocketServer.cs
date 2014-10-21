@@ -96,20 +96,24 @@ namespace Tizsoft.Treenet.IntegrationTests
         {
             const string address = "127.0.0.1";
             const int port = 50035;
+            var defaultBufferSize = 512 + Network.PacketMinSize;
+            const int defaultBacklog = 1000;
+            const int defaultMaxConnectionCount = 1000;
+            var defaultHeader = new byte[0];
             const double timeout = 3.0;
             const SocketType socketType = SocketType.Stream;
             const ProtocolType protocolType = ProtocolType.Tcp;
 
-            var caseSource = new CaseSource
+            var prototype = new CaseSource
             {
                 ServerConfig = new ServerConfig
                 {
                     Address = address,
                     Port = port,
-                    BufferSize = 512,
-                    Backlog = 1000,
-                    MaxConnections = 1000,
-                    Header = new byte[0],
+                    BufferSize = defaultBufferSize,
+                    Backlog = defaultBacklog,
+                    MaxConnections = defaultMaxConnectionCount,
+                    Header = defaultHeader,
                     TimeOut = timeout,
                     TransferType = socketType,
                     UseProtocol = protocolType,
@@ -118,7 +122,7 @@ namespace Tizsoft.Treenet.IntegrationTests
                 {
                     Address = address,
                     Port = port,
-                    BufferSize = 512,
+                    BufferSize = defaultBufferSize,
                     TransferType = socketType,
                     UseProtocol = protocolType,
                 },
@@ -126,92 +130,60 @@ namespace Tizsoft.Treenet.IntegrationTests
             };
 
             // Begin client count = 1
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 1,
-                ContentSize = 400,
-                SendTimes = 1
-            };
-
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 1,
-                ContentSize = 400,
-                SendTimes = 10
-            };
-
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 1,
-                ContentSize = 400,
-                SendTimes = 100
-            };
+            yield return CreateSendReceiveTestSource(prototype, 1, 1);
+            yield return CreateSendReceiveTestSource(prototype, 1, 10);
+            yield return CreateSendReceiveTestSource(prototype, 1, 100);
 
             // Begin client count = 10
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 10,
-                ContentSize = 400,
-                SendTimes = 1
-            };
-
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 10,
-                ContentSize = 400,
-                SendTimes = 10
-            };
-
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 10,
-                ContentSize = 400,
-                SendTimes = 100
-            };
+            yield return CreateSendReceiveTestSource(prototype, 10, 1);
+            yield return CreateSendReceiveTestSource(prototype, 10, 10);
+            yield return CreateSendReceiveTestSource(prototype, 10, 100);
 
             // Begin client count = 100
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 100,
-                ContentSize = 400,
-                SendTimes = 1
-            };
-
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 100,
-                ContentSize = 400,
-                SendTimes = 10
-            };
-
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 100,
-                ContentSize = 400,
-                SendTimes = 100
-            };
+            yield return CreateSendReceiveTestSource(prototype, 100, 1);
+            yield return CreateSendReceiveTestSource(prototype, 100, 10);
+            yield return CreateSendReceiveTestSource(prototype, 100, 100);
 
             // Begin client count = 1000
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 1000,
-                ContentSize = 400,
-                SendTimes = 1
-            };
+            yield return CreateSendReceiveTestSource(prototype, 1000, 1);
+            yield return CreateSendReceiveTestSource(prototype, 1000, 10);
+            yield return CreateSendReceiveTestSource(prototype, 1000, 100);
 
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 1000,
-                ContentSize = 400,
-                SendTimes = 10
-            };
+            // Begin bandwidth test
+            const int megabytes = 1024 * 1024;
 
-            yield return new CaseSource(caseSource)
-            {
-                ClientCount = 1000,
-                ContentSize = 400,
-                SendTimes = 100
-            };
+            // 1MB
+            yield return CreateBandwidthTestSource(prototype, megabytes, 1);
+
+            // 10MB
+            yield return CreateBandwidthTestSource(prototype, megabytes, 10);
+
+            // 100MB
+            yield return CreateBandwidthTestSource(prototype, megabytes, 100);
+
+            // 1000MB
+            yield return CreateBandwidthTestSource(prototype, megabytes, 1000);
+        }
+
+        static CaseSource CreateSendReceiveTestSource(CaseSource prototype, int clientCount, int sendTimes)
+        {
+            const int contentSize = 512;
+            var caseSource = new CaseSource(prototype);
+            caseSource.ServerConfig.BufferSize = caseSource.ClientConfig.BufferSize = contentSize + Network.PacketMinSize;
+            caseSource.ClientCount = clientCount;
+            caseSource.ContentSize = contentSize;
+            caseSource.SendTimes = sendTimes;
+            return caseSource;
+        }
+
+        static CaseSource CreateBandwidthTestSource(CaseSource prototype, int contentSize, int sendTimes)
+        {
+            var caseSource = new CaseSource(prototype);
+            caseSource.ServerConfig.BufferSize = caseSource.ClientConfig.BufferSize = contentSize + Network.PacketMinSize;
+            caseSource.ClientCount = 1;
+            caseSource.ContentSize = contentSize;
+            caseSource.SendTimes = sendTimes;
+            return caseSource;
         }
 
         #endregion
@@ -294,7 +266,7 @@ namespace Tizsoft.Treenet.IntegrationTests
 
             var sendContent = new byte[caseSource.ContentSize];
             var maxConnection = Math.Min(caseSource.ClientCount, caseSource.ServerConfig.MaxConnections);
-            var sendedClients = new HashSet<SocketClient>();
+            var sentClients = new HashSet<SocketClient>();
             var sendedCount = 0;
 
             while (sendedCount < maxConnection)
@@ -303,7 +275,7 @@ namespace Tizsoft.Treenet.IntegrationTests
                 {
                     if (client.IsConnected)
                     {
-                        if (sendedClients.Add(client))
+                        if (sentClients.Add(client))
                         {
                             for (var i = 0; i != caseSource.SendTimes; ++i)
                             {
@@ -316,10 +288,10 @@ namespace Tizsoft.Treenet.IntegrationTests
             }
 
             const int serverUpdateTime = 65;
-            var expectedBytesCount = caseSource.ContentSize * sendedClients.Count * caseSource.SendTimes;
-            var maxPacketProcessCount = (200 / sendedClients.Count / caseSource.SendTimes) + 1;
+            var expectedBytesCount = caseSource.ContentSize * sentClients.Count * caseSource.SendTimes;
+            var maxPacketProcessCount = (200 / sentClients.Count / caseSource.SendTimes) + 1;
 
-            Debug.Print("[INFO] Sended client count={0}, Expected byte count={1}", sendedClients.Count, expectedBytesCount);
+            Debug.Print("[INFO] Sent client count={0}, Expected byte count={1}", sentClients.Count, expectedBytesCount);
 
             while (true)
             {
@@ -328,7 +300,7 @@ namespace Tizsoft.Treenet.IntegrationTests
 
                 Thread.Sleep(1 + serverUpdateTime - remaingSleepTime);
 
-                foreach (var client in sendedClients)
+                foreach (var client in sentClients)
                 {
                     client.Update(maxPacketProcessCount);
                 }
@@ -340,7 +312,10 @@ namespace Tizsoft.Treenet.IntegrationTests
                     break;
                 }
 
-                Assert.Greater(connectedCount, 0);
+                if (caseSource.ClientCount > 1)
+                {
+                    Assert.Greater(connectedCount, 0);
+                }
             }
         }
     }

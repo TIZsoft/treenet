@@ -3,7 +3,6 @@ using System.Diagnostics;
 using Tizsoft.Collections;
 using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
-using Timer = System.Timers.Timer;
 
 namespace Tizsoft.Treenet.IntegrationTests
 {
@@ -19,7 +18,7 @@ namespace Tizsoft.Treenet.IntegrationTests
         readonly PacketSender _packetSender = new PacketSender();
 
         bool _isDisposed;
-        Stopwatch _stopwatch = new Stopwatch();
+        readonly Stopwatch _stopwatch = new Stopwatch();
 
         public SocketServer(ServerConfig config)
         {
