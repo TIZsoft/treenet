@@ -1,20 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace Tizsoft.Collections
 {
-    // TODO: Use lock-free (Interlocked) or Concurrent collections instead.
     public class FixedSizeObjPool<T> where T : class 
     {
-        readonly Stack<T> _pool;
-
+        readonly ConcurrentDictionary<int, T> _pool = new ConcurrentDictionary<int, T>();
+        readonly ConcurrentStack<int> _hash = new ConcurrentStack<int>();
+        readonly int _capacity;
+        
         /// <summary>
         /// Initializes the object pool to the specified size.<br />
         /// </summary>
         /// <param name="capacity">The maximum number of objects the pool can hold.</param>
         public FixedSizeObjPool(int capacity)
         {
-            _pool = new Stack<T>(capacity);
+            _capacity = capacity;
         }
 
         /// <summary>
@@ -23,12 +24,24 @@ namespace Tizsoft.Collections
         /// <param name="item">The T instance to add to the pool.</param>
         public void Push(T item)
         {
-            if (ReferenceEquals(item, null)) { throw new ArgumentNullException("item", "Items added to a FixedSizeObjPool cannot be null"); }
-            lock (_pool)
+            if (ReferenceEquals(item, null))
             {
-                if (!_pool.Contains(item))
-                    _pool.Push(item);
+                throw new ArgumentNullException("item", "Items added to a FixedSizeObjPool cannot be null.");
             }
+
+            if (_pool.Count > _capacity)
+            {
+                return;
+            }
+            
+            var hash = item.GetHashCode();
+            if (_pool.ContainsKey(hash))
+            {
+                return;
+            }
+
+            _hash.Push(hash);
+            _pool[hash] = item;
         }
 
         /// <summary>
@@ -37,10 +50,15 @@ namespace Tizsoft.Collections
         /// <returns></returns>
         public T Pop()
         {
-            lock (_pool)
+            int lastHash;
+            if (_hash.TryPop(out lastHash))
             {
-                return _pool.Pop();
+                T item;
+                _pool.TryRemove(lastHash, out item);
+                return item;
             }
+
+            throw new InvalidOperationException("Pop operation failure. The pool is already empty.");
         }
 
         /// <summary>
