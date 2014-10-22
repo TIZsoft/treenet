@@ -27,8 +27,8 @@ namespace Tizsoft.Treenet.IntegrationTests
                 throw new ArgumentNullException("config");
             }
             
-            _receiveBufferManager.InitBuffer(config.MaxConnections * config.BufferSize, config.BufferSize);
-            _sendBufferManager.InitBuffer(config.MaxConnections * config.BufferSize, config.BufferSize);
+            _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
+            _sendBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
 
             _packetContainer.Setup(CryptoProvider);
             _packetSender.Setup(_sendBufferManager, config.MaxConnections, CryptoProvider);

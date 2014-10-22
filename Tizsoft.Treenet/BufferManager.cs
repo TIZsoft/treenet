@@ -1,72 +1,104 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
-using Tizsoft.Log;
 
 namespace Tizsoft.Treenet
 {
     /// <summary>
-    /// This class creates a single large buffer which can be divided up  
-    /// and assigned to SocketAsyncEventArgs objects for use with each  
-    /// socket I/O operation.   
-    /// This enables bufffers to be easily reused and guards against  
-    /// fragmenting heap memory. 
-    ///  
-    /// The operations exposed on the BufferManager class are not thread safe. 
+    /// This class creates a single large buffer which can be divided up
+    /// and assigned to SocketAsyncEventArgs objects for use with each
+    /// socket I/O operation.
+    /// This enables bufffers to be easily reused and guards against
+    /// fragmenting heap memory.
+    /// 
+    /// The operations exposed on the BufferManager class are not thread safe.
     /// </summary>
     public class BufferManager
     {
-        // The total number of bytes controlled by the buffer pool.
-        int _totalBytes;
-
         // The underlying byte array maintained by the Buffer Manager.
         byte[] _buffer;
 
-        readonly Stack<int> _freeIndexPool = new Stack<int>();
-        int _currentIndex;
-        int _bufferSize;
+        // The total number of bytes controlled by the buffer pool.
+        int _segmentSize;
 
-        // Allocates buffer space used by the buffer pool.
-        public void InitBuffer(int totalBytes, int bufferSize)
+        int _currentSegmentIndex;
+
+        readonly Stack<int> _segmentIndexPool = new Stack<int>();
+        
+        public int BufferSize { get; private set; }
+
+        /// <summary>
+        /// Allocates buffer space used by the buffer pool.
+        /// </summary>
+        /// <param name="segmentCount"></param>
+        /// <param name="segmentSize"></param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <see cref="segmentCount"/> or <see cref="segmentSize"/> are less than or equal to zero.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        /// <see cref="segmentCount"/> multiplies <see cref="segmentSize"/> is greater than <see cref="System.Int32.MaxValue"/>.
+        /// </exception>
+        /// <remarks>
+        /// This method may throws an <see cref="OutOfMemoryException"/> when requires too large memory block.
+        /// </remarks>
+        public void InitBuffer(int segmentCount, int segmentSize)
         {
-            try
+            if (segmentCount <= 0)
             {
-                _totalBytes = totalBytes;
-                _currentIndex = 0;
-                _bufferSize = bufferSize;
-                _freeIndexPool.Clear();
+                throw new ArgumentOutOfRangeException("segmentCount", "Buffer count is less than or equal to zero.");
+            }
 
-                // Create one big large buffer and divide that  
-                // out to each SocketAsyncEventArgs object.
-                _buffer = new byte[_totalBytes];
-            }
-            catch (Exception e)
+            if (segmentSize <= 0)
             {
-                GLogger.Fatal(e);
+                throw new ArgumentOutOfRangeException("segmentSize", "Buffer size is less than or equal to zero.");
             }
+
+            _segmentSize = segmentSize;
+            BufferSize = checked(segmentCount * segmentSize);
+            _buffer = new byte[BufferSize];
+            _segmentIndexPool.Clear();
         }
 
         /// <summary>
         /// Assigns a buffer from the buffer pool to the  
         /// specified SocketAsyncEventArgs object.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="e"></param>
         /// <returns>If the buffer was set successfully, then returns true, otherwise returns false.</returns>
-        public bool SetBuffer(SocketAsyncEventArgs args)
+        public bool SetBuffer(SocketAsyncEventArgs e)
         {
-            if (_freeIndexPool.Count > 0)
+            if (e == null)
             {
-                args.SetBuffer(_buffer, _freeIndexPool.Pop(), _bufferSize);
+                return false;
             }
-            else
+
+            try
             {
-                if ((_totalBytes - _bufferSize) < _currentIndex)
+                if (_segmentIndexPool.Count > 0)
                 {
-                    return false;
+                    var offset = _segmentIndexPool.Pop();
+                    e.SetBuffer(_buffer, offset, _segmentSize);
                 }
-                args.SetBuffer(_buffer, _currentIndex, _bufferSize);
-                _currentIndex += _bufferSize;
+                else
+                {
+                    var remaingingBufferSize = BufferSize - _segmentSize;
+
+                    if (remaingingBufferSize < _currentSegmentIndex)
+                    {
+                        return false;
+                    }
+
+                    e.SetBuffer(_buffer, _currentSegmentIndex, _segmentSize);
+                    _currentSegmentIndex += _segmentSize;
+                }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+                return false;
+            }
+
             return true;
         }
 
@@ -74,15 +106,13 @@ namespace Tizsoft.Treenet
         /// Removes the buffer from a SocketAsyncEventArg object.<br />
         /// This frees the buffer back to the buffer pool.
         /// </summary>
-        /// <param name="args"></param>
-        public void FreeBuffer(SocketAsyncEventArgs args)
+        /// <param name="e"></param>
+        public void FreeBuffer(SocketAsyncEventArgs e)
         {
-            if (args != null)
+            if (e != null)
             {
-                _freeIndexPool.Push(args.Offset);
+                _segmentIndexPool.Push(e.Offset);
             }
         }
-
-        public int BufferSize {get { return _bufferSize; }}
     }
 }

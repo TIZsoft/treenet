@@ -16,7 +16,6 @@ namespace Tizsoft.Treenet
         readonly IPacketContainer _sendPacketContainer = new PacketContainer();
         byte[] _sendBuffer;
         ICryptoProvider _crypto;
-        int _bufferSize;
 
         void OnAsyncSendCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
@@ -57,6 +56,7 @@ namespace Tizsoft.Treenet
         // TODO: Message framing.
         void StartSend()
         {
+            // BUG: If send operations are exhausted, then the pending packets (if exist) sink into hungry until SendMsg invoking.
             //check if there is any available async send operation first, then pop from send queue,
             //otherwise packet will lost when pop first and there is no available async send operation.
             if (_asyncSendOpPool.Count == 0)
@@ -155,8 +155,7 @@ namespace Tizsoft.Treenet
         public void Setup(BufferManager bufferManager, int asyncCount, ICryptoProvider crypto)
         {
             _crypto = crypto;
-            _bufferSize = bufferManager.BufferSize;
-            _sendBuffer = new byte[_bufferSize];
+            _sendBuffer = new byte[bufferManager.BufferSize];
             _sendPacketContainer.Clear();
             FreeWorkingAsyncSendOps();
 

@@ -34,8 +34,8 @@ namespace Tizsoft.Treenet.IntegrationTests
                 throw new ArgumentNullException("config");
             }
 
-            _receiveBufferManager.InitBuffer(config.BufferSize, config.BufferSize);
-            _sendBufferManager.InitBuffer(config.BufferSize, config.BufferSize);
+            _receiveBufferManager.InitBuffer(1, config.BufferSize);
+            _sendBufferManager.InitBuffer(1, config.BufferSize);
 
             _packetSender.Setup(_sendBufferManager, 1, CryptoProvider);
             _packetContainer.Setup(CryptoProvider);

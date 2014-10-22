@@ -47,10 +47,10 @@ namespace Tizsoft.Treenet
             if (config == null)
                 throw new InvalidCastException("configArgs");
 
-            _receiveBufferManager.InitBuffer(config.MaxConnections * config.BufferSize, config.BufferSize);
+            _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
             InitConnectionPool(config.MaxConnections, _packetContainer);
             var sendConnection = Math.Max(1, config.MaxConnections / 10);
-            _sendBufferManager.InitBuffer(sendConnection * config.BufferSize, config.BufferSize);
+            _sendBufferManager.InitBuffer(sendConnection, config.BufferSize);
             _packetSender.Setup(_sendBufferManager, config.MaxConnections / 10, new XorCryptoProvider(Network.DefaultXorKey));
             _packetContainer.Setup(new XorCryptoProvider(Network.DefaultXorKey));
             

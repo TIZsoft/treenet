@@ -53,8 +53,8 @@ namespace Tizsoft.Treenet
             if (_config == null)
                 throw new InvalidCastException("configArgs");
 
-            _receiveBufferManager.InitBuffer(_config.BufferSize, _config.BufferSize);
-            _sendBufferManager.InitBuffer(_config.BufferSize, _config.BufferSize);
+            _receiveBufferManager.InitBuffer(1, _config.BufferSize);
+            _sendBufferManager.InitBuffer(1, _config.BufferSize);
             _packetSender.Setup(_sendBufferManager, 1, new XorCryptoProvider(Network.DefaultXorKey));
             _packetContainer.Setup(new XorCryptoProvider(Network.DefaultXorKey));
             InitConnectionPool();
