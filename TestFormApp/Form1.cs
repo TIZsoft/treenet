@@ -4,9 +4,9 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
-using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using TestFormApp.JsonCommand;
 using TestFormApp.User;
 using Tizsoft;
 using Tizsoft.Database;
@@ -21,20 +21,33 @@ namespace TestFormApp
     {
         Guid _guid;
         DatabaseQuery _dbQuery;
-        UserData _user = new UserData();
-        private ServerConfig _serverConfig;
-        private ListenService _listenService;
-        private ConnectService _connectService;
+        UserData _testUser = new UserData();
+        ServerConfig _serverConfig;
+        ListenService _listenService;
+        ConnectService _connectService;
         readonly CacheUserData _cacheUserData;
         TizIdManager _idManager;
         byte[] _largeBytes;
         bool _largeTest;
-        double _timeElapsed = 0;
+
+        void DisplayIPAddresses(bool includeIpV6)
+        {
+            var availableIpAddresses = Network.GetLocalIpAddresses(includeIpV6);
+
+            foreach (var ipAddress in availableIpAddresses)
+            {
+                LocalIPAddressComboBox.Items.Add(ipAddress.ToString());
+            }
+
+            if (LocalIPAddressComboBox.Items.Count > 0)
+                LocalIPAddressComboBox.SelectedIndex = 0;
+        }
 
         void ReadServerConfig()
         {
             _serverConfig = ServerConfig.Read(Application.StartupPath);
-            AddressTextBox.Text = _serverConfig.Address ?? string.Empty;
+            //LocalIPAddressComboBox.Items[0] = _serverConfig.Address ?? string.Empty;
+            //AddressTextBox.Text = _serverConfig.Address ?? string.Empty;
             PortTextBox.Text = _serverConfig.Port.ToString();
             MaxConnsTextBox.Text = _serverConfig.MaxConnections.ToString();
             BufferSizeTextBox.Text = _serverConfig.BufferSize.ToString();
@@ -43,7 +56,8 @@ namespace TestFormApp
 
         void SaveServerConfig()
         {
-            _serverConfig.Address = AddressTextBox.Text;
+            //_serverConfig.Address = AddressTextBox.Text;
+            _serverConfig.Address = (string)LocalIPAddressComboBox.Items[LocalIPAddressComboBox.SelectedIndex];
             _serverConfig.Port = int.Parse(PortTextBox.Text);
             _serverConfig.MaxConnections = int.Parse(MaxConnsTextBox.Text);
             _serverConfig.BufferSize = int.Parse(BufferSizeTextBox.Text);
@@ -81,46 +95,32 @@ namespace TestFormApp
             string databaseAddress = DBHosttextBox.Text;
             string user = DBUsertextBox.Text;
             string password = DBPwdtextBox.Text;
+            int keepAlive = int.Parse(DBKeepAliveTextBox.Text);
+
+            if (keepAlive == 0)
+                keepAlive = Network.DefaultDatabaseKeepAlive;
 
             _dbQuery =
                 new DatabaseQuery(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning",
-                    string.Format("Keepalive={0}", Network.DefaultDatabaseKeepAlive)));
+                    string.Format("Keepalive={0}", keepAlive)));
         }
 
-        void FacebookValidateHandler(object sender, DownloadStringCompletedEventArgs args)
+        IJsonCommand CreateJsonProcessCommand(string function, IConnection connection)
         {
-            var validateArgs = (FacebookValidateArgs)args.UserState;
-            var response = validateArgs.Response;
-
-            if (args.Error != null)
+            switch (function.ToLower())
             {
-                var responseStream = ((WebException)args.Error).Response.GetResponseStream();
-                using (var reader = new StreamReader(responseStream))
-                {
-                    response.Add("param", new Dictionary<string, object>
-                    {
-                        {"error", reader.ReadToEnd()}
-                    });
-                }
+                case "login":
+                    return new LoginCmd(_cacheUserData, _dbQuery, connection);
 
-                var responseStr = JsonConvert.SerializeObject(response);
-                validateArgs.Connection.Send(Encoding.UTF8.GetBytes(responseStr), PacketType.KeyValue);
-                return;
+                case "updateplayerdata":
+                    return new DefaultCmd(function);
+
+                case "iapvalidate":
+                    return new IapValidateCmd(new IapValidateArgs() {Connection = connection, IsSandBox = true});
+
+                default:
+                    return new DefaultCmd(function);
             }
-
-            var validateResultJobject = JObject.Parse(args.Result);
-            var fbid = (string)validateResultJobject.SelectToken("id");
-
-            UserData userData;
-
-            if (!_dbQuery.HasUserData(fbid, AccountType.Facebook, out userData))
-                userData = _dbQuery.CreateNewUser(fbid, AccountType.Facebook);
-
-            response.Add("param", new Dictionary<string, object>
-            {
-                {"user", JsonConvert.SerializeObject(userData)}
-            });
-            validateArgs.Connection.Send(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response)), PacketType.KeyValue);
         }
 
         void CheckJsonContent(JObject jsonObject, IConnection connection)
@@ -128,78 +128,10 @@ namespace TestFormApp
             if (jsonObject == null)
                 return;
 
-            var response = new Dictionary<string, object>()
-            {
-                {"result", "login"},
-            };
             var functionToken = (string)jsonObject.SelectToken("function");
 
-            switch (functionToken.ToLower())
-            {
-                case "login":
-                    var guid = (string)jsonObject.SelectToken("param.guid");
-                    var fbtoken = (string)jsonObject.SelectToken("param.fbtoken");
-
-                    if (string.IsNullOrEmpty(guid))
-                    {
-                        if (string.IsNullOrEmpty(fbtoken))
-                        {
-                            var userData = _cacheUserData.Get(guid);
-                            if (null == userData)
-                            {
-                                userData = _dbQuery.CreateNewUser(GuidUtil.New());
-                                _cacheUserData.Add(userData);
-                            }
-                            response.Add("param", new Dictionary<string, object>
-                            {
-                                {"user", JsonConvert.SerializeObject(userData)}
-                            });
-                        }
-                        else
-                        {
-                            ValidateFacebookTokenAsync(connection, fbtoken, response);
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        UserData user;
-                        response.Add("param", _dbQuery.HasUserData(guid, AccountType.Guid, out user) ?
-                            new Dictionary<string, object>
-                            {
-                                 {"user", JsonConvert.SerializeObject(user)}
-                            }
-                            :
-                            new Dictionary<string, object>
-                            {
-                                {"error", "wrong guid"}
-                            });
-                    }
-
-                    var responseStr = JsonConvert.SerializeObject(response);
-                    GLogger.Debug(responseStr);
-                    connection.Send(Encoding.UTF8.GetBytes(responseStr), PacketType.KeyValue);
-                    break;
-
-                default:
-                    GLogger.Warn(string.Format("未定義的function: <color=cyan>{0}</color>", functionToken));
-                    break;
-            }
-        }
-
-        void ValidateFacebookTokenAsync(IConnection connection, string fbtoken, Dictionary<string, object> response)
-        {
-            using (var wc = new WebClient())
-            {
-                var userToken = new FacebookValidateArgs();
-                userToken.Connection = connection;
-                userToken.FbToken = fbtoken;
-                userToken.Response = response;
-
-                wc.Encoding = Encoding.UTF8;
-                wc.DownloadStringCompleted += FacebookValidateHandler;
-                wc.DownloadStringAsync(new Uri("https://graph.facebook.com/me/?access_token=" + fbtoken), userToken);
-            }
+            IJsonCommand cmd = CreateJsonProcessCommand(functionToken, connection);
+            cmd.Do(jsonObject);
         }
 
         IPacketProcessor CreatePacketParser(PacketType type)
@@ -258,6 +190,7 @@ namespace TestFormApp
             InitConnectorPacketParser();
             Application.ApplicationExit += AppClose;
             _largeBytes = new byte[512];
+            DisplayIPAddresses(false);
         }
 
         private void PortTextBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -279,7 +212,6 @@ namespace TestFormApp
                 }
                 else
                 {
-                    InitDatabaseConnector();
                     service.Setup(GetConnectServiceConfig(true));
                     service.Start();
                 }
@@ -287,7 +219,10 @@ namespace TestFormApp
             else
             {
                 if (service.IsWorking)
+                {
+                    _dbQuery.Close();
                     service.Stop();
+                }
                 else
                 {
                     InitDatabaseConnector();
@@ -309,8 +244,8 @@ namespace TestFormApp
         private void NewGuidBtn_Click(object sender, EventArgs e)
         {
             _guid = GuidUtil.New();
-            _user = _dbQuery.GetUserData("123123123123");
-            LogMsgrichTextBox.AppendText(_user.ToString() + Environment.NewLine);
+            _testUser = _dbQuery.GetUserData("123123123123");
+            LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
             QueryGuidBtn.Text = string.Format("Query\n{0}", GuidUtil.ToBase64(_guid));
             QueryGuidBtn.Enabled = true;
             SetLevelBtn.Enabled = true;
@@ -340,31 +275,36 @@ namespace TestFormApp
 
         private void QueryGuidBtn_Click(object sender, EventArgs e)
         {
-            _user = _dbQuery.GetUserData(_guid);
-            LogMsgrichTextBox.AppendText(_user.ToString() + Environment.NewLine);
+            _testUser = _dbQuery.GetUserData(_guid);
+            LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
         }
 
         private void SetLevelBtn_Click(object sender, EventArgs e)
         {
-            _user.Money = 10;
-            _dbQuery.WriteUserData(_user);
-            _user = _dbQuery.GetUserData(_user.Guid);
-            LogMsgrichTextBox.AppendText(_user.ToString() + Environment.NewLine);
+            _testUser.Money = 10;
+            _dbQuery.WriteUserData(_testUser);
+            _testUser = _dbQuery.GetUserData(_testUser.Guid);
+            LogMsgrichTextBox.AppendText(_testUser.ToString() + Environment.NewLine);
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
+            TestAppStoreReceiptValidate();
             //TestLargePacket();
             //TestCreateAccount();
             //TestSendEchoPack();
             //TestWriteUserDataBack();
-            TestDatabaseConnection();
         }
 
-        void TestDatabaseConnection()
+        void TestAppStoreReceiptValidate()
         {
-            UserData userData;
-            _dbQuery.HasUserData(string.Empty, AccountType.Guid, out userData);
+            var cmd =
+                new IapValidateCmd(new IapValidateArgs()
+                {
+                    Connection = null,
+                    IsSandBox = true,
+                });
+            cmd.Do(null);
         }
 
         void TestLargePacket()

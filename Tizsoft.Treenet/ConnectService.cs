@@ -74,6 +74,7 @@ namespace Tizsoft.Treenet
 
         public void Stop()
         {
+            _connection.Dispose();
             _connector.Stop();
             _packetContainer.Clear();
             IsWorking = false;

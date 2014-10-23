@@ -46,6 +46,8 @@
             this.AddressTextBox = new System.Windows.Forms.TextBox();
             this.statusTimer = new System.Windows.Forms.Timer(this.components);
             this.panel1 = new System.Windows.Forms.Panel();
+            this.DBKeepAliveTextBox = new System.Windows.Forms.TextBox();
+            this.DBKeepAliveLabel = new System.Windows.Forms.Label();
             this.SetLevelBtn = new System.Windows.Forms.Button();
             this.QueryGuidBtn = new System.Windows.Forms.Button();
             this.DBPwdtextBox = new System.Windows.Forms.TextBox();
@@ -61,6 +63,7 @@
             this.IsClientCheckBox = new System.Windows.Forms.CheckBox();
             this.button1 = new System.Windows.Forms.Button();
             this.PacketTypeListBox = new System.Windows.Forms.ListBox();
+            this.LocalIPAddressComboBox = new System.Windows.Forms.ComboBox();
             this.ConnectionPanel.SuspendLayout();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -91,6 +94,7 @@
             // ConnectionPanel
             // 
             this.ConnectionPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.ConnectionPanel.Controls.Add(this.LocalIPAddressComboBox);
             this.ConnectionPanel.Controls.Add(this.label1);
             this.ConnectionPanel.Controls.Add(this.StatusprogressBar);
             this.ConnectionPanel.Controls.Add(this.TimeOutTextBox);
@@ -232,6 +236,8 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.DBKeepAliveTextBox);
+            this.panel1.Controls.Add(this.DBKeepAliveLabel);
             this.panel1.Controls.Add(this.SetLevelBtn);
             this.panel1.Controls.Add(this.QueryGuidBtn);
             this.panel1.Controls.Add(this.DBPwdtextBox);
@@ -248,9 +254,29 @@
             this.panel1.Size = new System.Drawing.Size(240, 256);
             this.panel1.TabIndex = 4;
             // 
+            // DBKeepAliveTextBox
+            // 
+            this.DBKeepAliveTextBox.AcceptsReturn = true;
+            this.DBKeepAliveTextBox.Location = new System.Drawing.Point(98, 111);
+            this.DBKeepAliveTextBox.MaxLength = 20;
+            this.DBKeepAliveTextBox.Name = "DBKeepAliveTextBox";
+            this.DBKeepAliveTextBox.Size = new System.Drawing.Size(130, 22);
+            this.DBKeepAliveTextBox.TabIndex = 24;
+            this.DBKeepAliveTextBox.Text = "1000";
+            this.DBKeepAliveTextBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // DBKeepAliveLabel
+            // 
+            this.DBKeepAliveLabel.AutoSize = true;
+            this.DBKeepAliveLabel.Location = new System.Drawing.Point(15, 114);
+            this.DBKeepAliveLabel.Name = "DBKeepAliveLabel";
+            this.DBKeepAliveLabel.Size = new System.Drawing.Size(57, 12);
+            this.DBKeepAliveLabel.TabIndex = 23;
+            this.DBKeepAliveLabel.Text = "Keep Alive";
+            // 
             // SetLevelBtn
             // 
-            this.SetLevelBtn.Location = new System.Drawing.Point(98, 114);
+            this.SetLevelBtn.Location = new System.Drawing.Point(98, 152);
             this.SetLevelBtn.Name = "SetLevelBtn";
             this.SetLevelBtn.Size = new System.Drawing.Size(75, 23);
             this.SetLevelBtn.TabIndex = 22;
@@ -261,7 +287,7 @@
             // QueryGuidBtn
             // 
             this.QueryGuidBtn.Enabled = false;
-            this.QueryGuidBtn.Location = new System.Drawing.Point(17, 143);
+            this.QueryGuidBtn.Location = new System.Drawing.Point(17, 181);
             this.QueryGuidBtn.Name = "QueryGuidBtn";
             this.QueryGuidBtn.Size = new System.Drawing.Size(75, 69);
             this.QueryGuidBtn.TabIndex = 21;
@@ -282,7 +308,7 @@
             // 
             // NewGuidBtn
             // 
-            this.NewGuidBtn.Location = new System.Drawing.Point(17, 114);
+            this.NewGuidBtn.Location = new System.Drawing.Point(17, 152);
             this.NewGuidBtn.Name = "NewGuidBtn";
             this.NewGuidBtn.Size = new System.Drawing.Size(75, 23);
             this.NewGuidBtn.TabIndex = 5;
@@ -394,6 +420,15 @@
             this.PacketTypeListBox.Size = new System.Drawing.Size(141, 88);
             this.PacketTypeListBox.TabIndex = 24;
             // 
+            // LocalIPAddressComboBox
+            // 
+            this.LocalIPAddressComboBox.FormattingEnabled = true;
+            this.LocalIPAddressComboBox.Location = new System.Drawing.Point(83, 27);
+            this.LocalIPAddressComboBox.Name = "LocalIPAddressComboBox";
+            this.LocalIPAddressComboBox.Size = new System.Drawing.Size(130, 20);
+            this.LocalIPAddressComboBox.Sorted = true;
+            this.LocalIPAddressComboBox.TabIndex = 26;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -450,6 +485,9 @@
         private System.Windows.Forms.Button SetLevelBtn;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.ListBox PacketTypeListBox;
+        private System.Windows.Forms.TextBox DBKeepAliveTextBox;
+        private System.Windows.Forms.Label DBKeepAliveLabel;
+        private System.Windows.Forms.ComboBox LocalIPAddressComboBox;
     }
 }
 

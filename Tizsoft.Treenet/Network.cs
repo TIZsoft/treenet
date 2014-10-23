@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace Tizsoft.Treenet
@@ -25,7 +27,7 @@ namespace Tizsoft.Treenet
 
         public const string DefaultXorKey = "Tizsoft";
 
-        public const int DefaultDatabaseKeepAlive = 5000;
+        public const int DefaultDatabaseKeepAlive = 1000;
 
         public static byte[] CheckFlags
         {
@@ -84,17 +86,44 @@ namespace Tizsoft.Treenet
 
         public static IPEndPoint GetIpEndPoint(string addressStr, int port, bool isIPv6 = false)
         {
-            var entry = Dns.GetHostEntry(addressStr);
+            var hostAddresses = Dns.GetHostAddresses(addressStr);
 
-            foreach (var addr in entry.AddressList)
+            foreach (var ipAddress in hostAddresses)
             {
-                if (isIPv6 ? addr.AddressFamily == AddressFamily.InterNetworkV6 : addr.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    return new IPEndPoint(addr, port);
-                }
+                if (isIPv6 ? ipAddress.AddressFamily == AddressFamily.InterNetworkV6 : ipAddress.AddressFamily == AddressFamily.InterNetwork)
+                    return new IPEndPoint(ipAddress, port);
             }
 
             return new IPEndPoint(new IPAddress(new byte[] { 1, 0, 0, 127 }), 5566);
+        }
+
+        public static List<IPAddress> GetLocalIpAddresses(bool includeIpV6)
+        {
+            var addresses = new List<IPAddress>();
+
+            // Get a list of all network interfaces (usually one per network card, dialup, and VPN connection)
+            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (NetworkInterface network in networkInterfaces)
+            {
+                // Read the IP configuration for each network
+                IPInterfaceProperties properties = network.GetIPProperties();
+
+                // Each network interface may have multiple IP addresses
+                foreach (IPAddressInformation address in properties.UnicastAddresses)
+                {
+                    if (!includeIpV6 && address.Address.AddressFamily != AddressFamily.InterNetwork)
+                        continue;
+
+                    // Ignore loopback addresses (e.g., 127.0.0.1)
+                    if (IPAddress.IsLoopback(address.Address))
+                        continue;
+
+                    addresses.Add(address.Address);
+                }
+            }
+
+            return addresses;
         }
 
         public static bool HasValidHeader(byte[] msg, int msgOffset, int msgCount)

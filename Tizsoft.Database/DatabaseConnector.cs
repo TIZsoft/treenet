@@ -42,12 +42,27 @@ namespace Tizsoft.Database
                 var connString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8;{4}",
                     config.HostName, config.UserName, config.Password, config.DataBase, config.Option);
 
+                GLogger.Debug(config.Option);
+
                 _mySqlConnection = new MySqlConnection(connString);
                 _mySqlConnection.Open();
             }
             catch (Exception exception)
             {
                 GLogger.Fatal(exception);
+            }
+        }
+
+        public void Close()
+        {
+            try
+            {
+                _mySqlConnection.Close();
+            }
+            catch (Exception)
+            {
+                _mySqlConnection = null;
+                throw;
             }
         }
 

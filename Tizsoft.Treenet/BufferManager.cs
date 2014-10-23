@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Sockets;
+using Tizsoft.Log;
 
 namespace Tizsoft.Treenet
 {
@@ -95,7 +95,7 @@ namespace Tizsoft.Treenet
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex);
+                GLogger.Fatal(ex);
                 return false;
             }
 

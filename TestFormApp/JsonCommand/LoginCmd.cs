@@ -8,11 +8,10 @@ using Newtonsoft.Json.Linq;
 using TestFormApp.User;
 using Tizsoft;
 using Tizsoft.Database;
-using Tizsoft.Log;
 using Tizsoft.Treenet;
 using Tizsoft.Treenet.Interface;
 
-namespace TestFormApp
+namespace TestFormApp.JsonCommand
 {
     public class LoginCmd : IJsonCommand
     {
@@ -131,7 +130,7 @@ namespace TestFormApp
             }
 
             var responseStr = JsonConvert.SerializeObject(response);
-            GLogger.Debug(responseStr);
+            //GLogger.Debug(responseStr);
             _connection.Send(Encoding.UTF8.GetBytes(responseStr), PacketType.KeyValue);
         }
     }

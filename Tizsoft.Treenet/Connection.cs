@@ -94,7 +94,6 @@ namespace Tizsoft.Treenet
             {
                 ConnectSocket.Shutdown(SocketShutdown.Both);
                 ConnectSocket.Close(0);
-                ConnectSocket.Dispose();
             }
             catch (Exception e)
             {

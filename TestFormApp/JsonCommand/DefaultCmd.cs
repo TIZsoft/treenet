@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Tizsoft.Log;
 
-namespace TestFormApp
+namespace TestFormApp.JsonCommand
 {
     public class DefaultCmd : IJsonCommand
     {

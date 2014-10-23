@@ -112,7 +112,8 @@ namespace Tizsoft.Treenet
         {
             try
             {
-                _maxNumberAcceptedClients.Dispose();
+                if (_maxNumberAcceptedClients != null)
+                    _maxNumberAcceptedClients.Close();
             }
             catch (Exception exception)
             {

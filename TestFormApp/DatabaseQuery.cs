@@ -40,6 +40,11 @@ namespace TestFormApp
             _dbConnector.Connect(args);
         }
 
+        public void Close()
+        {
+            _dbConnector.Close();
+        }
+
         public UserData GetUserData(string guid)
         {
             return GetUserDataByToken(guid, AccountType.Guid);

@@ -88,6 +88,12 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="IapValidateArgs.cs" />
+    <Compile Include="IJsonCommand.cs" />
+    <Compile Include="JsonCommand\DefaultCmd.cs" />
+    <Compile Include="JsonCommand\IapValidateCmd.cs" />
+    <Compile Include="JsonCommand\LoginCmd.cs" />
+    <Compile Include="JsonCommand\UpdatePlayerDataCmd.cs" />
     <Compile Include="LogPrinter.cs" />
     <Compile Include="ParseJsonPacket.cs" />
     <Compile Include="Program.cs" />
@@ -97,6 +103,7 @@
     <Compile Include="Schema\PlayerTable.cs" />
     <Compile Include="Schema\SkateBoardTable.cs" />
     <Compile Include="Schema\TreasureTable.cs" />
+    <Compile Include="SimpleHttpRequest.cs" />
     <Compile Include="TizIdManager.cs" />
     <Compile Include="User\IdLevelData.cs" />
     <Compile Include="User\UserData.cs" />
