@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TestFormApp.User;
@@ -28,6 +29,7 @@ namespace TestFormApp
         TizIdManager _idManager;
         byte[] _largeBytes;
         bool _largeTest;
+        double _timeElapsed = 0;
 
         void ReadServerConfig()
         {
@@ -80,7 +82,9 @@ namespace TestFormApp
             string user = DBUsertextBox.Text;
             string password = DBPwdtextBox.Text;
 
-            _dbQuery = new DatabaseQuery(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning", string.Empty));
+            _dbQuery =
+                new DatabaseQuery(new DatabaseConfig(databaseAddress, 3306, user, password, "speedrunning",
+                    string.Format("Keepalive={0}", Network.DefaultDatabaseKeepAlive)));
         }
 
         void FacebookValidateHandler(object sender, DownloadStringCompletedEventArgs args)
@@ -252,7 +256,6 @@ namespace TestFormApp
             InitListenerPacketParser();
             _connectService = new ConnectService();
             InitConnectorPacketParser();
-            InitDatabaseConnector();
             Application.ApplicationExit += AppClose;
             _largeBytes = new byte[512];
         }
@@ -276,6 +279,7 @@ namespace TestFormApp
                 }
                 else
                 {
+                    InitDatabaseConnector();
                     service.Setup(GetConnectServiceConfig(true));
                     service.Start();
                 }
@@ -286,6 +290,7 @@ namespace TestFormApp
                     service.Stop();
                 else
                 {
+                    InitDatabaseConnector();
                     SaveServerConfig();
                     SaveTizIdManager();
                     service.Setup(_serverConfig);
@@ -353,6 +358,13 @@ namespace TestFormApp
             //TestCreateAccount();
             //TestSendEchoPack();
             //TestWriteUserDataBack();
+            TestDatabaseConnection();
+        }
+
+        void TestDatabaseConnection()
+        {
+            UserData userData;
+            _dbQuery.HasUserData(string.Empty, AccountType.Guid, out userData);
         }
 
         void TestLargePacket()

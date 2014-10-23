@@ -198,7 +198,7 @@ namespace Tizsoft.Treenet
         void InitialHeartBeatTime()
         {
             if (_heartBeatTimer != null)
-                _heartBeatTimer.Dispose();
+                _heartBeatTimer.Close();
 
             _heartBeatTimer = new Timer(Network.DefaultTimeOutTick);
             _heartBeatTimer.AutoReset = true;

@@ -39,7 +39,8 @@ namespace Tizsoft.Database
             try
             {
                 var config = (DatabaseConfig)configArgs;
-                var connString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8", config.HostName, config.UserName, config.Password, config.DataBase);
+                var connString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8;{4}",
+                    config.HostName, config.UserName, config.Password, config.DataBase, config.Option);
 
                 _mySqlConnection = new MySqlConnection(connString);
                 _mySqlConnection.Open();

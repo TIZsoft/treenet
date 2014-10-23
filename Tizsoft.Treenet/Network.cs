@@ -25,6 +25,8 @@ namespace Tizsoft.Treenet
 
         public const string DefaultXorKey = "Tizsoft";
 
+        public const int DefaultDatabaseKeepAlive = 5000;
+
         public static byte[] CheckFlags
         {
             get
