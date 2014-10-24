@@ -40,6 +40,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.6.0.5\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="SevenZipSharp, Version=0.64.3890.29348, Culture=neutral, PublicKeyToken=20de82c62b055c88, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SevenZipSharp.0.64\lib\SevenZipSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -54,8 +58,12 @@
     <Compile Include="Interface\IConnection.cs" />
     <Compile Include="Interface\IService.cs" />
     <Compile Include="Interface\IPacket.cs" />
+    <Compile Include="MessageArrivedEventArgs.cs" />
     <Compile Include="Null Objects\NullConnection.cs" />
     <Compile Include="Null Objects\NullPacket.cs" />
+    <Compile Include="PacketFlags.cs" />
+    <Compile Include="PacketProtocol.cs" />
+    <Compile Include="PacketProtocolSettings.cs" />
     <Compile Include="PacketSender.cs" />
     <Compile Include="PacketType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -70,6 +78,7 @@
     <Compile Include="PacketContainer.cs" />
     <Compile Include="PacketHandler.cs" />
     <Compile Include="PacketParser\ParseDefaultEchoPacket.cs" />
+    <Compile Include="ReceiveOperationUserToken.cs" />
     <Compile Include="ServerConfig.cs" />
     <Compile Include="ListenService.cs" />
     <Compile Include="Connection.cs" />

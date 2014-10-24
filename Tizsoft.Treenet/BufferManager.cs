@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 using Tizsoft.Log;
 
@@ -24,7 +24,7 @@ namespace Tizsoft.Treenet
 
         int _currentSegmentIndex;
 
-        readonly Stack<int> _segmentIndexPool = new Stack<int>();
+        readonly ConcurrentStack<int> _segmentIndexPool = new ConcurrentStack<int>();
         
         public int BufferSize { get; private set; }
 
@@ -75,31 +75,28 @@ namespace Tizsoft.Treenet
 
             try
             {
-                if (_segmentIndexPool.Count > 0)
+                int offset;
+                if (_segmentIndexPool.TryPop(out offset))
                 {
-                    var offset = _segmentIndexPool.Pop();
                     e.SetBuffer(_buffer, offset, _segmentSize);
+                    return true;
                 }
-                else
+
+                var remaingingBufferSize = BufferSize - _segmentSize;
+                if (remaingingBufferSize < _currentSegmentIndex)
                 {
-                    var remaingingBufferSize = BufferSize - _segmentSize;
-
-                    if (remaingingBufferSize < _currentSegmentIndex)
-                    {
-                        return false;
-                    }
-
-                    e.SetBuffer(_buffer, _currentSegmentIndex, _segmentSize);
-                    _currentSegmentIndex += _segmentSize;
+                    return false;
                 }
+
+                e.SetBuffer(_buffer, _currentSegmentIndex, _segmentSize);
+                _currentSegmentIndex += _segmentSize;
+                return true;
             }
             catch (Exception ex)
             {
                 GLogger.Fatal(ex);
                 return false;
             }
-
-            return true;
         }
 
         /// <summary>
