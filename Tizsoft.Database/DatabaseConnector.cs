@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
+using System.IO;
 using System.Linq;
-using System.Runtime.Remoting;
 using System.Text;
-using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using Tizsoft.Log;
 
@@ -13,12 +11,12 @@ namespace Tizsoft.Database
     public class DatabaseConnector
     {
         readonly StringBuilder _queryBuilder = new StringBuilder();
-        MySqlConnection _mySqlConnection;
+        string _connectionString;
 
-        void CloseConnection()
+        void Disconnect(MySqlConnection connection)
         {
-            if (_mySqlConnection != null)
-                _mySqlConnection.Close();
+            if (connection != null)
+                connection.Close();
         }
 
         void ResetQueryBuilder()
@@ -26,44 +24,40 @@ namespace Tizsoft.Database
             _queryBuilder.Remove(0, _queryBuilder.Length);
         }
 
-        ~DatabaseConnector()
-        {
-            CloseConnection();
-        }
-
-        public void Connect(EventArgs configArgs)
+        public DatabaseConnector(EventArgs configArgs)
         {
             if (configArgs == null)
                 throw new ArgumentNullException("configArgs");
 
-            try
-            {
-                var config = (DatabaseConfig)configArgs;
-                var connString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8;{4}",
+            var config = (DatabaseConfig) configArgs;
+
+            if (config == null)
+                throw new InvalidCastException("configArgs");
+
+            _connectionString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8;{4}",
                     config.HostName, config.UserName, config.Password, config.DataBase, config.Option);
 
-                GLogger.Debug(config.Option);
+            GLogger.Debug(config.Option);
+        }
 
-                _mySqlConnection = new MySqlConnection(connString);
-                _mySqlConnection.Open();
+        MySqlConnection Connect()
+        {
+            try
+            {
+                var mySqlConnection = new MySqlConnection(_connectionString);
+                mySqlConnection.Open();
+                return mySqlConnection;
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal(string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
             }
             catch (Exception exception)
             {
                 GLogger.Fatal(exception);
             }
-        }
 
-        public void Close()
-        {
-            try
-            {
-                _mySqlConnection.Close();
-            }
-            catch (Exception)
-            {
-                _mySqlConnection = null;
-                throw;
-            }
+            return null;
         }
 
         public void Create(string table, List<string> columns, List<object> values)
@@ -73,12 +67,38 @@ namespace Tizsoft.Database
 
         public void CreateOnDuplicate(string table, List<string> columns, List<object> values, string duplicateKeyClause)
         {
-            if (_mySqlConnection == null)
+            if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || values == null)
                 return;
 
+            var queryString = BuildCreateOnDuplicateQueryString(table, columns, values, duplicateKeyClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var createCommand = new MySqlCommand(queryString, connection);
+                createCommand.ExecuteNonQueryAsync();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal(string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        string BuildCreateOnDuplicateQueryString(string table, List<string> columns, List<object> values, string duplicateKeyClause)
+        {
             ResetQueryBuilder();
             _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
 
@@ -95,8 +115,7 @@ namespace Tizsoft.Database
             if (!string.IsNullOrEmpty(duplicateKeyClause))
                 _queryBuilder.Append(duplicateKeyClause);
 
-            var createCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
-            createCommand.ExecuteNonQueryAsync();
+            return _queryBuilder.ToString();
         }
 
         public void MultiCreate(string table, List<string> columns, List<List<object>> multiValueLists)
@@ -106,12 +125,38 @@ namespace Tizsoft.Database
 
         public void MultiCreateOnDuplicate(string table, List<string> columns, List<List<object>> multiValueLists, string duplicateKeyClause)
         {
-            if (_mySqlConnection == null)
+            if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || multiValueLists == null || columns.Count == 0 || multiValueLists.Count == 0)
                 return;
 
+            var queryString = BuildMultiCreateOnDuplicateQueryString(table, columns, multiValueLists, duplicateKeyClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var createCommand = new MySqlCommand(queryString, connection);
+                createCommand.ExecuteNonQueryAsync();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal(string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        string BuildMultiCreateOnDuplicateQueryString(string table, List<string> columns, List<List<object>> multiValueLists, string duplicateKeyClause)
+        {
             ResetQueryBuilder();
             _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
             var minColumnCount = Math.Min(columns.Count, multiValueLists[0].Count);
@@ -139,15 +184,70 @@ namespace Tizsoft.Database
             if (!string.IsNullOrEmpty(duplicateKeyClause))
                 _queryBuilder.AppendFormat(@"ON DUPLICATE KEY UPDATE {0}", duplicateKeyClause);
 
-            var createCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
-            createCommand.ExecuteNonQueryAsync();
+            return _queryBuilder.ToString();
         }
 
         public List<Dictionary<string, object>> Request(string table, List<string> columns, string whereClause)
         {
-            if (_mySqlConnection == null)
+            if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
+            var queryString = BuildRequestQueryString(table, columns, whereClause);
+
+            var result = new List<Dictionary<string, object>>();
+            MySqlDataReader dataReader = null;
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var requestCommand = new MySqlCommand(queryString, connection);
+                dataReader = requestCommand.ExecuteReader();
+
+                if (!dataReader.HasRows)
+                {
+                    dataReader.Close();
+                    Disconnect(connection);
+                    return result;
+                }
+
+                while (dataReader.Read())
+                {
+                    if (columns != null)
+                    {
+                        var row = columns.ToDictionary(column => column, column => dataReader[column]);
+                        result.Add(row);
+                    }
+                    else
+                    {
+                        var row = new Dictionary<string, object>();
+                        for (var i = 0; i < dataReader.FieldCount; ++i)
+                            row.Add(dataReader.GetName(i), dataReader[i]);
+                        result.Add(row);
+                    }
+                }
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal(string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                if (dataReader != null)
+                    dataReader.Close();
+                Disconnect(connection);
+            }
+            
+            return result;
+        }
+
+        string BuildRequestQueryString(string table, List<string> columns, string whereClause)
+        {
             ResetQueryBuilder();
             _queryBuilder.Append("SELECT ");
 
@@ -164,43 +264,43 @@ namespace Tizsoft.Database
             if (!string.IsNullOrEmpty(whereClause))
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
-            var result = new List<Dictionary<string, object>>();
-            var requestCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
-            var dataReader = requestCommand.ExecuteReader();
-
-            if (!dataReader.HasRows)
-            {
-                dataReader.Close();
-                return result;
-            }
-
-            while (dataReader.Read())
-            {
-                if (columns != null)
-                {
-                    var row = columns.ToDictionary(column => column, column => dataReader[column]);
-                    result.Add(row);
-                }
-                else
-                {
-                    var row = new Dictionary<string, object>();
-                    for (var i = 0; i < dataReader.FieldCount; ++i)
-                        row.Add(dataReader.GetName(i), dataReader[i]);
-                    result.Add(row);
-                }
-            }
-            dataReader.Close();
-            return result;
+            return _queryBuilder.ToString();
         }
 
         public void Update(string table, List<string> columns, List<object> values, string whereClause)
         {
-            if (_mySqlConnection == null)
+            if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
                 return;
 
+            var queryString = BuildUpdateQueryString(table, columns, values, whereClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var updateCommand = new MySqlCommand(queryString, connection);
+                updateCommand.ExecuteNonQuery();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal(string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        string BuildUpdateQueryString(string table, List<string> columns, List<object> values, string whereClause)
+        {
             ResetQueryBuilder();
             _queryBuilder.AppendFormat("UPDATE `{0}` SET ", table);
             var bound = Math.Min(columns.Count, values.Count);
@@ -211,45 +311,86 @@ namespace Tizsoft.Database
             if (!string.IsNullOrEmpty(whereClause))
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
-            var updateCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
-            updateCommand.ExecuteNonQuery();
+            return _queryBuilder.ToString();
         }
 
         public void Delete(string table, string whereClause)
         {
-            if (_mySqlConnection == null)
+            if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (string.IsNullOrEmpty(whereClause))
                 return;
 
-            ResetQueryBuilder();
-
-            _queryBuilder.AppendFormat("DELETE FROM `{0}` WHERE {1}", table, whereClause);
-            var deleteCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
-            deleteCommand.ExecuteNonQuery();
-        }
-
-        public int Count(string table, KeyValuePair<string, string> whereClause)
-        {
-            if (_mySqlConnection == null)
-                throw new Exception("Connection doesn't establish yet.");
-
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat(@"SELECT COUNT(*) FROM `{0}` WHERE `{1}`='{2}'", table, whereClause.Key, whereClause.Value);
+            var queryString = BuildDeleteQueryString(table, whereClause);
+            MySqlConnection connection = null;
 
             try
             {
-                MySqlCommand countCommand = new MySqlCommand(_queryBuilder.ToString(), _mySqlConnection);
-                var count = countCommand.ExecuteScalar();
-                return Convert.ToInt32(count);
+                connection = Connect();
+                var deleteCommand = new MySqlCommand(queryString, connection);
+                deleteCommand.ExecuteNonQuery();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal(string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
             }
             catch (Exception exception)
             {
                 GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        string BuildDeleteQueryString(string table, string whereClause)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("DELETE FROM `{0}` WHERE {1}", table, whereClause);
+            return _queryBuilder.ToString();
+        }
+
+        public int Count(string table, KeyValuePair<string, string> whereClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            var queryString = BuildCountQueryString(table, whereClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                MySqlCommand countCommand = new MySqlCommand(queryString, connection);
+                var count = countCommand.ExecuteScalar();
+                return Convert.ToInt32(count);
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal(string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
             }
 
             return 0;
+        }
+
+        string BuildCountQueryString(string table, KeyValuePair<string, string> whereClause)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat(@"SELECT COUNT(*) FROM `{0}` WHERE `{1}`='{2}'", table, whereClause.Key,
+                whereClause.Value);
+            return _queryBuilder.ToString();
         }
     }
 }
