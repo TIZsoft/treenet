@@ -60,7 +60,7 @@
     <Compile Include="Helpers\Utils.cs" />
     <Compile Include="SimpleHttpRequest.cs" />
     <Compile Include="TizId.cs" />
-    <Compile Include="RngRandom.cs" />
+    <Compile Include="TizRandom.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Extensions\" />

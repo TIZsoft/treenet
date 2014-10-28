@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace Tizsoft
 {
-    public class RngRandom
+    public class TizRandom
     {
         static readonly RandomNumberGenerator _generator = new RNGCryptoServiceProvider();
         static readonly byte[] _randomBytes = new byte[4];
