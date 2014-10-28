@@ -6,6 +6,8 @@ namespace Tizsoft.Treenet
     {
         public bool IsNull { get { return true; } }
 
+        public PacketFlags PacketFlags { get; private set; }
+
         public PacketType PacketType
         {
             get { return default(PacketType); }
@@ -21,7 +23,7 @@ namespace Tizsoft.Treenet
             get { return null; }
         }
 
-        public void SetContent(IConnection connection, byte[] contents, PacketType packetType)
+        public void SetContent(IConnection connection, byte[] content, PacketType packetType)
         {
             
         }

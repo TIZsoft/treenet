@@ -3,11 +3,10 @@
 namespace Tizsoft.Treenet
 {
     /// <summary>
-    /// Represents a settings of packet protocol.
+    ///     Represents a settings of packet header handler.
     /// </summary>
     /// <remarks>
-    /// See the following to understand the structure of header packing below.
-    /// [ Signature (n bytes) | PacketFlags (8 bits) | Packet type (1 byte) | Message size (4 byte) ]
+    ///     See https://bitbucket.org/tizsoftcoltd/treenet/wiki/PacketProtocol.
     /// </remarks>
     [Serializable]
     public class PacketProtocolSettings
@@ -15,14 +14,14 @@ namespace Tizsoft.Treenet
         byte[] _signature;
 
         /// <summary>
-        ///     Gets or sets the signature for packet protocol.
+        ///     Gets or sets the signature for packet header handler.
         /// </summary>
         /// <remarks>
         ///     <para>
         ///         If a incoming packet contains invalid signature or the signature does not exist, then drop it.
         ///     </para>
         ///     <para>
-        ///         Null signature or zero-length signature are equality.
+        ///         Given a null signature or zero-length signature are equality.
         ///     </para>
         /// </remarks>
         public byte[] Signature
@@ -31,37 +30,32 @@ namespace Tizsoft.Treenet
             set
             {
                 _signature = value;
-                ComputePrefixSize();
+                ComputeHeaderSize();
             }
         }
 
-        public bool HasSignature { get { return Signature != null && Signature.Length > 0; } }
+        public int SignatureLength { get { return Signature != null ? Signature.Length : 0; } }
+
+        public bool HasSignature { get { return SignatureLength > 0; } }
 
         /// <summary>
-        ///     Gets or sets the maximum message size.
+        ///     Gets the header size (count of bytes).
         /// </summary>
-        public int MaxMessageSize { get; set; }
+        public int HeaderSize { get; private set; }
 
-        /// <summary>
-        ///     Gets the prefix size (count of bytes).
-        /// </summary>
-        public int PrefixSize { get; private set; }
-
-        public bool IsValid
+        public PacketProtocolSettings()
         {
-            get { return MaxMessageSize > 0; }
+            Signature = null;
         }
 
-        void ComputePrefixSize()
+        void ComputeHeaderSize()
         {
             // Signature        (n bytes)
-            // PacketFlags      (8 bits)
+            // PacketFlags      (8 bits = 1 byte)
             // PacketType       (1 byte)
-            // Message size     (4 bytes)
-            PrefixSize = (Signature != null ? sizeof(byte) * Signature.Length : 0) +
+            HeaderSize = SignatureLength * sizeof(byte) +
                 sizeof(PacketFlags) +
-                sizeof(PacketType) +
-                sizeof(int);
+                sizeof(PacketType);
         }
     }
 }

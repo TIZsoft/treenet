@@ -4,6 +4,7 @@ using NUnit.Framework;
 
 namespace Tizsoft.Treenet.Tests
 {
+    // TODO: Reduce test took time.
     [TestFixture]
     public class TestBufferManager
     {
