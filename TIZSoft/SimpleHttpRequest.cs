@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 
-namespace SpeedRunning
+namespace Tizsoft
 {
     public class SimpleHttpRequest
     {
