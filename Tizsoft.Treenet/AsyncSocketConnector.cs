@@ -45,13 +45,13 @@ namespace Tizsoft.Treenet
 
                     var newConnection = CreateNewConnection(connectOperation.AcceptSocket);
                     _workingConnections.Add(newConnection);
-                    GLogger.Debug("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress);
-                    GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+                    GLogger.DebugFormat("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress);
+                    GLogger.DebugFormat("目前連線數: {0}", _workingConnections.Count);
                     Notify(newConnection, true);
                     break;
 
                 default:
-                    GLogger.Debug("因為 {0} ，所以無法連線", connectOperation.SocketError);
+                    GLogger.DebugFormat("因為 {0} ，所以無法連線", connectOperation.SocketError);
                     Notify(Connection.Null, false);
                     break;
             }
@@ -160,8 +160,8 @@ namespace Tizsoft.Treenet
                 _connectionPool.Push(connection);
             }
 
-            GLogger.Debug("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress);
-            GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+            GLogger.DebugFormat("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress);
+            GLogger.DebugFormat("目前連線數: {0}", _workingConnections.Count);
             Notify(connection, false);
         }
 

@@ -37,11 +37,11 @@ namespace Tizsoft.Treenet
 
             if (sendOperation.SocketError == SocketError.Success)
             {
-                GLogger.Debug("sent <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>", sendOperation.BytesTransferred, connection.DestAddress);
+                GLogger.DebugFormat("sent <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>", sendOperation.BytesTransferred, connection.DestAddress);
             }
             else
             {
-                GLogger.Error("send msg to <color=cyan>{0}</color> failed due to <color=cyan>{1}</color>", connection.DestAddress, sendOperation.SocketError);
+                GLogger.ErrorFormat("send msg to <color=cyan>{0}</color> failed due to <color=cyan>{1}</color>", connection.DestAddress, sendOperation.SocketError);
                 connection.Dispose();
             }
 
