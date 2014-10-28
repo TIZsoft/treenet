@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Security.Cryptography;
+using NUnit.Framework;
 
 namespace Tizsoft.Treenet.Tests
 {
@@ -40,6 +41,21 @@ namespace Tizsoft.Treenet.Tests
             {
                 Assert.AreEqual(signature[i], settings.Signature[i]);
             }
+        }
+
+        [TestCase(0)]
+        [TestCase(-1)]
+        [TestCase(-12345)]
+        [TestCase(1)]
+        [TestCase(12345)]
+        public void TestMaxContentSize(int maxContentSize)
+        {
+            var settings = new PacketProtocolSettings
+            {
+                MaxContentSize = maxContentSize
+            };
+            
+            Assert.AreEqual(maxContentSize > 0 ? maxContentSize : 1, settings.MaxContentSize);
         }
     }
 }

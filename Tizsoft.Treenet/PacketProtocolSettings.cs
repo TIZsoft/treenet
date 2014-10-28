@@ -2,6 +2,7 @@
 
 namespace Tizsoft.Treenet
 {
+    // TODO: Crypto and compression settings.
     /// <summary>
     ///     Represents a settings of packet header handler.
     /// </summary>
@@ -11,7 +12,10 @@ namespace Tizsoft.Treenet
     [Serializable]
     public class PacketProtocolSettings
     {
+        const int DefaultMaxContentSize = 64 * 1024;
+
         byte[] _signature;
+        int _maxContentSize;
 
         /// <summary>
         ///     Gets or sets the signature for packet header handler.
@@ -43,9 +47,16 @@ namespace Tizsoft.Treenet
         /// </summary>
         public int HeaderSize { get; private set; }
 
+        public int MaxContentSize
+        {
+            get { return _maxContentSize; }
+            set { _maxContentSize = value > 0 ? value : 1; }
+        }
+
         public PacketProtocolSettings()
         {
             Signature = null;
+            MaxContentSize = DefaultMaxContentSize;
         }
 
         void ComputeHeaderSize()
@@ -53,9 +64,11 @@ namespace Tizsoft.Treenet
             // Signature        (n bytes)
             // PacketFlags      (8 bits = 1 byte)
             // PacketType       (1 byte)
+            // Content Length   (4 bytes)
             HeaderSize = SignatureLength * sizeof(byte) +
                 sizeof(PacketFlags) +
-                sizeof(PacketType);
+                sizeof(PacketType) +
+                sizeof(int);
         }
     }
 }

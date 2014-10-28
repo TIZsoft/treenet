@@ -7,11 +7,11 @@ namespace Tizsoft.Security.Cryptography
     {
         readonly byte[] _key;
 
-        static byte[] XorBytes(byte[] key, byte[] rawData, int offset, int count)
+        static byte[] XorBytes(byte[] key, byte[] input, int offset, int count)
         {
-            if (null == rawData)
+            if (null == input)
             {
-                throw new ArgumentNullException("rawData");
+                throw new ArgumentNullException("input");
             }
 
             if (null == key)
@@ -19,24 +19,26 @@ namespace Tizsoft.Security.Cryptography
                 throw new ArgumentNullException("key");
             }
 
-            if (offset < 0 || offset > rawData.Length)
+            if (offset < 0 || offset > input.Length)
             {
                 throw new ArgumentOutOfRangeException("offset");
             }
 
-            if (count < 0 || offset + count > rawData.Length)
+            if (count < 0 || offset + count > input.Length)
             {
                 throw new ArgumentOutOfRangeException("count");
             }
 
+            // DO NOT change the content of input.
             var keylen = key.Length;
+            var ret = new byte[count];
             for (var i = 0; i < count; i++)
             {
                 var keyidx = i%keylen;
-                rawData[i + offset] = (byte)(rawData[i + offset] ^ key[keyidx]);
+                ret[i + offset] = (byte)(input[i + offset] ^ key[keyidx]);
             }
 
-            return rawData;
+            return ret;
         }
 
         public XorCryptoProvider(string key)
@@ -65,24 +67,34 @@ namespace Tizsoft.Security.Cryptography
             _key = key;
         }
 
-        public byte[] Decrypt(byte[] data)
+        public byte[] Decrypt(byte[] cipher)
         {
-            return Decrypt(data, 0, data.Length);
+            if (cipher == null)
+            {
+                throw new ArgumentNullException("cipher");
+            }
+
+            return Decrypt(cipher, 0, cipher.Length);
         }
 
-        public byte[] Decrypt(byte[] data, int offset, int count)
+        public byte[] Decrypt(byte[] cipher, int offset, int count)
         {
-            return XorBytes(_key, data, offset, count);
+            return XorBytes(_key, cipher, offset, count);
         }
 
-        public byte[] Encrypt(byte[] data)
+        public byte[] Encrypt(byte[] plain)
         {
-            return Encrypt(data, 0, data.Length);
+            if (plain == null)
+            {
+                throw new ArgumentNullException("plain");
+            }
+
+            return Encrypt(plain, 0, plain.Length);
         }
 
-        public byte[] Encrypt(byte[] data, int offset, int count)
+        public byte[] Encrypt(byte[] plain, int offset, int count)
         {
-            return XorBytes(_key, data, offset, count);
+            return XorBytes(_key, plain, offset, count);
         }
     }
 }

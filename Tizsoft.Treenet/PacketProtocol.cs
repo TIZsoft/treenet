@@ -27,6 +27,67 @@ namespace Tizsoft.Treenet
             Settings = settings;
         }
 
+        public bool TryWrapPacket(IPacket packet, out byte[] message)
+        {
+            if (packet == null)
+            {
+                throw new ArgumentNullException("packet");
+            }
+
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var binaryWriter = new BinaryWriter(memoryStream))
+                {
+                    // Write header.
+                    WriteSignature(memoryStream);
+
+                    var packetFlags = (byte)packet.PacketFlags;
+                    var packetType = (byte)packet.PacketType;
+
+                    binaryWriter.Write(packetFlags);
+                    binaryWriter.Write(packetType);
+
+                    var content = packet.Content;
+
+                    // Compress if necessary.
+                    if (packet.PacketFlags.HasFlag(PacketFlags.Compressed))
+                    {
+                        if (CompressProvider != null)
+                        {
+                            content = CompressProvider.Compress(content);
+                        }
+                        else
+                        {
+                            GLogger.Error("Content requires compression but CompressProvider is null.");
+                            message = null;
+                            return false;
+                        }
+                    }
+
+                    // Write content.
+                    var contentLength = content.Length;
+                    binaryWriter.Write(contentLength);
+                    binaryWriter.Write(content);
+
+                    message = memoryStream.ToArray();
+                    Encrypt(ref message);
+
+                    return true;
+                }
+            }
+        }
+
+        void WriteSignature(Stream output)
+        {
+            Debug.Assert(output != null);
+            Debug.Assert(Settings != null);
+
+            if (Settings.HasSignature)
+            {
+                output.Write(Settings.Signature, 0, Settings.SignatureLength);
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -51,7 +112,7 @@ namespace Tizsoft.Treenet
 
             try
             {
-                message = Decrypt(message);
+                Decrypt(ref message);
 
                 // Begin parse packet header.
                 using (var memoryStream = new MemoryStream(message))
@@ -138,10 +199,17 @@ namespace Tizsoft.Treenet
             return true;
         }
 
-        byte[] Decrypt(byte[] message)
+        void Encrypt(ref byte[] message)
         {
-            Debug.Assert(message != null);
-            return CryptoProvider != null ? CryptoProvider.Decrypt(message) : message;
+            if (CryptoProvider != null)
+            {
+                message = CryptoProvider.Encrypt(message);
+            }
+        }
+
+        void Decrypt(ref byte[] message)
+        {
+            message = CryptoProvider != null ? CryptoProvider.Decrypt(message) : message;
         }
 
         bool TryDecompress(byte[] content, out byte[] decompressed)
