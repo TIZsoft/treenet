@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace Tizsoft.Treenet
 {
@@ -69,6 +70,33 @@ namespace Tizsoft.Treenet
                 sizeof(PacketFlags) +
                 sizeof(PacketType) +
                 sizeof(int);
+        }
+
+        public override string ToString()
+        {
+            var builder = new StringBuilder();
+
+            builder.Append("Signature=");
+            if (Signature != null)
+            {
+                builder.Append("{ ");
+                for (var i = 0; i != Signature.Length; ++i)
+                {
+                    builder.Append(Signature[i].ToString("X"));
+                    if (i < Signature.Length - 1)
+                        builder.Append(", ");
+                }
+                builder.Append(" }");
+            }
+            else
+            {
+                builder.AppendLine("<null>");
+            }
+            builder.AppendLine();
+
+            builder.AppendFormat("MaxContentSize={0}\n", MaxContentSize);
+
+            return builder.ToString();
         }
     }
 }

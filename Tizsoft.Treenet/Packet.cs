@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -11,7 +12,7 @@ namespace Tizsoft.Treenet
 
         public static IPacket Null { get { return NullPacket; } }
 
-        public static IPacket Keepalive { get { return KeepalivePacket; }}
+        public static IPacket Keepalive { get { return KeepalivePacket; } }
 
         readonly MemoryStream _buffer = new MemoryStream();
 
@@ -53,6 +54,35 @@ namespace Tizsoft.Treenet
         {
             _buffer.SetLength(0);
             Connection = Treenet.Connection.Null;
+        }
+
+        public override string ToString()
+        {
+            var builder = new StringBuilder();
+
+            builder.AppendFormat("PacketFlags={0}\n", PacketFlags);
+            builder.AppendFormat("PacketType={0}\n", PacketType);
+
+            var content = Content;
+            builder.Append("Content=");
+            if (content != null)
+            {
+                builder.Append("{ ");
+                for (var i = 0; i != content.Length; ++i)
+                {
+                    builder.Append(content[i].ToString("X"));
+                    if (i < content.Length - 1)
+                        builder.Append(", ");
+                }
+                builder.Append(" }");
+            }
+            else
+            {
+                builder.AppendLine("<null>");
+            }
+            builder.AppendLine();
+
+            return builder.ToString();
         }
     }
 }

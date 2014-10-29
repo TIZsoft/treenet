@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using NUnit.Framework;
@@ -18,7 +19,7 @@ namespace Tizsoft.Treenet.Tests
             Assert.Catch<ArgumentException>(() => new PacketProtocol(settings));
         }
 
-        public static IEnumerable<PacketProtocolSettings> TestValidConstructorArgsCaseSources()
+        public IEnumerable<PacketProtocolSettings> TestValidConstructorArgsCaseSources()
         {
             yield return new PacketProtocolSettings();
         }
@@ -29,7 +30,7 @@ namespace Tizsoft.Treenet.Tests
             Assert.DoesNotThrow(() => new PacketProtocol(settings));
         }
 
-        public class TryWrapPacketCaseSource 
+        public class TryWrapPacketCaseSource
         {
             public PacketProtocolSettings Settings { get; set; }
 
@@ -38,11 +39,22 @@ namespace Tizsoft.Treenet.Tests
             public ICompressProvider CompressProvider { get; set; }
 
             public IPacket Packet { get; set; }
+
+            public override string ToString()
+            {
+                var builder = new StringBuilder();
+
+                builder.AppendFormat("Settings={0}\n", Settings);
+                builder.AppendFormat("Packet={0}\n", Packet);
+
+                return builder.ToString();
+            }
         }
 
-        public static IEnumerable<TryWrapPacketCaseSource> TestValidTryWrapPacketCaseSources()
+        public IEnumerable<TryWrapPacketCaseSource> TestValidTryWrapPacketCaseSources()
         {
             var expectedSignature = new byte[] { 12, 34, 56, 78, 90 };
+            const int maxContentSize = 4 * 1024 * 1024;
             var content = Encoding.UTF8.GetBytes("G_G_In_In_Der~");
             var emptyContent = new byte[0];
 
@@ -58,6 +70,7 @@ namespace Tizsoft.Treenet.Tests
                 Settings = new PacketProtocolSettings
                 {
                     Signature = expectedSignature,
+                    MaxContentSize = maxContentSize
                 },
                 CryptoProvider = null,
                 CompressProvider = null,
@@ -75,6 +88,7 @@ namespace Tizsoft.Treenet.Tests
                 Settings = new PacketProtocolSettings
                 {
                     Signature = expectedSignature,
+                    MaxContentSize = maxContentSize
                 },
                 CryptoProvider = null,
                 CompressProvider = null,
@@ -92,6 +106,7 @@ namespace Tizsoft.Treenet.Tests
                 Settings = new PacketProtocolSettings
                 {
                     Signature = expectedSignature,
+                    MaxContentSize = maxContentSize
                 },
                 CryptoProvider = null,
                 CompressProvider = null,
@@ -115,6 +130,7 @@ namespace Tizsoft.Treenet.Tests
                 Settings = new PacketProtocolSettings
                 {
                     Signature = expectedSignature,
+                    MaxContentSize = maxContentSize
                 },
                 CryptoProvider = cryptoProvider,
                 CompressProvider = null,
@@ -132,6 +148,7 @@ namespace Tizsoft.Treenet.Tests
                 Settings = new PacketProtocolSettings
                 {
                     Signature = expectedSignature,
+                    MaxContentSize = maxContentSize
                 },
                 CryptoProvider = cryptoProvider,
                 CompressProvider = null,
@@ -149,6 +166,7 @@ namespace Tizsoft.Treenet.Tests
                 Settings = new PacketProtocolSettings
                 {
                     Signature = expectedSignature,
+                    MaxContentSize = maxContentSize
                 },
                 CryptoProvider = cryptoProvider,
                 CompressProvider = null,
@@ -183,6 +201,8 @@ namespace Tizsoft.Treenet.Tests
         [TestCaseSource("TestValidTryWrapPacketCaseSources")]
         public void TestValidTryWrapPacket(TryWrapPacketCaseSource caseSource)
         {
+            Debug.WriteLine(caseSource);
+
             var packetProtocol = new PacketProtocol(caseSource.Settings)
             {
                 CryptoProvider = caseSource.CryptoProvider,
@@ -259,11 +279,99 @@ namespace Tizsoft.Treenet.Tests
             }
         }
 
+        [Test]
+        public void TestInvalidTryWrapPacket()
+        {
+            var expectedSignature = new byte[] { 12, 34, 56, 78, 90 };
+            const int maxContentSize = 4 * 1024 * 1024;
+            var content = Encoding.UTF8.GetBytes("G_G_In_In_Der~");
+            var cryptoProvider = new XorCryptoProvider("TIZSoft");
+            var packetProtocolSettings = new PacketProtocolSettings
+            {
+                Signature = expectedSignature,
+                MaxContentSize = maxContentSize
+            };
+            var packetProtocol = new PacketProtocol(packetProtocolSettings)
+            {
+                CryptoProvider = cryptoProvider,
+                CompressProvider = null
+            };
+
+            byte[] message;
+
+            // Case 1: Null packet.
+            var isWrapSuccess = packetProtocol.TryWrapPacket(null, out message);
+            Assert.IsFalse(isWrapSuccess);
+
+            // Case 2: Requires compression.
+            var packet = new Packet
+            {
+                Content = content,
+                PacketFlags = PacketFlags.Compressed,
+                PacketType = PacketType.Stream
+            };
+            isWrapSuccess = packetProtocol.TryWrapPacket(packet, out message);
+            Assert.IsFalse(isWrapSuccess);
+
+            // Case 3: Content size is larger than max content size.
+            packet = new Packet
+            {
+                Content = new byte[maxContentSize + 1],
+                PacketFlags = PacketFlags.None,
+                PacketType = PacketType.Stream
+            };
+            var rand = new Random();
+            rand.NextBytes(packet.Content);
+            isWrapSuccess = packetProtocol.TryWrapPacket(packet, out message);
+            Assert.IsFalse(isWrapSuccess);
+        }
+
         public class TryParsePacketCaseSource
         {
             public PacketProtocolSettings Settings { get; set; }
 
-            
+            public ICryptoProvider CryptoProvider { get; set; }
+
+            public ICompressProvider CompressProvider { get; set; }
+
+            public PacketFlags PacketFlags { get; set; }
+
+            public PacketType PacketType { get; set; }
+
+            public int MinContentSize { get; set; }
+
+            public int MaxContentSize { get; set; }
+
+            public byte[] Content { get; set; }
+
+            public byte[] CreateMessage(PacketProtocol  packetProtocol)
+            {
+                Content = GenerateRandomContent(MinContentSize, MaxContentSize);
+
+                var packet = new Packet
+                {
+                    PacketFlags = PacketFlags,
+                    PacketType = PacketType,
+                    Content = Content
+                };
+
+                byte[] message;
+                packetProtocol.TryWrapPacket(packet, out message);
+                return message;
+            }
+
+            public override string ToString()
+            {
+                var builder = new StringBuilder();
+
+                builder.AppendFormat("Settings={0}\n", Settings);
+                builder.AppendFormat("PacketFlags={0}\n", PacketFlags);
+                builder.AppendFormat("PacketType={0}\n", PacketType);
+                builder.AppendFormat("MinContentSize={0}\n", MinContentSize);
+                builder.AppendFormat("MaxContentSize={0}\n", MaxContentSize);
+
+                return builder.ToString();
+            }
         }
 
         static byte[] GenerateRandomContent(int minLength, int maxLength)
@@ -274,29 +382,162 @@ namespace Tizsoft.Treenet.Tests
             random.NextBytes(bytes);
             return bytes;
         }
-        
-        public static IEnumerable<TryParsePacketCaseSource> TestValidTryParsePacketCaseSources()
+
+        // Precondition: TryWrapMessage is correct.
+        public IEnumerable<TryParsePacketCaseSource> TestValidTryParsePacketCaseSources()
         {
+            var expectedSignature = new byte[] { 12, 34, 56, 78, 90 };
+            const int maxContentSize = 4 * 1024 * 1024;
+
+            var cryptoProvider = new XorCryptoProvider("No Game No Life.");
+
+            // TODO: Case 4: Requires compression.
+
+            #region Without crypto & compress.
+
+            // Case 1: Normal case.
             yield return new TryParsePacketCaseSource
             {
                 Settings = new PacketProtocolSettings
                 {
-                    
+                    Signature = expectedSignature,
+                    MaxContentSize = maxContentSize,
                 },
-                
+                CryptoProvider = null,
+                CompressProvider = null,
+                PacketFlags = PacketFlags.None,
+                PacketType = PacketType.Stream,
+                MinContentSize = 1024,
+                MaxContentSize = 1024,
             };
+
+            // Case 2: Max content size.
+            yield return new TryParsePacketCaseSource
+            {
+                Settings = new PacketProtocolSettings
+                {
+                    Signature = expectedSignature,
+                    MaxContentSize = maxContentSize,
+                },
+                CryptoProvider = null,
+                CompressProvider = null,
+                PacketFlags = PacketFlags.None,
+                PacketType = PacketType.Stream,
+                MinContentSize = maxContentSize,
+                MaxContentSize = maxContentSize,
+            };
+
+            // Case 3: Keepalive or empty content.
+            yield return new TryParsePacketCaseSource
+            {
+                Settings = new PacketProtocolSettings
+                {
+                    Signature = expectedSignature,
+                    MaxContentSize = maxContentSize,
+                },
+                CryptoProvider = null,
+                CompressProvider = null,
+                PacketFlags = PacketFlags.None,
+                PacketType = PacketType.Stream,
+                MinContentSize = 0,
+                MaxContentSize = 0,
+            };
+
+            #endregion
+
+
+            #region Crypto only.
+
+            // Case 1: Normal case.
+            yield return new TryParsePacketCaseSource
+            {
+                Settings = new PacketProtocolSettings
+                {
+                    Signature = expectedSignature,
+                    MaxContentSize = maxContentSize,
+                },
+                CryptoProvider = cryptoProvider,
+                CompressProvider = null,
+                PacketFlags = PacketFlags.None,
+                PacketType = PacketType.Stream,
+                MinContentSize = 1024,
+                MaxContentSize = 1024,
+            };
+
+            // Case 2: Max content size.
+            yield return new TryParsePacketCaseSource
+            {
+                Settings = new PacketProtocolSettings
+                {
+                    Signature = expectedSignature,
+                    MaxContentSize = maxContentSize,
+                },
+                CryptoProvider = cryptoProvider,
+                CompressProvider = null,
+                PacketFlags = PacketFlags.None,
+                PacketType = PacketType.Stream,
+                MinContentSize = maxContentSize,
+                MaxContentSize = maxContentSize,
+            };
+
+            // Case 3: Keepalive or empty content.
+            yield return new TryParsePacketCaseSource
+            {
+                Settings = new PacketProtocolSettings
+                {
+                    Signature = expectedSignature,
+                    MaxContentSize = maxContentSize,
+                },
+                CryptoProvider = cryptoProvider,
+                CompressProvider = null,
+                PacketFlags = PacketFlags.None,
+                PacketType = PacketType.Stream,
+                MinContentSize = 0,
+                MaxContentSize = 0,
+            };
+
+            #endregion
         }
-        
+
         // Precondition: TryWrapPacket must be correct.
         [TestCaseSource("TestValidTryParsePacketCaseSources")]
         public void TestValidTryParsePacket(TryParsePacketCaseSource caseSource)
         {
-            
+            Debug.WriteLine(caseSource);
+
+            var packetProtocol = new PacketProtocol(caseSource.Settings)
+            {
+                CryptoProvider = caseSource.CryptoProvider,
+                CompressProvider = caseSource.CompressProvider
+            };
+
+            IPacket packet;
+            if (packetProtocol.TryParsePacket(caseSource.CreateMessage(packetProtocol), out packet))
+            {
+                Assert.IsNotNull(packet);
+                Assert.AreEqual(caseSource.PacketFlags, packet.PacketFlags);
+                Assert.AreEqual(caseSource.PacketType, packet.PacketType);
+
+                var actualContent = packet.Content;
+                Assert.AreEqual(caseSource.Content.Length, actualContent.Length);
+
+                for (var i = 0; i != caseSource.Content.Length; ++i)
+                {
+                    if (caseSource.Content[i] != actualContent[i])
+                    {
+                        Assert.Fail("Content is not matched.");
+                    }
+                }
+            }
+            else
+            {
+                Assert.Fail();
+            }
         }
 
         public void TestInvalidTryParsePacket()
         {
-            
+
         }
     }
 }

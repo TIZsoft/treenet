@@ -31,49 +31,68 @@ namespace Tizsoft.Treenet
         {
             if (packet == null)
             {
-                throw new ArgumentNullException("packet");
+                message = null;
+                return false;
             }
 
-            using (var memoryStream = new MemoryStream())
+            try
             {
-                using (var binaryWriter = new BinaryWriter(memoryStream))
+                using (var memoryStream = new MemoryStream())
                 {
-                    // Write header.
-                    WriteSignature(memoryStream);
-
-                    var packetFlags = (byte)packet.PacketFlags;
-                    var packetType = (byte)packet.PacketType;
-
-                    binaryWriter.Write(packetFlags);
-                    binaryWriter.Write(packetType);
-
-                    var content = packet.Content;
-
-                    // Compress if necessary.
-                    if (packet.PacketFlags.HasFlag(PacketFlags.Compressed))
+                    using (var binaryWriter = new BinaryWriter(memoryStream))
                     {
-                        if (CompressProvider != null)
+                        // Write header.
+                        WriteSignature(memoryStream);
+
+                        var packetFlags = (byte) packet.PacketFlags;
+                        var packetType = (byte) packet.PacketType;
+
+                        binaryWriter.Write(packetFlags);
+                        binaryWriter.Write(packetType);
+
+                        var content = packet.Content;
+
+                        // Compress if necessary.
+                        if (packet.PacketFlags.HasFlag(PacketFlags.Compressed))
                         {
-                            content = CompressProvider.Compress(content);
+                            if (CompressProvider != null)
+                            {
+                                content = CompressProvider.Compress(content);
+                            }
+                            else
+                            {
+                                GLogger.Error("Content requires compression but CompressProvider is null.");
+                                message = null;
+                                return false;
+                            }
                         }
-                        else
+
+                        // Write content.
+                        var contentLength = content.Length;
+
+                        Debug.Assert(contentLength >= 0);
+                        if (contentLength > Settings.MaxContentSize)
                         {
-                            GLogger.Error("Content requires compression but CompressProvider is null.");
                             message = null;
                             return false;
                         }
+
+                        binaryWriter.Write(contentLength);
+                        binaryWriter.Write(content);
+
+                        message = memoryStream.ToArray();
+                        Encrypt(ref message);
+
+                        return true;
                     }
-
-                    // Write content.
-                    var contentLength = content.Length;
-                    binaryWriter.Write(contentLength);
-                    binaryWriter.Write(content);
-
-                    message = memoryStream.ToArray();
-                    Encrypt(ref message);
-
-                    return true;
                 }
+            }
+            catch (Exception e)
+            {
+                // Should never occurred.
+                Debug.WriteLine(e);
+                message = null;
+                return false;
             }
         }
 
@@ -130,12 +149,24 @@ namespace Tizsoft.Treenet
                             }
                         }
 
-                        // Extract header and content.
-                        var contentLength = message.Length - Settings.HeaderSize;
-                        Debug.Assert(contentLength >= 0);
-
                         var packetFlags = (PacketFlags)binaryReader.ReadByte();
                         var packetType = (PacketType)binaryReader.ReadByte();
+                        
+                        // Extract header and content.
+                        var contentLength = binaryReader.ReadInt32();
+
+                        if (contentLength < 0)
+                        {
+                            packet = default(IPacket);
+                            return false;
+                        }
+
+                        if (contentLength > Settings.MaxContentSize)
+                        {
+                            packet = default(IPacket);
+                            return false;
+                        }
+
                         var content = binaryReader.ReadBytes(contentLength);
                         
                         if (packetFlags.HasFlag(PacketFlags.Compressed))
