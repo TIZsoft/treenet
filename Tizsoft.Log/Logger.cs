@@ -169,7 +169,12 @@ namespace Tizsoft.Log
             Log.Debug(message);
         }
 
-        public static void DebugFormat(string format, params object[] args)
+        public static void Debug(string format)
+        {
+            Log.DebugFormat(format);
+        }
+
+        public static void Debug(string format, params object[] args)
         {
             Log.DebugFormat(format, args);
         }
@@ -179,7 +184,12 @@ namespace Tizsoft.Log
             Log.Error(message);
         }
 
-        public static void ErrorFormat(string format, params object[] args)
+        public static void Error(string format)
+        {
+            Log.ErrorFormat(format);
+        }
+
+        public static void Error(string format, params object[] args)
         {
             Log.ErrorFormat(format, args);
         }
@@ -189,7 +199,12 @@ namespace Tizsoft.Log
             Log.Fatal(message);
         }
 
-        public static void FatalFormat(string format, params object[] args)
+        public static void Fatal(string format)
+        {
+            Log.FatalFormat(format);
+        }
+
+        public static void Fatal(string format, params object[] args)
         {
             Log.FatalFormat(format, args);
         }
@@ -199,7 +214,12 @@ namespace Tizsoft.Log
             Log.Info(message);
         }
 
-        public static void InfoFormat(string format, params object[] args)
+        public static void Info(string format)
+        {
+            Log.InfoFormat(format);
+        }
+
+        public static void Info(string format, params object[] args)
         {
             Log.InfoFormat(format, args);
         }
@@ -209,7 +229,12 @@ namespace Tizsoft.Log
             Log.Warn(message);
         }
 
-        public static void WarnFormat(string format, params object[] args)
+        public static void Warn(string format)
+        {
+            Log.WarnFormat(format);
+        }
+
+        public static void Warn(string format, params object[] args)
         {
             Log.WarnFormat(format, args);
         }

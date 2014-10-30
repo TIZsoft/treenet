@@ -29,7 +29,7 @@ namespace Tizsoft.Treenet
 
         void OnAsyncReceiveCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
-            GLogger.DebugFormat("async {0} complete with result {1}", socketOperation.LastOperation, socketOperation.SocketError);
+            GLogger.Debug("async {0} complete with result {1}", socketOperation.LastOperation, socketOperation.SocketError);
 
             switch (socketOperation.LastOperation)
             {

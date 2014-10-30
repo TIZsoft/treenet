@@ -65,7 +65,7 @@ namespace Tizsoft.Treenet
         {
             var jsonStr = JsonConvert.SerializeObject(config);
             File.WriteAllText(ConfigFullPath(appPath), jsonStr, Encoding.UTF8);
-            GLogger.Debug(jsonStr);
+            GLogger.Debug((object) jsonStr);
         }
     }
 }

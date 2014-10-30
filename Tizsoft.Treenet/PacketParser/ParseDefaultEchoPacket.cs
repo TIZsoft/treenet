@@ -9,7 +9,7 @@ namespace Tizsoft.Treenet.PacketParser
 
         public void Process(IPacket packet)
         {
-            GLogger.Debug("parse by default: echo back!");
+            GLogger.Debug((object) "parse by default: echo back!");
             packet.Connection.Send(packet.Content, packet.PacketType);
         }
 
