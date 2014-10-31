@@ -8,6 +8,7 @@ using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
+    // TODO: Reuse packets.
     // TODO: Non-blocking decrypt & decompress.
     public class PacketProtocol
     {
@@ -16,6 +17,8 @@ namespace Tizsoft.Treenet
         public ICryptoProvider CryptoProvider { private get; set; }
 
         public ICompressProvider CompressProvider { private get; set; }
+
+        public IPacketContainer PacketContainer { private get; set; }
 
         public PacketProtocol(PacketProtocolSettings settings)
         {
@@ -115,9 +118,10 @@ namespace Tizsoft.Treenet
         /// <returns></returns>
         public bool TryParsePacket(byte[] message, out IPacket packet)
         {
+            packet = null;
+
             if (message == null)
             {
-                packet = default(IPacket);
                 return false;
             }
 
@@ -125,7 +129,6 @@ namespace Tizsoft.Treenet
 
             if (message.Length < Settings.HeaderSize)
             {
-                packet = default(IPacket);
                 return false;
             }
 
@@ -144,7 +147,6 @@ namespace Tizsoft.Treenet
                             var signature = binaryReader.ReadBytes(Settings.SignatureLength);
                             if (!CheckSignature(signature))
                             {
-                                packet = default(IPacket);
                                 return false;
                             }
                         }
@@ -157,13 +159,11 @@ namespace Tizsoft.Treenet
 
                         if (contentLength < 0)
                         {
-                            packet = default(IPacket);
                             return false;
                         }
 
                         if (contentLength > Settings.MaxContentSize)
                         {
-                            packet = default(IPacket);
                             return false;
                         }
 
@@ -178,7 +178,6 @@ namespace Tizsoft.Treenet
                             else
                             {
                                 // Decompression failed.
-                                packet = default(IPacket);
                                 return false;
                             }
                         }
@@ -199,7 +198,7 @@ namespace Tizsoft.Treenet
                 Debug.WriteLine(e);
 
                 // Fallback object state.
-                packet = default(IPacket);
+                packet = null;
                 return false;
             }
         }

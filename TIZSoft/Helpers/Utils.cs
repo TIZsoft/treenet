@@ -22,7 +22,7 @@ namespace Tizsoft.Helpers
         }
 
         /// <summary>
-        /// Split an array to a list of segments by segment size.
+        /// Split up an array into a list of segments by segment size.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source">The source array.</param>
@@ -78,6 +78,47 @@ namespace Tizsoft.Helpers
             {
                 var remainingIndex = segments.Length - 1;
                 segments[remainingIndex] = new ArraySegment<T>(source, remainingIndex * segmentSize, remaining);
+            }
+
+            return segments;
+        }
+
+        /// <summary>
+        /// Split up an array into a list of array by segment size.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="segmentSize"></param>
+        /// <returns></returns>
+        public static IList<T[]> SplitArray<T>(T[] source, int segmentSize)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+
+            if (segmentSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException("source", "Segment size must greater than zero.");
+            }
+
+            var segmentCount = source.Length / segmentSize;
+            var remaining = source.Length - segmentCount * segmentSize;
+            var segments = new T[segmentCount + (remaining > 0 ? 1 : 0)][];
+
+            for (var i = 0; i != segmentCount; ++i)
+            {
+                var segment = new T[segmentSize];
+                Array.Copy(source, i * segmentSize, segment, 0, segmentSize);
+                segments[i] = segment;
+            }
+
+            if (remaining > 0)
+            {
+                var remainingIndex = segments.Length - 1;
+                var segment = new T[remaining];
+                Array.Copy(source, remainingIndex * segmentSize, segment, 0, remaining);
+                segments[remainingIndex] = segment;
             }
 
             return segments;

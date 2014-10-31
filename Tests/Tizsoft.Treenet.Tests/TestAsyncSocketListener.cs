@@ -63,7 +63,6 @@ namespace Tizsoft.Treenet.Tests
                 BufferSize = 512,
                 Backlog = 10,
                 MaxConnections = 10,
-                Header = new byte[0],
                 TimeOut = 5.0,
                 TransferType = SocketType.Stream,
                 UseProtocol = ProtocolType.Tcp

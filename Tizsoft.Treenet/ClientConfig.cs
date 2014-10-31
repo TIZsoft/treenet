@@ -11,9 +11,13 @@ namespace Tizsoft.Treenet
 
         public int BufferSize { get; set; }
 
+        public int MaxMessageSize { get; set; }
+
         public SocketType TransferType { get; set; }
 
         public ProtocolType UseProtocol { get; set; }
+
+        public PacketProtocolSettings PacketProtocolSettings { get; set; }
 
         public bool AutoReConnect { get; set; }
 
@@ -23,6 +27,7 @@ namespace Tizsoft.Treenet
             TransferType = SocketType.Stream;
             UseProtocol = ProtocolType.Tcp;
             AutoReConnect = true;
+            MaxMessageSize = 64 * 1024;
         }
     }
 }

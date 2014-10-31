@@ -5,6 +5,7 @@ using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
+    // TODO: Reuse packets.
     public class PacketContainer : IPacketContainer
     {
         readonly ConcurrentQueue<IPacket> _queueingPackets = new ConcurrentQueue<IPacket>();
@@ -24,10 +25,22 @@ namespace Tizsoft.Treenet
             _crypto = crypto;
         }
 
-        public void AddPacket(IConnection connection, byte[] contents, PacketType packetType)
+        public void AddPacket(IConnection connection, byte[] content, PacketType packetType)
         {
             var packet = GetUnusedPacket();
-            packet.SetContent(connection, contents, packetType);
+            packet.Connection = connection;
+            packet.Content = content;
+            packet.PacketType = packetType;
+            _queueingPackets.Enqueue(packet);
+        }
+
+        public void AddPacket(IPacket packet)
+        {
+            if (packet == null)
+            {
+                throw new ArgumentNullException("packet");
+            }
+
             _queueingPackets.Enqueue(packet);
         }
 
@@ -41,7 +54,9 @@ namespace Tizsoft.Treenet
             packet.Clear();
 
             if (packet != Packet.Null)
+            {
                 _unusedPackets.Enqueue(packet);
+            }
         }
 
         public void Clear()
@@ -56,6 +71,7 @@ namespace Tizsoft.Treenet
             }
         }
 
+        [Obsolete("Use PacketProtocol instead.")]
         public void ValidatePacket(IConnection connection, byte[] buffer)
         {
             var bufferPos = 0;

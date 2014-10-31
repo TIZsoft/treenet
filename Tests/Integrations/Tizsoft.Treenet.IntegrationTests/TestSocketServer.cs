@@ -38,10 +38,11 @@ namespace Tizsoft.Treenet.IntegrationTests
                     BufferSize = other.ServerConfig.BufferSize,
                     Backlog = other.ServerConfig.Backlog,
                     MaxConnections = other.ServerConfig.MaxConnections,
-                    Header = other.ServerConfig.Header,
+                    MaxMessageSize = other.ServerConfig.MaxMessageSize,
                     TimeOut = other.ServerConfig.TimeOut,
                     TransferType = other.ServerConfig.TransferType,
-                    UseProtocol = other.ServerConfig.UseProtocol
+                    UseProtocol = other.ServerConfig.UseProtocol,
+                    PacketProtocolSettings = other.ServerConfig.PacketProtocolSettings
                 };
 
                 ClientConfig = new ClientConfig
@@ -49,8 +50,10 @@ namespace Tizsoft.Treenet.IntegrationTests
                     Address = other.ClientConfig.Address,
                     Port = other.ClientConfig.Port,
                     BufferSize = other.ClientConfig.BufferSize,
+                    MaxMessageSize = other.ClientConfig.MaxMessageSize,
                     TransferType = other.ClientConfig.TransferType,
-                    UseProtocol = other.ClientConfig.UseProtocol
+                    UseProtocol = other.ClientConfig.UseProtocol,
+                    PacketProtocolSettings = other.ClientConfig.PacketProtocolSettings
                 };
 
                 ClientCount = other.ClientCount;
@@ -92,17 +95,23 @@ namespace Tizsoft.Treenet.IntegrationTests
 
         #region Case sources.
 
-        public static IEnumerable<CaseSource> Cases()
+        public IEnumerable<CaseSource> Cases()
         {
             const string address = "127.0.0.1";
             const int port = 50035;
-            var defaultBufferSize = 512 + Network.PacketMinSize;
+            const int defaultBufferSize = 1024;
             const int defaultBacklog = 1000;
             const int defaultMaxConnectionCount = 1000;
-            var defaultHeader = new byte[0];
-            const double timeout = 3.0;
+            const int defaultMaxMessageSize = 520 * 1024 * 1024;
+            const double timeout = 45.0;
             const SocketType socketType = SocketType.Stream;
             const ProtocolType protocolType = ProtocolType.Tcp;
+
+            var packetProtocolSettings = new PacketProtocolSettings
+            {
+                Signature = new byte[] { 12, 34, 56, 78, 90 },
+                MaxContentSize = 512 * 1024 * 1024,
+            };
 
             var prototype = new CaseSource
             {
@@ -113,18 +122,21 @@ namespace Tizsoft.Treenet.IntegrationTests
                     BufferSize = defaultBufferSize,
                     Backlog = defaultBacklog,
                     MaxConnections = defaultMaxConnectionCount,
-                    Header = defaultHeader,
+                    MaxMessageSize = defaultMaxMessageSize,
                     TimeOut = timeout,
                     TransferType = socketType,
                     UseProtocol = protocolType,
+                    PacketProtocolSettings = packetProtocolSettings,
                 },
                 ClientConfig = new ClientConfig
                 {
                     Address = address,
                     Port = port,
                     BufferSize = defaultBufferSize,
+                    MaxMessageSize = defaultMaxMessageSize,
                     TransferType = socketType,
                     UseProtocol = protocolType,
+                    PacketProtocolSettings = packetProtocolSettings,
                 },
                 ContentSize = 400,
             };
@@ -134,55 +146,57 @@ namespace Tizsoft.Treenet.IntegrationTests
             yield return CreateSendReceiveTestSource(prototype, 1, 10);
             yield return CreateSendReceiveTestSource(prototype, 1, 100);
 
-            // Begin client count = 10
-            yield return CreateSendReceiveTestSource(prototype, 10, 1);
-            yield return CreateSendReceiveTestSource(prototype, 10, 10);
-            yield return CreateSendReceiveTestSource(prototype, 10, 100);
+            // Begin client count = 16
+            yield return CreateSendReceiveTestSource(prototype, 16, 1);
+            yield return CreateSendReceiveTestSource(prototype, 16, 10);
+            yield return CreateSendReceiveTestSource(prototype, 16, 100);
 
-            // Begin client count = 100
-            yield return CreateSendReceiveTestSource(prototype, 100, 1);
-            yield return CreateSendReceiveTestSource(prototype, 100, 10);
-            yield return CreateSendReceiveTestSource(prototype, 100, 100);
+            // Begin client count = 128
+            yield return CreateSendReceiveTestSource(prototype, 128, 1);
+            yield return CreateSendReceiveTestSource(prototype, 128, 10);
+            yield return CreateSendReceiveTestSource(prototype, 128, 100);
 
-            // Begin client count = 1000
-            yield return CreateSendReceiveTestSource(prototype, 1000, 1);
-            yield return CreateSendReceiveTestSource(prototype, 1000, 10);
-            yield return CreateSendReceiveTestSource(prototype, 1000, 100);
+            // Begin client count = 512
+            yield return CreateSendReceiveTestSource(prototype, 512, 1);
+            yield return CreateSendReceiveTestSource(prototype, 512, 10);
+            yield return CreateSendReceiveTestSource(prototype, 512, 100);
 
             // Begin bandwidth test
             const int megabytes = 1024 * 1024;
 
-            // 1MB
-            yield return CreateBandwidthTestSource(prototype, megabytes, 1);
+            // 64MB
+            yield return CreateBandwidthTestSource(prototype, 64 * megabytes, 1);
 
-            // 10MB
-            yield return CreateBandwidthTestSource(prototype, megabytes, 10);
+            // 128MB
+            yield return CreateBandwidthTestSource(prototype, 128 * megabytes, 1);
 
-            // 100MB
-            yield return CreateBandwidthTestSource(prototype, megabytes, 100);
+            // 256MB
+            yield return CreateBandwidthTestSource(prototype, 256 * megabytes, 1);
 
-            // 1000MB
-            yield return CreateBandwidthTestSource(prototype, megabytes, 1000);
+            // 512MB
+            yield return CreateBandwidthTestSource(prototype, 512 * megabytes, 1);
         }
 
         static CaseSource CreateSendReceiveTestSource(CaseSource prototype, int clientCount, int sendTimes)
         {
             const int contentSize = 512;
-            var caseSource = new CaseSource(prototype);
-            caseSource.ServerConfig.BufferSize = caseSource.ClientConfig.BufferSize = contentSize + Network.PacketMinSize;
-            caseSource.ClientCount = clientCount;
-            caseSource.ContentSize = contentSize;
-            caseSource.SendTimes = sendTimes;
+            var caseSource = new CaseSource(prototype)
+            {
+                ClientCount = clientCount,
+                ContentSize = contentSize,
+                SendTimes = sendTimes
+            };
             return caseSource;
         }
 
         static CaseSource CreateBandwidthTestSource(CaseSource prototype, int contentSize, int sendTimes)
         {
-            var caseSource = new CaseSource(prototype);
-            caseSource.ServerConfig.BufferSize = caseSource.ClientConfig.BufferSize = contentSize + Network.PacketMinSize;
-            caseSource.ClientCount = 1;
-            caseSource.ContentSize = contentSize;
-            caseSource.SendTimes = sendTimes;
+            var caseSource = new CaseSource(prototype)
+            {
+                ClientCount = 1,
+                ContentSize = contentSize,
+                SendTimes = sendTimes
+            };
             return caseSource;
         }
 
@@ -224,8 +238,8 @@ namespace Tizsoft.Treenet.IntegrationTests
         {
             Debug.Print("[INFO] ClientCount={0}, ConentSize={1}, SendTimes={2}", caseSource.ClientCount, caseSource.ContentSize, caseSource.SendTimes);
 
+            var guidHash = new HashSet<Guid>();
             var receivedByteCount = 0;
-            var incomingMessageCount = 0;
             var connectedCount = 0;
             var incomingMessageListener = new SocketServerIncomingMessageListener((connection, isConnected) =>
             {
@@ -245,9 +259,24 @@ namespace Tizsoft.Treenet.IntegrationTests
             _server.Register(incomingMessageListener);
             _server.AddParser(PacketType.Stream, new PacketProcessor(packet =>
             {
-                receivedByteCount += packet.Content.Length;
-                incomingMessageCount++;
-                Debug.Print("[RCVD] Message serial={0}, Message size={1}, received byte count={2}", incomingMessageCount, packet.Content.Length, receivedByteCount);
+                var content = packet.Content;
+                
+                var guidBytes = new byte[16];
+                Array.Copy(content, 0, guidBytes, 0, guidBytes.Length);
+                var guid = new Guid(guidBytes);
+
+                if (guidHash.Remove(guid))
+                {
+                    receivedByteCount += content.Length;
+
+                    Debug.Print("[RCVD] GUID={0}, received byte count={1}",
+                        guid,
+                        receivedByteCount);
+                }
+                else
+                {
+                    Assert.Fail("GUID not matched.");
+                }
             }));
             _server.Start();
 
@@ -268,7 +297,7 @@ namespace Tizsoft.Treenet.IntegrationTests
             var maxConnection = Math.Min(caseSource.ClientCount, caseSource.ServerConfig.MaxConnections);
             var sentClients = new HashSet<SocketClient>();
             var sendedCount = 0;
-
+            
             while (sendedCount < maxConnection)
             {
                 foreach (var client in _clients)
@@ -279,6 +308,11 @@ namespace Tizsoft.Treenet.IntegrationTests
                         {
                             for (var i = 0; i != caseSource.SendTimes; ++i)
                             {
+                                var guid = Guid.NewGuid();
+                                guidHash.Add(guid);
+
+                                var guidBytes = guid.ToByteArray();
+                                Array.Copy(guidBytes, 0, sendContent, 0, guidBytes.Length);
                                 client.Send(sendContent, PacketType.Stream);
                             }
                             ++sendedCount;
@@ -316,6 +350,11 @@ namespace Tizsoft.Treenet.IntegrationTests
                 {
                     Assert.Greater(connectedCount, 0);
                 }
+            }
+
+            if (guidHash.Count != 0)
+            {
+                Assert.Fail("Packets lost.");
             }
         }
     }

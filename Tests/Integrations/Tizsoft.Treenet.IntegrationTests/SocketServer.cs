@@ -26,18 +26,22 @@ namespace Tizsoft.Treenet.IntegrationTests
             {
                 throw new ArgumentNullException("config");
             }
+
+            var packetProtocol = new PacketProtocol(config.PacketProtocolSettings);
             
             _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
             _sendBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
 
             _packetContainer.Setup(CryptoProvider);
             _packetSender.Setup(_sendBufferManager, config.MaxConnections, CryptoProvider);
+            _packetSender.PacketProtocol = packetProtocol;
             
             var connectionPool = new FixedSizeObjPool<IConnection>(config.MaxConnections);
 
             for (var i = 0; i < config.MaxConnections; ++i)
             {
-                var connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender);
+                var connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, config.MaxMessageSize);
+                connection.PacketProtocol = packetProtocol;
                 connection.Register(_socketListener);
                 connectionPool.Push(connection);
             }

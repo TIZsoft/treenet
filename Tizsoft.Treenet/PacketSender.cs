@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics;
 using System.Net.Sockets;
+using System.Threading;
 using Tizsoft.Collections;
+using Tizsoft.Helpers;
 using Tizsoft.Log;
 using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
@@ -11,11 +14,22 @@ namespace Tizsoft.Treenet
 {
     public class PacketSender
     {
+        struct SendOperand
+        {
+            public IConnection Connection { get; set; }
+
+            public byte[] Message { get; set; }
+        }
+
+        volatile object _syncRoot = new object();
         FixedSizeObjPool<SocketAsyncEventArgs> _asyncSendOpPool;
-        List<SocketAsyncEventArgs> _workingAsyncSendOps;
-        readonly IPacketContainer _sendPacketContainer = new PacketContainer();
+        HashSet<SocketAsyncEventArgs> _workingAsyncSendOps;
+        readonly ConcurrentQueue<SendOperand> _sendQueue = new ConcurrentQueue<SendOperand>();
         byte[] _sendBuffer;
-        ICryptoProvider _crypto;
+
+        readonly IPacketContainer _sendPacketContainer = new PacketContainer();
+
+        public PacketProtocol PacketProtocol { get; set; }
 
         void OnAsyncSendCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
@@ -37,18 +51,25 @@ namespace Tizsoft.Treenet
 
             if (sendOperation.SocketError == SocketError.Success)
             {
-                GLogger.Debug("sent <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>", sendOperation.BytesTransferred, connection.DestAddress);
+                GLogger.Debug("sent <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>",
+                    sendOperation.BytesTransferred, connection.DestAddress);
             }
             else
             {
-                GLogger.Error("send msg to <color=cyan>{0}</color> failed due to <color=cyan>{1}</color>", connection.DestAddress, sendOperation.SocketError);
+                GLogger.Error("send msg to <color=cyan>{0}</color> failed due to <color=cyan>{1}</color>",
+                    connection.DestAddress, sendOperation.SocketError);
                 connection.Dispose();
             }
 
             sendOperation.UserToken = null;
             sendOperation.AcceptSocket = null;
-            _asyncSendOpPool.Push(sendOperation);
-            _workingAsyncSendOps.Remove(sendOperation);
+
+            lock (_asyncSendOpPool)
+                _asyncSendOpPool.Push(sendOperation);
+
+            lock (_workingAsyncSendOps)
+                _workingAsyncSendOps.Remove(sendOperation);
+
             StartSend();
         }
 
@@ -56,65 +77,66 @@ namespace Tizsoft.Treenet
         // TODO: Message framing.
         void StartSend()
         {
-            // BUG: If send operations are exhausted, then the pending packets (if exist) sink into hungry until SendMsg invoking.
-            //check if there is any available async send operation first, then pop from send queue,
-            //otherwise packet will lost when pop first and there is no available async send operation.
-            if (_asyncSendOpPool.Count == 0)
-                return;
-
-            var packet = _sendPacketContainer.NextPacket();
-
-            if (packet.IsNull ||
-                packet.Connection.IsNull)
-                return;
-
-            int msgSize;
-
-            using (var stream = new MemoryStream(_sendBuffer))
+            SendOperand sendOperand;
+            if (!_sendQueue.TryDequeue(out sendOperand))
             {
-                using (var writer = new BinaryWriter(stream))
-                {
-                    writer.Write(Network.CheckFlags);
-                    writer.Write(false);  //compression now set to false
-                    writer.Write((byte)packet.PacketType);
-                    var content = packet.Content;
+                return;
+            }
 
-                    if (content.Length + stream.Position <= _sendBuffer.Length)
+            // TODO: To be reviwed.
+            var spin = new SpinWait();
+            while (true)
+            {
+                //check if there is any available async send operation first, then pop from send queue,
+                //otherwise packet will lost when pop first and there is no available async send operation.
+                SocketAsyncEventArgs asyncSendOperation;
+
+                lock (_asyncSendOpPool)
+                {
+                    if (!_asyncSendOpPool.TryPop(out asyncSendOperation))
                     {
-                        writer.Write(content.Length);
-                        writer.Write(content);
+                        spin.SpinOnce();
+                        continue;
+                    }
+                }
+
+                Debug.Assert(asyncSendOperation != null);
+
+                asyncSendOperation.SetBuffer(asyncSendOperation.Offset, sendOperand.Message.Length);
+                Array.Copy(sendOperand.Message, 0, asyncSendOperation.Buffer, asyncSendOperation.Offset, sendOperand.Message.Length);
+                asyncSendOperation.UserToken = sendOperand.Connection;
+
+                lock (_workingAsyncSendOps)
+                {
+                    _workingAsyncSendOps.Add(asyncSendOperation);
+                }
+
+                var connectSocket = sendOperand.Connection.ConnectSocket;
+
+                if (connectSocket == null)
+                {
+                    GLogger.Error("You're trying to send a message but socket is null.");
+                    break;
+                }
+
+                try
+                {
+                    var willRaiseEvent = connectSocket.SendAsync(asyncSendOperation);
+
+                    if (willRaiseEvent)
+                    {
+                        break;
                     }
 
-                    msgSize = (int)stream.Position;    
+                    ProcessSend(asyncSendOperation);
                 }
-            }
-
-            if (_crypto != null)
-                _sendBuffer = _crypto.Encrypt(_sendBuffer, 0, msgSize);
-
-            // BUG: Possible expected an InvalidOperationException when send operation called too many times at same time.
-            var asyncSendOperation = _asyncSendOpPool.Pop();
-            asyncSendOperation.SetBuffer(asyncSendOperation.Offset, msgSize);
-            Buffer.BlockCopy(_sendBuffer, 0, asyncSendOperation.Buffer, asyncSendOperation.Offset, msgSize);
-            asyncSendOperation.UserToken = packet.Connection;
-            _workingAsyncSendOps.Add(asyncSendOperation);
-            
-            var connector = packet.Connection.ConnectSocket;
-
-            try
-            {
-                var willRaiseEvent = connector.SendAsync(asyncSendOperation);
-
-                if (willRaiseEvent)
+                catch (Exception e)
                 {
-                    return;
+                    GLogger.Error(e);
+                    sendOperand.Connection.Dispose();
                 }
 
-                ProcessSend(asyncSendOperation);
-            }
-            catch (Exception)
-            {
-                packet.Connection.Dispose();
+                break;
             }
         }
 
@@ -133,7 +155,6 @@ namespace Tizsoft.Treenet
                     if (sendOperation.AcceptSocket != null)
                     {
                         sendOperation.AcceptSocket.Shutdown(SocketShutdown.Both);
-                        sendOperation.AcceptSocket.Close();
                     }
                 }
                 catch (Exception e)
@@ -143,8 +164,13 @@ namespace Tizsoft.Treenet
                 }
                 finally
                 {
+                    if (sendOperation.AcceptSocket != null)
+                    {
+                        sendOperation.AcceptSocket.Close();
+                        sendOperation.AcceptSocket = null;
+                    }
+
                     sendOperation.UserToken = null;
-                    sendOperation.AcceptSocket = null;
                     _asyncSendOpPool.Push(sendOperation);
                 }
             }
@@ -154,7 +180,6 @@ namespace Tizsoft.Treenet
 
         public void Setup(BufferManager bufferManager, int asyncCount, ICryptoProvider crypto)
         {
-            _crypto = crypto;
             _sendBuffer = new byte[bufferManager.BufferSize];
             _sendPacketContainer.Clear();
             FreeWorkingAsyncSendOps();
@@ -170,13 +195,41 @@ namespace Tizsoft.Treenet
                 _asyncSendOpPool.Push(asyncSend);
             }
 
-            _workingAsyncSendOps = new List<SocketAsyncEventArgs>(asyncCount);
+            _workingAsyncSendOps = new HashSet<SocketAsyncEventArgs>();
         }
 
+        // TODO: Implements SendPacket method.
         public void SendMsg(IConnection connection, byte[] msg, PacketType packetType)
         {
-            _sendPacketContainer.AddPacket(connection, msg, packetType);
-            StartSend();
+            var packet = new Packet
+            {
+                Connection = connection,
+                PacketType = packetType,
+                Content = msg,
+            };
+
+            byte[] message;
+            if (PacketProtocol.TryWrapPacket(packet, out message))
+            {
+                message = MessageFraming.WrapMessage(message);
+
+                //_sendPacketContainer.AddPacket(connection, msg, packetType);
+                var splitedMessages = Utils.SplitArray(message, _sendBuffer.Length);
+                foreach (var splitedMessage in splitedMessages)
+                {
+                    var operand = new SendOperand
+                    {
+                        Connection = connection,
+                        Message = splitedMessage
+                    };
+                    _sendQueue.Enqueue(operand);
+                }
+                StartSend();
+            }
+            else
+            {
+                GLogger.Error("Packet wrapping failure.");
+            }
         }
     }
 }

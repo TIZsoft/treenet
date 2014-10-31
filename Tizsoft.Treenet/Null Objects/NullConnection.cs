@@ -17,6 +17,8 @@ namespace Tizsoft.Treenet
             get { return null; }
         }
 
+        public PacketProtocol PacketProtocol { get; set; }
+
         public void Dispose()
         {
 

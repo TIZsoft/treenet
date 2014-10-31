@@ -4,15 +4,13 @@
     {
         bool IsNull { get; }
 
-        PacketFlags PacketFlags { get; }
+        PacketFlags PacketFlags { get; set; }
 
-        PacketType PacketType { get; }
+        PacketType PacketType { get; set; }
 
-        byte[] Content { get; }
+        byte[] Content { get; set; }
 
-        IConnection Connection { get; }
-
-        void SetContent(IConnection connection, byte[] content, PacketType packetType);
+        IConnection Connection { get; set; }
 
         void Clear();
     }

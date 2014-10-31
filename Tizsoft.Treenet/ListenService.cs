@@ -15,13 +15,13 @@ namespace Tizsoft.Treenet
         readonly PacketHandler _packetHandler = new PacketHandler();
         readonly PacketSender _packetSender = new PacketSender();
 
-        void InitConnectionPool(int maxConnections, IPacketContainer packetContainer)
+        void InitConnectionPool(int maxConnections, IPacketContainer packetContainer, int maxMessageSize)
         {
             _connectionPool = new FixedSizeObjPool<IConnection>(maxConnections);
 
             for (var i = 0; i < maxConnections; ++i)
             {
-                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender);
+                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender, maxMessageSize);
                 connection.Register(_socketListener);
                 _connectionPool.Push(connection);
             }
@@ -48,7 +48,7 @@ namespace Tizsoft.Treenet
                 throw new InvalidCastException("configArgs");
 
             _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
-            InitConnectionPool(config.MaxConnections, _packetContainer);
+            InitConnectionPool(config.MaxConnections, _packetContainer, config.MaxMessageSize);
             var sendConnection = Math.Max(1, config.MaxConnections / 10);
             _sendBufferManager.InitBuffer(sendConnection, config.BufferSize);
             _packetSender.Setup(_sendBufferManager, config.MaxConnections / 10, new XorCryptoProvider(Network.DefaultXorKey));

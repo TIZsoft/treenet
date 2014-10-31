@@ -21,13 +21,15 @@ namespace Tizsoft.Treenet
 
         public int BufferSize { get; set; }
 
+        public int MaxMessageSize { get; set; }
+
         public SocketType TransferType { get; set; }
 
         public ProtocolType UseProtocol { get; set; }
 
         public double TimeOut { get; set; }
 
-        public byte[] Header { get; set; }
+        public PacketProtocolSettings PacketProtocolSettings { get; set; }
 
         const string ConfigFilename = "ServerConfig.json";
 
@@ -41,6 +43,7 @@ namespace Tizsoft.Treenet
             Address = "127.0.0.1";
             Backlog = 10;
             TimeOut = Network.PacketMinSize;
+            MaxMessageSize = 64 * 1024;
         }
 
         public static ServerConfig Read(string appPath)

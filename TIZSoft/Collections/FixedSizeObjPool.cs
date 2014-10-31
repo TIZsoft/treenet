@@ -50,15 +50,26 @@ namespace Tizsoft.Collections
         /// <returns></returns>
         public T Pop()
         {
-            int lastHash;
-            if (_hash.TryPop(out lastHash))
+            T item;
+            if (TryPop(out item))
             {
-                T item;
-                _pool.TryRemove(lastHash, out item);
                 return item;
             }
 
             throw new InvalidOperationException("Pop operation failure. The pool is already empty.");
+        }
+
+        public bool TryPop(out T item)
+        {
+            int lastHash;
+            if (_hash.TryPop(out lastHash))
+            {
+                _pool.TryRemove(lastHash, out item);
+                return true;
+            }
+
+            item = default(T);
+            return false;
         }
 
         /// <summary>

@@ -6,7 +6,9 @@ namespace Tizsoft.Treenet.Interface
     {
         void Setup(ICryptoProvider crypto);
 
-        void AddPacket(IConnection connection, byte[] contents, PacketType packetType);
+        void AddPacket(IConnection connection, byte[] content, PacketType packetType);
+
+        void AddPacket(IPacket packet);
 
         void RecyclePacket(IPacket packet);
 

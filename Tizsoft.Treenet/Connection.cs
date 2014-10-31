@@ -6,8 +6,7 @@ using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
-    // TODO: “TCP does not operate on packets of data. TCP operates on streams of data.”
-    // TODO: Message framing.
+    // TODO: Reuse packets.
     public class Connection : IConnection
     {
         static readonly IConnection NullConnection = new NullConnection();
@@ -15,7 +14,8 @@ namespace Tizsoft.Treenet
         public static IConnection Null { get { return NullConnection; } }
 
         bool _isActive;
-
+        readonly MessageFraming _messageFraming;
+        
         readonly SocketAsyncEventArgs _socketOperation;
         readonly PacketSender _packetSender;
         readonly IPacketContainer _packetContainer;
@@ -26,6 +26,8 @@ namespace Tizsoft.Treenet
         public string DestAddress { get; private set; }
 
         public Socket ConnectSocket { get; private set; }
+
+        public PacketProtocol PacketProtocol { get; set; }
 
         void OnAsyncReceiveCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
@@ -55,13 +57,10 @@ namespace Tizsoft.Treenet
                     return;
                 }
 
-                if (receiveOperation.BytesTransferred > Network.PacketMinSize)
-                {
-                    IdleTime = 0;
-                    var buffer = new byte[receiveOperation.BytesTransferred];
-                    Buffer.BlockCopy(receiveOperation.Buffer, receiveOperation.Offset, buffer, 0, receiveOperation.BytesTransferred);
-                    _packetContainer.ValidatePacket(this, buffer);
-                }
+                IdleTime = 0;
+                var buffer = new byte[receiveOperation.BytesTransferred];
+                Array.Copy(receiveOperation.Buffer, receiveOperation.Offset, buffer, 0, receiveOperation.BytesTransferred);
+                _messageFraming.DataReceived(buffer);
 
                 StartReceive();
             }
@@ -93,7 +92,6 @@ namespace Tizsoft.Treenet
             try
             {
                 ConnectSocket.Shutdown(SocketShutdown.Both);
-                ConnectSocket.Close(0);
             }
             catch (Exception e)
             {
@@ -101,12 +99,12 @@ namespace Tizsoft.Treenet
             }
             finally
             {
+                ConnectSocket.Close(0);
                 ConnectSocket = null;
             }
         }
 
-        public Connection(BufferManager bufferManager, IPacketContainer packetContainer, PacketSender packetSender)
-            : this()
+        public Connection(BufferManager bufferManager, IPacketContainer packetContainer, PacketSender packetSender, int maxMessageSize)
         {
             if (bufferManager == null)
                 throw new ArgumentNullException("bufferManager");
@@ -116,16 +114,35 @@ namespace Tizsoft.Treenet
 
             if (packetSender == null)
                 throw new ArgumentNullException("packetSender");
-            
+
+            DestAddress = string.Empty;
             _socketOperation = new SocketAsyncEventArgs();
             bufferManager.SetBuffer(_socketOperation);
             _packetContainer = packetContainer;
             _packetSender = packetSender;
+            _messageFraming = new MessageFraming(maxMessageSize);
+            _messageFraming.MessageArrived += OnMessageArrived;
         }
 
-        protected Connection()
+        void OnMessageArrived(object sender, MessageArrivedEventArgs e)
         {
-            DestAddress = string.Empty;
+            if (PacketProtocol == null)
+            {
+                throw new InvalidOperationException("PacketProtocol is null.");
+            }
+
+            // TODO: Reuse packets.
+            IPacket packet;
+            if (PacketProtocol.TryParsePacket(e.Message, out packet))
+            {
+                packet.Connection = this;
+                _packetContainer.AddPacket(packet);
+            }
+            else
+            {
+                // Invalid packet.
+                Dispose();
+            }
         }
 
         ~Connection()
@@ -167,6 +184,7 @@ namespace Tizsoft.Treenet
                 _isActive = false;
                 IdleTime = 0;
                 _socketOperation.Completed -= OnAsyncReceiveCompleted;
+                _messageFraming.Clear();
                 CloseConnectSocket();
                 Notify(this, false);
             }

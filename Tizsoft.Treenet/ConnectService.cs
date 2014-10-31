@@ -20,9 +20,9 @@ namespace Tizsoft.Treenet
         readonly PacketHandler _packetHandler = new PacketHandler();
         readonly PacketSender _packetSender = new PacketSender();
 
-        void InitConnectionPool()
+        void InitConnectionPool(int maxMessageSize)
         {
-            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender);
+            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, maxMessageSize);
             _connection.Register(_connector);
             _connectionPool = new FixedSizeObjPool<IConnection>(1);
             _connectionPool.Push(_connection);
@@ -57,7 +57,7 @@ namespace Tizsoft.Treenet
             _sendBufferManager.InitBuffer(1, _config.BufferSize);
             _packetSender.Setup(_sendBufferManager, 1, new XorCryptoProvider(Network.DefaultXorKey));
             _packetContainer.Setup(new XorCryptoProvider(Network.DefaultXorKey));
-            InitConnectionPool();
+            InitConnectionPool(_config.MaxMessageSize);
             _connector.Setup(_config, _connectionPool);
         }
 

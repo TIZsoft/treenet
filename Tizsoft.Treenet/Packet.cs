@@ -18,14 +18,14 @@ namespace Tizsoft.Treenet
 
         public bool IsNull { get { return false; } }
 
-        public PacketFlags PacketFlags { get; internal set; }
+        public PacketFlags PacketFlags { get; set; }
 
-        public PacketType PacketType { get; internal set; }
+        public PacketType PacketType { get; set; }
 
         public byte[] Content
         {
             get { return _buffer.ToArray(); }
-            internal set
+            set
             {
                 _buffer.SetLength(0);
                 if (value != null)
@@ -36,7 +36,7 @@ namespace Tizsoft.Treenet
             }
         }
 
-        public IConnection Connection { get; protected set; }
+        public IConnection Connection { get; set; }
 
         public Packet()
         {

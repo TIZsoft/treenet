@@ -86,6 +86,9 @@ namespace Tizsoft.Treenet
         ///     The maximum message size supported by this protocol. This may be less than or equal to
         ///     zero to indicate no maximum message size.
         /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///     Maximum message size is less than or equal to zero.
+        /// </exception>
         public MessageFraming(int maxMessageSize)
         {
             if (maxMessageSize <= 0)
@@ -193,6 +196,12 @@ namespace Tizsoft.Treenet
             }
 
             Debug.Assert(i == data.Length);
+        }
+
+        public void Clear()
+        {
+            _dataBuffer = null;
+            _bytesReceived = 0;
         }
 
         /// <summary>

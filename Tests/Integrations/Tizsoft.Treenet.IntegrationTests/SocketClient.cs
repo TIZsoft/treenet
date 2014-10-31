@@ -34,15 +34,19 @@ namespace Tizsoft.Treenet.IntegrationTests
                 throw new ArgumentNullException("config");
             }
 
+            var packetProtocol = new PacketProtocol(config.PacketProtocolSettings);
+
             _receiveBufferManager.InitBuffer(1, config.BufferSize);
             _sendBufferManager.InitBuffer(1, config.BufferSize);
 
             _packetSender.Setup(_sendBufferManager, 1, CryptoProvider);
+            _packetSender.PacketProtocol = packetProtocol;
             _packetContainer.Setup(CryptoProvider);
             _sendPacketContainer.Setup(CryptoProvider);
 
-            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender);
+            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, config.MaxMessageSize);
             _connection.Register(_connector);
+            _connection.PacketProtocol = packetProtocol;
 
             var connectionPool = new FixedSizeObjPool<IConnection>(1);
             connectionPool.Push(_connection);
@@ -129,8 +133,12 @@ namespace Tizsoft.Treenet.IntegrationTests
 
                 ++SentCount;
                 ++processedCount;
-                _packetSender.SendMsg(_connection, packet.Content, packet.PacketType);
-                Debug.Print("[SEND] Message size={0}, sent count={1}", packet.Content.Length, SentCount);
+                var content = packet.Content;
+                _packetSender.SendMsg(_connection, content, packet.PacketType);
+                var guidBytes = new byte[16];
+                Array.Copy(content, 0, guidBytes, 0, guidBytes.Length);
+                var guid = new Guid(guidBytes);
+                Debug.Print("[SEND] GUID={0}", guid);
 
                 if (processedCount >= maxProcessCount)
                 {

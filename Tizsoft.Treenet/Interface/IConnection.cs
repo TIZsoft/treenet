@@ -11,6 +11,8 @@ namespace Tizsoft.Treenet.Interface
 
         Socket ConnectSocket { get; }
 
+        PacketProtocol PacketProtocol { get; set; }
+
         void SetConnection(Socket socket);
 
         void Send(byte[] content, PacketType packetType);
