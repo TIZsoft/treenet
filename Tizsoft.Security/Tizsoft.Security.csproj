@@ -40,6 +40,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cryptography\ICryptoProvider.cs" />
+    <Compile Include="Cryptography\RijndaelCryptoProvider.cs" />
+    <Compile Include="Cryptography\RijndaelUtils.cs" />
     <Compile Include="Cryptography\XorCryptoProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
