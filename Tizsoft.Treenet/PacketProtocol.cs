@@ -125,7 +125,10 @@ namespace Tizsoft.Treenet
                 return false;
             }
 
-            Debug.Assert(Settings != null);
+            if (Settings == null)
+            {
+                throw new InvalidOperationException("Settings is null.");
+            }
 
             if (message.Length < Settings.HeaderSize)
             {
@@ -205,8 +208,6 @@ namespace Tizsoft.Treenet
 
         bool CheckSignature(byte[] signature)
         {
-            Debug.Assert(Settings != null);
-
             if (Settings.HasSignature)
             {
                 if (signature == null ||

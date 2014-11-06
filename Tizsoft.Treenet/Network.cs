@@ -21,9 +21,9 @@ namespace Tizsoft.Treenet
 
         public const int DefaultPortNumber = 5566;
 
-        public const double DefaultTimeOut = 5000f;
+        public const double DefaultTimeOut = 5000;
 
-        public const double DefaultTimeOutTick = 1000f;
+        public const double DefaultTimeOutTick = 1000;
 
         public const string DefaultXorKey = "Tizsoft";
 
@@ -39,19 +39,7 @@ namespace Tizsoft.Treenet
                     {
                         using (var writer = new BinaryWriter(stream))
                         {
-                            //writer.Write(0x54);
-                            writer.Write("鈦");
-                            //writer.Write(0x33);
-                            writer.Write("甲");
-                            //writer.Write(0x23);
-                            writer.Write("數");
-                            //writer.Write(0x37);
-                            writer.Write("位");
-                            //writer.Write(0x02);
-                            writer.Write("科");
-                            //writer.Write(0x8770);
-                            writer.Write("技");
-                            //writer.Write(0x7592);
+                            writer.Write("鈦甲數位科技");
                             _packetHeader = stream.ToArray();
                         }
                     }
@@ -62,11 +50,6 @@ namespace Tizsoft.Treenet
         }
 
         public static int CheckFlagSize { get { return CheckFlags.Length; } }
-
-        /// <summary>
-        /// PacketMinSize = CheckFlagSize + compression flag(bool) + packet type(byte) + content size(int)
-        /// </summary>
-        public static int PacketMinSize = CheckFlagSize + sizeof(bool) + sizeof(byte) + sizeof(int);
 
         /// <summary>
         /// 建立 keepalive 作業所需的輸入資料
@@ -84,9 +67,9 @@ namespace Tizsoft.Treenet
             return buffer;
         }
 
-        public static IPEndPoint GetIpEndPoint(string addressStr, int port, bool isIPv6 = false)
+        public static IPEndPoint GetIpEndPoint(string hostNameOrAddress, int port, bool isIPv6 = false)
         {
-            var hostAddresses = Dns.GetHostAddresses(addressStr);
+            var hostAddresses = Dns.GetHostAddresses(hostNameOrAddress);
 
             foreach (var ipAddress in hostAddresses)
             {
@@ -102,15 +85,15 @@ namespace Tizsoft.Treenet
             var addresses = new List<IPAddress>();
 
             // Get a list of all network interfaces (usually one per network card, dialup, and VPN connection)
-            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
 
-            foreach (NetworkInterface network in networkInterfaces)
+            foreach (var network in networkInterfaces)
             {
                 // Read the IP configuration for each network
-                IPInterfaceProperties properties = network.GetIPProperties();
+                var properties = network.GetIPProperties();
 
                 // Each network interface may have multiple IP addresses
-                foreach (IPAddressInformation address in properties.UnicastAddresses)
+                foreach (var address in properties.UnicastAddresses)
                 {
                     if (!includeIpV6 && address.Address.AddressFamily != AddressFamily.InterNetwork)
                         continue;
@@ -124,34 +107,6 @@ namespace Tizsoft.Treenet
             }
 
             return addresses;
-        }
-
-        public static bool HasValidHeader(byte[] msg, int msgOffset, int msgCount)
-        {
-            return HasValidHeader(CheckFlags, msg, msgOffset, msgCount);
-        }
-
-        public static bool HasValidHeader(byte[] header, byte[] msg, int msgOffset, int msgCount)
-        {
-            var checkFlags = header == null ? CheckFlags : header;
-
-            if (msgCount >= checkFlags.Length)
-            {
-                for (var i = 0; i < checkFlags.Length; i++)
-                {
-                    if (msg[i + msgOffset] != checkFlags[i])
-                        return false;
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool IsEmptyHeader(byte[] msg)
-        {
-            return (msg.Length > CheckFlagSize - 1 && msg[0] == 0 && msg[1] == 0 && msg[2] == 0 && msg[3] == 0);
         }
     }
 }

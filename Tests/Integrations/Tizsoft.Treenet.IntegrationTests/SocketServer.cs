@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using Tizsoft.Collections;
-using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet.IntegrationTests
 {
     class SocketServer : IConnectionSubject, IDisposable
     {
-        static readonly ICryptoProvider CryptoProvider = new XorCryptoProvider(Network.DefaultXorKey);
-
         readonly BufferManager _receiveBufferManager = new BufferManager();
         readonly BufferManager _sendBufferManager = new BufferManager();
         readonly AsyncSocketListener _socketListener = new AsyncSocketListener();
@@ -32,8 +29,7 @@ namespace Tizsoft.Treenet.IntegrationTests
             _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
             _sendBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
 
-            _packetContainer.Setup(CryptoProvider);
-            _packetSender.Setup(_sendBufferManager, config.MaxConnections, CryptoProvider);
+            _packetSender.Setup(_sendBufferManager, config.MaxConnections);
             _packetSender.PacketProtocol = packetProtocol;
             
             var connectionPool = new FixedSizeObjPool<IConnection>(config.MaxConnections);

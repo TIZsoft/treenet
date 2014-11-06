@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
-using System.Threading;
 using Tizsoft.Collections;
 using Tizsoft.Helpers;
 using Tizsoft.Log;
-using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -21,18 +18,16 @@ namespace Tizsoft.Treenet
             public byte[] Message { get; set; }
         }
 
-        volatile object _syncRoot = new object();
         FixedSizeObjPool<SocketAsyncEventArgs> _asyncSendOpPool;
-        HashSet<SocketAsyncEventArgs> _workingAsyncSendOps;
         readonly ConcurrentQueue<SendOperand> _sendQueue = new ConcurrentQueue<SendOperand>();
-        byte[] _sendBuffer;
-
-        readonly IPacketContainer _sendPacketContainer = new PacketContainer();
+        int _segmentSize;
 
         public PacketProtocol PacketProtocol { get; set; }
 
         void OnAsyncSendCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
+            Debug.Assert(socketOperation.LastOperation == SocketAsyncOperation.Send);
+
             switch (socketOperation.LastOperation)
             {
                 case SocketAsyncOperation.Send:
@@ -63,130 +58,61 @@ namespace Tizsoft.Treenet
 
             sendOperation.UserToken = null;
             sendOperation.AcceptSocket = null;
-
-            lock (_asyncSendOpPool)
-                _asyncSendOpPool.Push(sendOperation);
-
-            lock (_workingAsyncSendOps)
-                _workingAsyncSendOps.Remove(sendOperation);
-
-            StartSend();
+            
+            StartSend(sendOperation);
         }
 
-        // TODO: “TCP does not operate on packets of data. TCP operates on streams of data.”
-        // TODO: Message framing.
-        void StartSend()
+        void StartSend(SocketAsyncEventArgs asyncSendOperation)
         {
+            // Check if there is any available async send operation first, then pop from send queue,
+            // Otherwise packet will lost when pop first and there is no available async send operation.
+            if (asyncSendOperation == null)
+            {
+                return;
+            }
+
             SendOperand sendOperand;
             if (!_sendQueue.TryDequeue(out sendOperand))
             {
+                _asyncSendOpPool.Push(asyncSendOperation);
                 return;
             }
 
-            // TODO: To be reviwed.
-            var spin = new SpinWait();
-            while (true)
+            asyncSendOperation.SetBuffer(asyncSendOperation.Offset, sendOperand.Message.Length);
+            Array.Copy(sendOperand.Message, 0, asyncSendOperation.Buffer, asyncSendOperation.Offset, sendOperand.Message.Length);
+            asyncSendOperation.UserToken = sendOperand.Connection;
+
+            var connectSocket = sendOperand.Connection.ConnectSocket;
+
+            if (connectSocket == null)
             {
-                //check if there is any available async send operation first, then pop from send queue,
-                //otherwise packet will lost when pop first and there is no available async send operation.
-                SocketAsyncEventArgs asyncSendOperation;
-
-                lock (_asyncSendOpPool)
-                {
-                    if (!_asyncSendOpPool.TryPop(out asyncSendOperation))
-                    {
-                        spin.SpinOnce();
-                        continue;
-                    }
-                }
-
-                Debug.Assert(asyncSendOperation != null);
-
-                asyncSendOperation.SetBuffer(asyncSendOperation.Offset, sendOperand.Message.Length);
-                Array.Copy(sendOperand.Message, 0, asyncSendOperation.Buffer, asyncSendOperation.Offset, sendOperand.Message.Length);
-                asyncSendOperation.UserToken = sendOperand.Connection;
-
-                lock (_workingAsyncSendOps)
-                {
-                    _workingAsyncSendOps.Add(asyncSendOperation);
-                }
-
-                var connectSocket = sendOperand.Connection.ConnectSocket;
-
-                if (connectSocket == null)
-                {
-                    GLogger.Error("You're trying to send a message but socket is null.");
-                    break;
-                }
-
-                try
-                {
-                    var willRaiseEvent = connectSocket.SendAsync(asyncSendOperation);
-
-                    if (willRaiseEvent)
-                    {
-                        break;
-                    }
-
-                    ProcessSend(asyncSendOperation);
-                }
-                catch (Exception e)
-                {
-                    GLogger.Error(e);
-                    sendOperand.Connection.Dispose();
-                }
-
-                break;
-            }
-        }
-
-        void FreeWorkingAsyncSendOps()
-        {
-            if (_workingAsyncSendOps == null)
+                GLogger.Error("You're trying to send a message but socket is null.");
                 return;
-
-            foreach (var sendOperation in _workingAsyncSendOps)
-            {
-                if (sendOperation == null)
-                    continue;
-
-                try
-                {
-                    if (sendOperation.AcceptSocket != null)
-                    {
-                        sendOperation.AcceptSocket.Shutdown(SocketShutdown.Both);
-                    }
-                }
-                catch (Exception e)
-                {
-                    GLogger.Error(e);
-                    throw;
-                }
-                finally
-                {
-                    if (sendOperation.AcceptSocket != null)
-                    {
-                        sendOperation.AcceptSocket.Close();
-                        sendOperation.AcceptSocket = null;
-                    }
-
-                    sendOperation.UserToken = null;
-                    _asyncSendOpPool.Push(sendOperation);
-                }
             }
 
-            _workingAsyncSendOps.Clear();
+            try
+            {
+                var willRaiseEvent = connectSocket.SendAsync(asyncSendOperation);
+
+                if (willRaiseEvent)
+                {
+                    return;
+                }
+
+                ProcessSend(asyncSendOperation);
+            }
+            catch (Exception e)
+            {
+                GLogger.Error(e);
+                sendOperand.Connection.Dispose();
+            }
         }
 
-        public void Setup(BufferManager bufferManager, int asyncCount, ICryptoProvider crypto)
+        public void Setup(BufferManager bufferManager, int asyncCount)
         {
-            _sendBuffer = new byte[bufferManager.BufferSize];
-            _sendPacketContainer.Clear();
-            FreeWorkingAsyncSendOps();
-
             asyncCount = Math.Max(1, asyncCount);
             _asyncSendOpPool = new FixedSizeObjPool<SocketAsyncEventArgs>(asyncCount);
-
+            _segmentSize = bufferManager.SegmentSize;
             for (var i = 0; i < asyncCount; ++i)
             {
                 var asyncSend = new SocketAsyncEventArgs();
@@ -194,11 +120,8 @@ namespace Tizsoft.Treenet
                 asyncSend.Completed += OnAsyncSendCompleted;
                 _asyncSendOpPool.Push(asyncSend);
             }
-
-            _workingAsyncSendOps = new HashSet<SocketAsyncEventArgs>();
         }
 
-        // TODO: Implements SendPacket method.
         public void SendMsg(IConnection connection, byte[] msg, PacketType packetType)
         {
             var packet = new Packet
@@ -208,23 +131,37 @@ namespace Tizsoft.Treenet
                 Content = msg,
             };
 
+            SendMsg(packet);
+        }
+
+        public void SendMsg(IPacket packet)
+        {
+            if (packet == null)
+            {
+                throw new ArgumentNullException("packet");
+            }
+
             byte[] message;
             if (PacketProtocol.TryWrapPacket(packet, out message))
             {
                 message = MessageFraming.WrapMessage(message);
 
-                //_sendPacketContainer.AddPacket(connection, msg, packetType);
-                var splitedMessages = Utils.SplitArray(message, _sendBuffer.Length);
+                var splitedMessages = Utils.SplitArray(message, _segmentSize);
                 foreach (var splitedMessage in splitedMessages)
                 {
                     var operand = new SendOperand
                     {
-                        Connection = connection,
+                        Connection = packet.Connection,
                         Message = splitedMessage
                     };
                     _sendQueue.Enqueue(operand);
                 }
-                StartSend();
+
+                SocketAsyncEventArgs sendOperation;
+                if (_asyncSendOpPool.TryPop(out sendOperation))
+                {
+                    StartSend(sendOperation);
+                }
             }
             else
             {

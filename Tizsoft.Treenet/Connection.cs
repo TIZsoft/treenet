@@ -14,8 +14,8 @@ namespace Tizsoft.Treenet
         public static IConnection Null { get { return NullConnection; } }
 
         bool _isActive;
+
         readonly MessageFraming _messageFraming;
-        
         readonly SocketAsyncEventArgs _socketOperation;
         readonly PacketSender _packetSender;
         readonly IPacketContainer _packetContainer;
@@ -28,6 +28,8 @@ namespace Tizsoft.Treenet
         public Socket ConnectSocket { get; private set; }
 
         public PacketProtocol PacketProtocol { get; set; }
+
+        public double IdleTime { get; set; }
 
         void OnAsyncReceiveCompleted(object sender, SocketAsyncEventArgs socketOperation)
         {
@@ -66,6 +68,7 @@ namespace Tizsoft.Treenet
             }
             else
             {
+                GLogger.Error(receiveOperation.SocketError);
                 Dispose();
             }
         }
@@ -141,6 +144,7 @@ namespace Tizsoft.Treenet
             else
             {
                 // Invalid packet.
+                GLogger.Error("Invalid packet.");
                 Dispose();
             }
         }
@@ -166,14 +170,22 @@ namespace Tizsoft.Treenet
 
         public void Send(byte[] content, PacketType packetType)
         {
+            Send(content, PacketFlags.None, packetType);
+        }
+
+        public void Send(byte[] content, PacketFlags packetFlags, PacketType packetType)
+        {
             if (_isActive)
             {
                 IdleTime = 0;
                 _packetSender.SendMsg(this, content, packetType);
             }
+            else
+            {
+                throw new InvalidOperationException("Connection is disconnected.");
+            }
         }
 
-        public double IdleTime { get; set; }
 
         #region IDisposable Members
 

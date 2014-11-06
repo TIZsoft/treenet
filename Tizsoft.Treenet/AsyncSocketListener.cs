@@ -134,7 +134,8 @@ namespace Tizsoft.Treenet
 
             try
             {
-                if (_asyncAcceptOperation.AcceptSocket != null && _asyncAcceptOperation.AcceptSocket.Connected)
+                if (_asyncAcceptOperation.AcceptSocket != null &&
+                    _asyncAcceptOperation.AcceptSocket.Connected)
                 {
                     _asyncAcceptOperation.AcceptSocket.Shutdown(SocketShutdown.Both);
                 }

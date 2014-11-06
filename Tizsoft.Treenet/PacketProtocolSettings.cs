@@ -13,7 +13,7 @@ namespace Tizsoft.Treenet
     [Serializable]
     public class PacketProtocolSettings
     {
-        const int DefaultMaxContentSize = 64 * 1024;
+        const int DefaultMaxContentSize = 8000;
 
         byte[] _signature;
         int _maxContentSize;

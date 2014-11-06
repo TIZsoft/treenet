@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using Tizsoft.Collections;
-using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet.IntegrationTests
 {
     class SocketClient : IConnectionObserver, IDisposable
     {
-        static readonly ICryptoProvider CryptoProvider = new XorCryptoProvider(Network.DefaultXorKey);
-
         readonly IConnection _connection;
         bool _isDisposed;
+        bool _isConnecting;
         
         readonly AsyncSocketConnector _connector = new AsyncSocketConnector();
         readonly BufferManager _receiveBufferManager = new BufferManager();
@@ -39,10 +37,8 @@ namespace Tizsoft.Treenet.IntegrationTests
             _receiveBufferManager.InitBuffer(1, config.BufferSize);
             _sendBufferManager.InitBuffer(1, config.BufferSize);
 
-            _packetSender.Setup(_sendBufferManager, 1, CryptoProvider);
+            _packetSender.Setup(_sendBufferManager, 1);
             _packetSender.PacketProtocol = packetProtocol;
-            _packetContainer.Setup(CryptoProvider);
-            _sendPacketContainer.Setup(CryptoProvider);
 
             _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, config.MaxMessageSize);
             _connection.Register(_connector);
@@ -75,6 +71,7 @@ namespace Tizsoft.Treenet.IntegrationTests
         public void Start()
         {
             ThrowExceptionIfDisposed();
+            _isConnecting = true;
             _connector.StartConnect();
         }
 
@@ -149,6 +146,7 @@ namespace Tizsoft.Treenet.IntegrationTests
 
         public void Stop()
         {
+            _isConnecting = false;
             _connector.Stop();
             _packetContainer.Clear();
         }
@@ -173,7 +171,7 @@ namespace Tizsoft.Treenet.IntegrationTests
             }
 
             _isDisposed = true;
-
+            _isConnecting = false;
             _connector.Stop();
             _packetContainer.Clear();
         }
@@ -188,9 +186,17 @@ namespace Tizsoft.Treenet.IntegrationTests
 
         void OnConnectionEvent(IConnection connection, bool isConnected)
         {
-            if (ConnectionIncoming != null)
+            if (isConnected)
             {
-                ConnectionIncoming(connection, isConnected);
+                _isConnecting = false;
+                if (ConnectionIncoming != null)
+                {
+                    ConnectionIncoming(connection, true);
+                }
+            }
+            else if (_isConnecting)
+            {
+                _connector.StartConnect();
             }
         }
     }

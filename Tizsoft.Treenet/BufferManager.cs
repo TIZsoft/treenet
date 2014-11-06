@@ -18,15 +18,17 @@ namespace Tizsoft.Treenet
     {
         // The underlying byte array maintained by the Buffer Manager.
         byte[] _buffer;
-
-        // The total number of bytes controlled by the buffer pool.
-        int _segmentSize;
-
+        
         int _currentSegmentIndex;
 
         readonly ConcurrentStack<int> _segmentIndexPool = new ConcurrentStack<int>();
         
         public int BufferSize { get; private set; }
+
+        /// <summary>
+        /// The total number of bytes controlled by the buffer pool.
+        /// </summary>
+        public int SegmentSize { get; private set; }
 
         /// <summary>
         /// Allocates buffer space used by the buffer pool.
@@ -54,9 +56,9 @@ namespace Tizsoft.Treenet
                 throw new ArgumentOutOfRangeException("segmentSize", "Buffer size is less than or equal to zero.");
             }
 
-            _segmentSize = segmentSize;
+            SegmentSize = segmentSize;
             BufferSize = checked(segmentCount * segmentSize);
-            _buffer = new byte[BufferSize];
+            Array.Resize(ref _buffer, BufferSize);
             _segmentIndexPool.Clear();
         }
 
@@ -78,18 +80,18 @@ namespace Tizsoft.Treenet
                 int offset;
                 if (_segmentIndexPool.TryPop(out offset))
                 {
-                    e.SetBuffer(_buffer, offset, _segmentSize);
+                    e.SetBuffer(_buffer, offset, SegmentSize);
                     return true;
                 }
 
-                var remaingingBufferSize = BufferSize - _segmentSize;
+                var remaingingBufferSize = BufferSize - SegmentSize;
                 if (remaingingBufferSize < _currentSegmentIndex)
                 {
                     return false;
                 }
 
-                e.SetBuffer(_buffer, _currentSegmentIndex, _segmentSize);
-                _currentSegmentIndex += _segmentSize;
+                e.SetBuffer(_buffer, _currentSegmentIndex, SegmentSize);
+                _currentSegmentIndex += SegmentSize;
                 return true;
             }
             catch (Exception ex)

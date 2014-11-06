@@ -1,6 +1,5 @@
 ﻿using System;
 using Tizsoft.Collections;
-using Tizsoft.Security.Cryptography;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -42,18 +41,19 @@ namespace Tizsoft.Treenet
 
         public void Setup(EventArgs configArgs)
         {
-            var config = (ServerConfig) configArgs;
+            if (configArgs == null)
+                throw new ArgumentNullException("configArgs");
+
+            var config = configArgs as ServerConfig;
 
             if (config == null)
-                throw new InvalidCastException("configArgs");
+                throw new InvalidCastException("Type of configArgs is not ServerConfig.");
 
             _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
             InitConnectionPool(config.MaxConnections, _packetContainer, config.MaxMessageSize);
-            var sendConnection = Math.Max(1, config.MaxConnections / 10);
-            _sendBufferManager.InitBuffer(sendConnection, config.BufferSize);
-            _packetSender.Setup(_sendBufferManager, config.MaxConnections / 10, new XorCryptoProvider(Network.DefaultXorKey));
-            _packetContainer.Setup(new XorCryptoProvider(Network.DefaultXorKey));
-            
+            var sendConnectionCount = Math.Max(1, config.MaxConnections / 10);
+            _sendBufferManager.InitBuffer(sendConnectionCount, config.BufferSize);
+            _packetSender.Setup(_sendBufferManager, sendConnectionCount);
             _socketListener.Setup(config, _connectionPool);
         }
 
