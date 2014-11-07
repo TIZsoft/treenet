@@ -54,6 +54,7 @@
     <Compile Include="Collections\IPool.cs" />
     <Compile Include="Collections\IPoolObject.cs" />
     <Compile Include="GuidUtil.cs" />
+    <Compile Include="Random.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Collections\FixedSizeObjPool.cs" />
     <Compile Include="ICommand.cs" />

@@ -121,7 +121,7 @@ namespace Tizsoft.Treenet.Tests
             #endregion
 
 
-            // TODO: Use Rijndael instead.
+            // TODO: Use Aes instead.
             #region Crypto only.
 
             // Case 1: Normal packet.
@@ -320,7 +320,7 @@ namespace Tizsoft.Treenet.Tests
                 PacketFlags = PacketFlags.None,
                 PacketType = PacketType.Stream
             };
-            var rand = new Random();
+            var rand = new System.Random();
             rand.NextBytes(packet.Content);
             isWrapSuccess = packetProtocol.TryWrapPacket(packet, out message);
             Assert.IsFalse(isWrapSuccess);
@@ -376,7 +376,7 @@ namespace Tizsoft.Treenet.Tests
 
         static byte[] GenerateRandomContent(int minLength, int maxLength)
         {
-            var random = new Random();
+            var random = new System.Random();
             var length = random.Next(minLength, maxLength);
             var bytes = new byte[length];
             random.NextBytes(bytes);

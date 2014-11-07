@@ -51,7 +51,7 @@ namespace Tizsoft.Treenet.Tests
 
         static byte[] GenerateRandomBytes(int count)
         {
-            var rand = new Random();
+            var rand = new System.Random();
             var bytes = new byte[count];
             rand.NextBytes(bytes);
             return bytes;
@@ -132,7 +132,7 @@ namespace Tizsoft.Treenet.Tests
                 {
                     var sw = Stopwatch.StartNew();
                     var spin = new SpinWait();
-                    var random = new Random();
+                    var random = new System.Random();
 
                     while (fileStream.Length > fileStream.Position)
                     {
@@ -374,7 +374,7 @@ namespace Tizsoft.Treenet.Tests
 
         public static List<byte[]> GenerateRandomWrappedMessages(int minMessageCount, int maxMessageCount, int minMessageSize, int maxMessageSize)
         {
-            var random = new Random();
+            var random = new System.Random();
             var messageCount = random.Next(minMessageCount, maxMessageCount);
             var wrappedMessages = new List<byte[]>(messageCount);
             var totalBytes = 0;

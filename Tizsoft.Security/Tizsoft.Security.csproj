@@ -39,9 +39,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cryptography\CryptoAsyncEventArgs.cs" />
     <Compile Include="Cryptography\ICryptoProvider.cs" />
-    <Compile Include="Cryptography\RijndaelCryptoProvider.cs" />
-    <Compile Include="Cryptography\RijndaelUtils.cs" />
+    <Compile Include="Cryptography\AesCryptoProvider.cs" />
+    <Compile Include="Cryptography\AesUtils.cs" />
     <Compile Include="Cryptography\XorCryptoProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

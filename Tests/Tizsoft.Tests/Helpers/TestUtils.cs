@@ -103,7 +103,7 @@ namespace Tizsoft.Tests.Helpers
         public void TestSplit(TestSplitSource testSource)
         {
             var sourceArray = TestSplitSource.CreateSourceArray<byte>(testSource.SourceArraySize);
-            var random = new Random();
+            var random = new System.Random();
             random.NextBytes(sourceArray);
 
             var segments = Utils.Split(sourceArray, testSource.SegmentSize);
