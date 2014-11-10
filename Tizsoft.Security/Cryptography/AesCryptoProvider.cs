@@ -14,14 +14,10 @@ namespace Tizsoft.Security.Cryptography
     /// </remarks>
     public class AesCryptoProvider : ICryptoProvider
     {
-        readonly object _encryptSyncRoot = new object();
-        readonly object _decryptSyncRoot = new object();
         readonly Aes _aes = new AesCryptoServiceProvider();
-        readonly MemoryStream _encryptMemoryStream = new MemoryStream();
-        readonly MemoryStream _decryptMemoryStream = new MemoryStream();
 
         /// <summary>
-        ///     IV length is 16 bits.
+        ///     IV length is 16 bytes.
         /// </summary>
         public byte[] IV
         {
@@ -35,7 +31,8 @@ namespace Tizsoft.Security.Cryptography
             set { _aes.Key = value; }
         }
 
-        public AesCryptoProvider() : this(CipherMode.CBC)
+        public AesCryptoProvider()
+            : this(CipherMode.CBC)
         {
 
         }
@@ -77,20 +74,15 @@ namespace Tizsoft.Security.Cryptography
                 throw new ArgumentException();
             }
 
-            lock (_encryptSyncRoot)
+            using (var memoryStream = new MemoryStream())
             {
-                _encryptMemoryStream.SetLength(0);
-                _encryptMemoryStream.Seek(0, SeekOrigin.Begin);
-
                 using (var encryptor = _aes.CreateEncryptor())
+                using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
                 {
-                    using (var cryptoStream = new CryptoStream(_encryptMemoryStream, encryptor, CryptoStreamMode.Write))
-                    {
-                        cryptoStream.Write(plain, offset, count);
-                    }
+                    cryptoStream.Write(plain, offset, count);
                 }
 
-                return _encryptMemoryStream.ToArray();
+                return memoryStream.ToArray();
             }
         }
 
@@ -126,21 +118,15 @@ namespace Tizsoft.Security.Cryptography
                 throw new ArgumentException();
             }
 
-            lock (_decryptSyncRoot)
+            using (var memoryStream = new MemoryStream(cipher, offset, count))
             {
-                _decryptMemoryStream.SetLength(0);
-                _decryptMemoryStream.Write(cipher, offset, count);
-                _decryptMemoryStream.Seek(0, SeekOrigin.Begin);
-
                 using (var decryptor = _aes.CreateDecryptor())
+                using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
                 {
-                    using (var cryptoStream = new CryptoStream(_decryptMemoryStream, decryptor, CryptoStreamMode.Read))
-                    {
-                        cryptoStream.Read(cipher, offset, count);
-                    }
+                    var plain = new byte[count];
+                    cryptoStream.Read(plain, offset, count);
+                    return plain;
                 }
-
-                return _encryptMemoryStream.ToArray();
             }
         }
     }

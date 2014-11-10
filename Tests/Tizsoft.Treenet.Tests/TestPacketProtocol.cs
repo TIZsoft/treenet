@@ -58,7 +58,7 @@ namespace Tizsoft.Treenet.Tests
             var content = Encoding.UTF8.GetBytes("G_G_In_In_Der~");
             var emptyContent = new byte[0];
 
-            var cryptoProvider = new XorCryptoProvider("No Game No Life.");
+            var cryptoProvider = new AesCryptoProvider();
             //var compressProvider = 
 
 
@@ -285,7 +285,7 @@ namespace Tizsoft.Treenet.Tests
             var expectedSignature = new byte[] { 12, 34, 56, 78, 90 };
             const int maxContentSize = 4 * 1024 * 1024;
             var content = Encoding.UTF8.GetBytes("G_G_In_In_Der~");
-            var cryptoProvider = new XorCryptoProvider("TIZSoft");
+            var cryptoProvider = new AesCryptoProvider();
             var packetProtocolSettings = new PacketProtocolSettings
             {
                 Signature = expectedSignature,
@@ -389,7 +389,7 @@ namespace Tizsoft.Treenet.Tests
             var expectedSignature = new byte[] { 12, 34, 56, 78, 90 };
             const int maxContentSize = 4 * 1024 * 1024;
 
-            var cryptoProvider = new XorCryptoProvider("No Game No Life.");
+            var cryptoProvider = new AesCryptoProvider();
 
             // TODO: Case 4: Requires compression.
 
