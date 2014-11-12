@@ -14,13 +14,14 @@ namespace Tizsoft.Treenet
         readonly PacketHandler _packetHandler = new PacketHandler();
         readonly PacketSender _packetSender = new PacketSender();
 
-        void InitConnectionPool(int maxConnections, IPacketContainer packetContainer, int maxMessageSize)
+        void InitConnectionPool(ServerConfig config, IPacketContainer packetContainer, PacketProtocol packetProtocol)
         {
-            _connectionPool = new FixedSizeObjPool<IConnection>(maxConnections);
+            _connectionPool = new FixedSizeObjPool<IConnection>(config.MaxConnections);
 
-            for (var i = 0; i < maxConnections; ++i)
+            for (var i = 0; i < config.MaxConnections; ++i)
             {
-                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender, maxMessageSize);
+                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender, config.MaxMessageSize);
+                connection.PacketProtocol = packetProtocol;
                 connection.Register(_socketListener);
                 _connectionPool.Push(connection);
             }
@@ -49,11 +50,13 @@ namespace Tizsoft.Treenet
             if (config == null)
                 throw new InvalidCastException("Type of configArgs is not ServerConfig.");
 
+            var packetProtocol = new PacketProtocol(config.PacketProtocolSettings);
             _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
-            InitConnectionPool(config.MaxConnections, _packetContainer, config.MaxMessageSize);
+            InitConnectionPool(config, _packetContainer, packetProtocol);
             var sendConnectionCount = Math.Max(1, config.MaxConnections / 10);
             _sendBufferManager.InitBuffer(sendConnectionCount, config.BufferSize);
             _packetSender.Setup(_sendBufferManager, sendConnectionCount);
+            _packetSender.PacketProtocol = packetProtocol;
             _socketListener.Setup(config, _connectionPool);
         }
 

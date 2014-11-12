@@ -19,9 +19,10 @@ namespace Tizsoft.Treenet
         readonly PacketHandler _packetHandler = new PacketHandler();
         readonly PacketSender _packetSender = new PacketSender();
 
-        void InitConnectionPool(int maxMessageSize)
+        void InitConnectionPool(PacketProtocol packetProtocol)
         {
-            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, maxMessageSize);
+            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, _config.MaxMessageSize);
+            _connection.PacketProtocol = packetProtocol;
             _connection.Register(_connector);
             _connectionPool = new FixedSizeObjPool<IConnection>(1);
             _connectionPool.Push(_connection);
@@ -52,10 +53,12 @@ namespace Tizsoft.Treenet
             if (_config == null)
                 throw new InvalidCastException("configArgs");
 
+            var packetProtocol = new PacketProtocol(_config.PacketProtocolSettings);
             _receiveBufferManager.InitBuffer(1, _config.BufferSize);
             _sendBufferManager.InitBuffer(1, _config.BufferSize);
+            InitConnectionPool(packetProtocol);
             _packetSender.Setup(_sendBufferManager, 1);
-            InitConnectionPool(_config.MaxMessageSize);
+            _packetSender.PacketProtocol = packetProtocol;
             _connector.Setup(_config, _connectionPool);
         }
 
