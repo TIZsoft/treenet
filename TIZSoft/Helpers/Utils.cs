@@ -5,6 +5,41 @@ namespace Tizsoft.Helpers
 {
     public class Utils
     {
+        /// <summary>
+        /// The TIMESTAMP data type is used for values that contain both date and time parts. 
+        /// Min value is '1970-01-01 00:00:01' UTC.
+        /// </summary>
+        public static DateTime MySqlTimeStampMinValue { get { return new DateTime(1970, 1, 1, 0, 0, 1); } }
+        /// <summary>
+        /// The TIMESTAMP data type is used for values that contain both date and time parts. 
+        /// Max value is '2038-01-19 03:14:07' UTC.
+        /// </summary>
+        public static DateTime MySqlTimeStampMaxValue { get { return new DateTime(2038, 1, 19, 3, 14, 7); } }
+        /// <summary>
+        /// The DATE type is used for values with a date part but no time part. 
+        /// MySQL retrieves and displays DATE values in 'YYYY-MM-DD' format. 
+        /// The min value is '1000-01-01'.
+        /// </summary>
+        public static DateTime MySqlDateMinValue { get { return new DateTime(1000, 1, 1); } }
+        /// <summary>
+        /// The DATE type is used for values with a date part but no time part. 
+        /// MySQL retrieves and displays DATE values in 'YYYY-MM-DD' format. 
+        /// The max value is '1000-01-01' to '9999-12-31'.
+        /// </summary>
+        public static DateTime MySqlDateMaxValue { get { return new DateTime(9999, 12, 31); } }
+        /// <summary>
+        /// The DATETIME type is used for values that contain both date and time parts. 
+        /// MySQL retrieves and displays DATETIME values in 'YYYY-MM-DD HH:MM:SS' format. 
+        /// The min value is '1000-01-01 00:00:00'.
+        /// </summary>
+        public static DateTime MySqlDateTimeMinValue { get { return new DateTime(1000, 1, 1, 0, 0, 0);} }
+        /// <summary>
+        /// The DATETIME type is used for values that contain both date and time parts. 
+        /// MySQL retrieves and displays DATETIME values in 'YYYY-MM-DD HH:MM:SS' format. 
+        /// The max value is '1000-01-01 00:00:00' to '9999-12-31 23:59:59'.
+        /// </summary>
+        public static DateTime MySqlDateTimeMaxValue { get { return new DateTime(9999, 12, 31, 23, 59, 59);} }
+
         public static bool IsBitSet(int number, int index)
         {
             if (index < 0 || index > sizeof(int))

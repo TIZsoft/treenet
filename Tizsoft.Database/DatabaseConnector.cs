@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using Tizsoft.Log;
 
@@ -59,9 +62,47 @@ namespace Tizsoft.Database
             return null;
         }
 
+        public async Task CreateAsync(string table, List<string> columns, List<object> values)
+        {
+            await CreateOnDuplicateAsync(table, columns, values, string.Empty);
+        }
+
         public void Create(string table, List<string> columns, List<object> values)
         {
             CreateOnDuplicate(table, columns, values, string.Empty);
+        }
+
+        public async Task CreateOnDuplicateAsync(string table, List<string> columns, List<object> values,
+            string duplicateKeyClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            if (columns == null || values == null)
+                return;
+
+            var queryString = BuildCreateOnDuplicateQueryString(table, columns, values, duplicateKeyClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var createCommand = new MySqlCommand(queryString, connection);
+                await createCommand.ExecuteNonQueryAsync();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
         }
 
         public void CreateOnDuplicate(string table, List<string> columns, List<object> values, string duplicateKeyClause)
@@ -79,7 +120,7 @@ namespace Tizsoft.Database
             {
                 connection = Connect();
                 var createCommand = new MySqlCommand(queryString, connection);
-                createCommand.ExecuteNonQueryAsync();
+                createCommand.ExecuteNonQuery();
             }
             catch (MySqlException mySqlException)
             {
@@ -117,9 +158,47 @@ namespace Tizsoft.Database
             return _queryBuilder.ToString();
         }
 
+        public async Task MultiCreateAsync(string table, List<string> columns, List<List<object>> multiValueLists)
+        {
+            await MultiCreateAsync(table, columns, multiValueLists);
+        }
+
         public void MultiCreate(string table, List<string> columns, List<List<object>> multiValueLists)
         {
             MultiCreateOnDuplicate(table, columns, multiValueLists, string.Empty);
+        }
+
+        public async Task MultiCreateOnDuplicateAsync(string table, List<string> columns,
+            List<List<object>> multiValueLists, string duplicateKeyClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            if (columns == null || multiValueLists == null || columns.Count == 0 || multiValueLists.Count == 0)
+                return;
+
+            var queryString = BuildMultiCreateOnDuplicateQueryString(table, columns, multiValueLists, duplicateKeyClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var createCommand = new MySqlCommand(queryString, connection);
+                await createCommand.ExecuteNonQueryAsync();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
         }
 
         public void MultiCreateOnDuplicate(string table, List<string> columns, List<List<object>> multiValueLists, string duplicateKeyClause)
@@ -137,7 +216,8 @@ namespace Tizsoft.Database
             {
                 connection = Connect();
                 var createCommand = new MySqlCommand(queryString, connection);
-                createCommand.ExecuteNonQueryAsync();
+                createCommand.ExecuteNonQuery();
+                //createCommand.ExecuteNonQueryAsync();
             }
             catch (MySqlException mySqlException)
             {
@@ -184,6 +264,66 @@ namespace Tizsoft.Database
                 _queryBuilder.AppendFormat(@"ON DUPLICATE KEY UPDATE {0}", duplicateKeyClause);
 
             return _queryBuilder.ToString();
+        }
+
+        public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns, string whereClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            var queryString = BuildRequestQueryString(table, columns, whereClause);
+
+            var result = new List<Dictionary<string, object>>();
+            DbDataReader dataReader = null;
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var requestCommand = new MySqlCommand(queryString, connection);
+                dataReader = await requestCommand.ExecuteReaderAsync();
+                //dataReader = requestCommand.ExecuteReader();
+
+                if (!dataReader.HasRows)
+                {
+                    dataReader.Close();
+                    Disconnect(connection);
+                    return result;
+                }
+
+                while (dataReader.Read())
+                {
+                    if (columns != null)
+                    {
+                        var row = columns.ToDictionary(column => column, column => dataReader[column]);
+                        result.Add(row);
+                    }
+                    else
+                    {
+                        var row = new Dictionary<string, object>();
+                        for (var i = 0; i < dataReader.FieldCount; ++i)
+                            row.Add(dataReader.GetName(i), dataReader[i]);
+                        result.Add(row);
+                    }
+                }
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                if (dataReader != null)
+                    dataReader.Close();
+                Disconnect(connection);
+            }
+
+            return result;
         }
 
         public List<Dictionary<string, object>> Request(string table, List<string> columns, string whereClause)
@@ -264,6 +404,42 @@ namespace Tizsoft.Database
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
             return _queryBuilder.ToString();
+        }
+
+        public async Task<int> UpdateAsync(string table, List<string> columns, List<object> values, string whereClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
+                return 0;
+
+            var queryString = BuildUpdateQueryString(table, columns, values, whereClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var updateCommand = new MySqlCommand(queryString, connection);
+                var result = await updateCommand.ExecuteNonQueryAsync();
+                return result;
+                //awupdateCommand.ExecuteNonQuery();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+
+            return 0;
         }
 
         public void Update(string table, List<string> columns, List<object> values, string whereClause)
@@ -352,6 +528,38 @@ namespace Tizsoft.Database
             return _queryBuilder.ToString();
         }
 
+        public async Task<int> CountAsync(string table, KeyValuePair<string, string> whereClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            var queryString = BuildCountQueryString(table, whereClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var countCommand = new MySqlCommand(queryString, connection);
+                var count = await countCommand.ExecuteScalarAsync();
+                return Convert.ToInt32(count);
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+
+            return 0;
+        }
+
         public int Count(string table, KeyValuePair<string, string> whereClause)
         {
             if (string.IsNullOrEmpty(_connectionString))
@@ -363,7 +571,7 @@ namespace Tizsoft.Database
             try
             {
                 connection = Connect();
-                MySqlCommand countCommand = new MySqlCommand(queryString, connection);
+                var countCommand = new MySqlCommand(queryString, connection);
                 var count = countCommand.ExecuteScalar();
                 return Convert.ToInt32(count);
             }

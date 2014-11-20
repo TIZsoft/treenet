@@ -17,8 +17,6 @@ namespace Tizsoft.Database
             if (config == null)
                 throw new InvalidCastException("args");
 
-            //var connectionString = string.Format("mongodb://{0}:{1}@{2}:{3}/{4}", config.UserName, config.Password,
-            //    config.HostName, config.Port, config.DataBase);
             var connectionString = string.Format("mongodb://{0}:{1}/{2}", config.HostName, config.Port, config.DataBase);
 
             try
