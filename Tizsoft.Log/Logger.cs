@@ -69,7 +69,7 @@ namespace Tizsoft.Log
         {
             if (LoggerManager.GetCurrentLoggersCount() == 0)
             {
-                var filepath = System.Reflection.Assembly.GetAssembly(typeof (Logger)).Location;
+                var filepath = System.Reflection.Assembly.GetAssembly(typeof(Logger)).Location;
                 filepath = Path.GetDirectoryName(filepath);
                 if (!LoggerManager.LoadConfig(filepath))
                 {
@@ -81,88 +81,158 @@ namespace Tizsoft.Log
 
         public void Debug(object message)
         {
-            if (_log.IsDebugEnabled)
+            try
             {
-                _log.Debug(message);
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void DebugFormat(string format, params object[] args)
         {
-            if (_log.IsDebugEnabled)
+            try
             {
-                _log.DebugFormat(format, args);
+                if (_log.IsDebugEnabled)
+                {
+                    _log.DebugFormat(format, args);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void Error(object message)
         {
-            if (_log.IsErrorEnabled)
+            try
             {
-                _log.Error(message);
+                if (_log.IsErrorEnabled)
+                {
+                    _log.Error(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void ErrorFormat(string format, params object[] args)
         {
-            if (_log.IsErrorEnabled)
+            try
             {
-                _log.ErrorFormat(format, args);
+                if (_log.IsErrorEnabled)
+                {
+                    _log.ErrorFormat(format, args);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void Fatal(object message)
         {
-            if (_log.IsFatalEnabled)
+            try
             {
-                _log.Fatal(message);
+                if (_log.IsFatalEnabled)
+                {
+                    _log.Fatal(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void FatalFormat(string format, params object[] args)
         {
-            if (_log.IsFatalEnabled)
+            try
             {
-                _log.FatalFormat(format, args);
+                if (_log.IsFatalEnabled)
+                {
+                    _log.FatalFormat(format, args);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void Info(object message)
         {
-            if (_log.IsInfoEnabled)
+            try
             {
-                _log.Info(message);
+                if (_log.IsInfoEnabled)
+                {
+                    _log.Info(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void InfoFormat(string format, params object[] args)
         {
-            if (_log.IsInfoEnabled)
+            try
             {
-                _log.InfoFormat(format, args);
+                if (_log.IsInfoEnabled)
+                {
+                    _log.InfoFormat(format, args);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void Warn(object message)
         {
-            if (_log.IsWarnEnabled)
+            try
             {
-                _log.Warn(message);
+                if (_log.IsWarnEnabled)
+                {
+                    _log.Warn(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
 
         public void WarnFormat(string format, params object[] args)
         {
-            if (_log.IsWarnEnabled)
+            try
             {
-                _log.WarnFormat(format, args);
+                if (_log.IsWarnEnabled)
+                {
+                    _log.WarnFormat(format, args);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
     }
 
     public static class GLogger
     {
-        static readonly ILogger Log =  new Logger(typeof(GLogger));
+        static readonly ILogger Log = new Logger(typeof(GLogger));
 
         public static void Debug(object message)
         {
