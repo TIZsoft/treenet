@@ -18,5 +18,7 @@ namespace Tizsoft.Treenet.Interface
         void Send(byte[] content, PacketType packetType);
 
         double IdleTime { get; set;}
+
+        bool IsActive { get; }
     }
 }

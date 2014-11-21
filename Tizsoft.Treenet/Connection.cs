@@ -13,7 +13,7 @@ namespace Tizsoft.Treenet
 
         public static IConnection Null { get { return NullConnection; } }
 
-        bool _isActive;
+        //bool _isActive;
 
         readonly MessageFraming _messageFraming;
         readonly SocketAsyncEventArgs _socketOperation;
@@ -163,7 +163,7 @@ namespace Tizsoft.Treenet
                 throw new ArgumentNullException("socket");
             }
 
-            _isActive = true;
+            IsActive = true;
             ConnectSocket = socket;
             DestAddress = socket.RemoteEndPoint.ToString();
             _socketOperation.Completed += OnAsyncReceiveCompleted;
@@ -177,7 +177,7 @@ namespace Tizsoft.Treenet
 
         public void Send(byte[] content, PacketFlags packetFlags, PacketType packetType)
         {
-            if (_isActive)
+            if (IsActive)
             {
                 IdleTime = 0;
                 _packetSender.SendMsg(this, content, packetType);
@@ -188,14 +188,15 @@ namespace Tizsoft.Treenet
             }
         }
 
+        public bool IsActive { get; private set; }
 
         #region IDisposable Members
 
         public void Dispose()
         {
-            if (_isActive)
+            if (IsActive)
             {
-                _isActive = false;
+                IsActive = false;
                 IdleTime = 0;
                 _socketOperation.Completed -= OnAsyncReceiveCompleted;
                 _messageFraming.Clear();

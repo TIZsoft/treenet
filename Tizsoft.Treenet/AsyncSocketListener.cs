@@ -79,6 +79,7 @@ namespace Tizsoft.Treenet
 
                 var newConnection = CreateNewConnection(acceptOperation.AcceptSocket);
                 _workingConnections.Add(newConnection);
+                _maxNumberAcceptedClients.Release();
                 GLogger.Debug("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress);
                 GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
                 GLogger.Debug("可連線數: {0}", _connectionPool.Count);
@@ -213,10 +214,11 @@ namespace Tizsoft.Treenet
             if (_workingConnections.Count == 0)
                 return;
 
-            //_heartBeatTimer.Stop();
-
             foreach (var workingConnection in _workingConnections)
             {
+                if (!workingConnection.IsActive)
+                    continue;
+
                 workingConnection.IdleTime += Network.DefaultTimeOutTick;
 
                 if (workingConnection.IdleTime > _config.TimeOut)
