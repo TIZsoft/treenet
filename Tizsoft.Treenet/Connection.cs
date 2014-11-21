@@ -152,6 +152,8 @@ namespace Tizsoft.Treenet
         ~Connection()
         {
             Dispose();
+            _messageFraming.MessageArrived -= OnMessageArrived;
+            _socketOperation.Dispose();
         }
 
         public void SetConnection(Socket socket)

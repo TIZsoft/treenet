@@ -56,6 +56,7 @@ namespace Tizsoft.Treenet
                 throw new ArgumentOutOfRangeException("segmentSize", "Buffer size is less than or equal to zero.");
             }
 
+            _currentSegmentIndex = 0;
             SegmentSize = segmentSize;
             BufferSize = checked(segmentCount * segmentSize);
             Array.Resize(ref _buffer, BufferSize);
