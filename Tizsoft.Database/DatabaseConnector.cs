@@ -39,7 +39,7 @@ namespace Tizsoft.Database
             _connectionString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8;{4}",
                     config.HostName, config.UserName, config.Password, config.DataBase, config.Option);
 
-            GLogger.Debug((object) config.Option);
+            GLogger.Debug(config.Option);
         }
 
         MySqlConnection Connect()
