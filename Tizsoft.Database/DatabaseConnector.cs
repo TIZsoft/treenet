@@ -15,6 +15,12 @@ namespace Tizsoft.Database
         readonly StringBuilder _queryBuilder = new StringBuilder();
         string _connectionString;
 
+        async void DisconnectAsync(MySqlConnection connection)
+        {
+            if (connection != null)
+                await connection.CloseAsync();
+        }
+
         void Disconnect(MySqlConnection connection)
         {
             if (connection != null)
@@ -40,6 +46,26 @@ namespace Tizsoft.Database
                     config.HostName, config.UserName, config.Password, config.DataBase, config.Option);
 
             GLogger.Debug(config.Option);
+        }
+
+        async Task<MySqlConnection> ConnectAsync()
+        {
+            try
+            {
+                var mySqlConnection = new MySqlConnection(_connectionString);
+                await mySqlConnection.OpenAsync();
+                return mySqlConnection;
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+            }
+
+            return null;
         }
 
         MySqlConnection Connect()
@@ -86,7 +112,7 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = Connect();
+                connection = await ConnectAsync();
                 var createCommand = new MySqlCommand(queryString, connection);
                 await createCommand.ExecuteNonQueryAsync();
             }
@@ -101,7 +127,7 @@ namespace Tizsoft.Database
             }
             finally
             {
-                Disconnect(connection);
+                DisconnectAsync(connection);
             }
         }
 
@@ -160,7 +186,7 @@ namespace Tizsoft.Database
 
         public async Task MultiCreateAsync(string table, List<string> columns, List<List<object>> multiValueLists)
         {
-            await MultiCreateAsync(table, columns, multiValueLists);
+            await MultiCreateOnDuplicateAsync(table, columns, multiValueLists, string.Empty);
         }
 
         public void MultiCreate(string table, List<string> columns, List<List<object>> multiValueLists)
@@ -182,7 +208,7 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = Connect();
+                connection = await ConnectAsync();
                 var createCommand = new MySqlCommand(queryString, connection);
                 await createCommand.ExecuteNonQueryAsync();
             }
@@ -197,7 +223,7 @@ namespace Tizsoft.Database
             }
             finally
             {
-                Disconnect(connection);
+                DisconnectAsync(connection);
             }
         }
 
@@ -279,15 +305,14 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = Connect();
+                connection = await ConnectAsync();
                 var requestCommand = new MySqlCommand(queryString, connection);
                 dataReader = await requestCommand.ExecuteReaderAsync();
-                //dataReader = requestCommand.ExecuteReader();
 
                 if (!dataReader.HasRows)
                 {
                     dataReader.Close();
-                    Disconnect(connection);
+                    DisconnectAsync(connection);
                     return result;
                 }
 
@@ -320,7 +345,7 @@ namespace Tizsoft.Database
             {
                 if (dataReader != null)
                     dataReader.Close();
-                Disconnect(connection);
+                DisconnectAsync(connection);
             }
 
             return result;
@@ -406,24 +431,22 @@ namespace Tizsoft.Database
             return _queryBuilder.ToString();
         }
 
-        public async Task<int> UpdateAsync(string table, List<string> columns, List<object> values, string whereClause)
+        public async Task UpdateAsync(string table, List<string> columns, List<object> values, string whereClause)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
-                return 0;
+                return;
 
             var queryString = BuildUpdateQueryString(table, columns, values, whereClause);
             MySqlConnection connection = null;
 
             try
             {
-                connection = Connect();
+                connection = await ConnectAsync();
                 var updateCommand = new MySqlCommand(queryString, connection);
-                var result = await updateCommand.ExecuteNonQueryAsync();
-                return result;
-                //awupdateCommand.ExecuteNonQuery();
+                await updateCommand.ExecuteNonQueryAsync();
             }
             catch (MySqlException mySqlException)
             {
@@ -436,10 +459,8 @@ namespace Tizsoft.Database
             }
             finally
             {
-                Disconnect(connection);
+                DisconnectAsync(connection);
             }
-
-            return 0;
         }
 
         public void Update(string table, List<string> columns, List<object> values, string whereClause)
@@ -487,6 +508,38 @@ namespace Tizsoft.Database
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
             return _queryBuilder.ToString();
+        }
+
+        public async Task DeleteAsync(string table, string whereClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            if (string.IsNullOrEmpty(whereClause))
+                return;
+
+            var queryString = BuildDeleteQueryString(table, whereClause);
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var deleteCommand = new MySqlCommand(queryString, connection);
+                await deleteCommand.ExecuteNonQueryAsync();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                DisconnectAsync(connection);
+            }
         }
 
         public void Delete(string table, string whereClause)
@@ -538,14 +591,15 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = Connect();
+                connection = await ConnectAsync();
                 var countCommand = new MySqlCommand(queryString, connection);
                 var count = await countCommand.ExecuteScalarAsync();
                 return Convert.ToInt32(count);
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal(
+                    (object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
             }
             catch (Exception exception)
             {
@@ -554,7 +608,7 @@ namespace Tizsoft.Database
             }
             finally
             {
-                Disconnect(connection);
+                DisconnectAsync(connection);
             }
 
             return 0;
