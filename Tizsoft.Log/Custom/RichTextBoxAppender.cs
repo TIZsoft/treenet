@@ -23,6 +23,92 @@ namespace Tizsoft.Log.Custom
 
         private delegate void UpdateControlDelegate(LoggingEvent loggingEvent);
 
+        static Color StringToColor(string color)
+        {
+            switch (color.ToLower())
+            {
+                case "red":
+                    return Color.Red;
+
+                case "green":
+                    return Color.Green;
+
+                case "blue":
+                    return Color.Blue;
+
+                case "cyan":
+                    return Color.Cyan;
+
+                case "orange":
+                    return Color.Orange;
+
+                case "yellow":
+                    return Color.Yellow;
+
+                case "white":
+                    return Color.White;
+
+                case "black":
+                    return Color.Black;
+
+                default:
+                    return Color.White;
+            }
+        }
+
+        void ParseColorFormat(LevelTextStyle style, string msg)
+        {
+            if (string.IsNullOrEmpty(msg))
+                return;
+
+            msg = msg.TrimStart();
+            string[] colorEndTags = { "</color>" };
+            var colorStartTag = "<color=";
+            var colorStartTagEnd = ">";
+
+            var frontColor = style != null ? style.TextColor : Color.White;
+
+            if (msg.StartsWith("WARN"))
+                frontColor = Color.Yellow;
+            else if (msg.StartsWith("ERROR"))
+                frontColor = Color.Red;
+            else if (msg.StartsWith("FATAL"))
+                frontColor = Color.PaleVioletRed;
+            else if (msg.StartsWith("INFO"))
+                frontColor = Color.Gray;
+
+            var subStrings = msg.Split(colorEndTags, StringSplitOptions.RemoveEmptyEntries);
+
+            for (var i = 0; i < subStrings.Length; ++i)
+            {
+                var colorStartIndex = subStrings[i].IndexOf(colorStartTag);
+
+                if (colorStartIndex == -1)
+                {
+                    _richTextBox.SelectionColor = frontColor;
+                    _richTextBox.AppendText(subStrings[i]);
+                    continue;
+                }
+
+                var frontColorStr = subStrings[i].Substring(0, colorStartIndex);
+                _richTextBox.SelectionColor = frontColor;
+                _richTextBox.AppendText(frontColorStr);
+                var colorEndIndex = subStrings[i].IndexOf(colorStartTagEnd, colorStartIndex);
+                var colorStr =
+                    subStrings[i].Substring(colorStartIndex, colorEndIndex - colorStartIndex)
+                        .Replace(colorStartTag, string.Empty);
+                var coloredStr = subStrings[i].Substring(colorEndIndex + 1);
+                _richTextBox.SelectionColor = StringToColor(colorStr);
+
+                //if (i != subStrings.Length - 1)
+                //    _richTextBox.AppendText(coloredStr);
+                //else
+                //    _richTextBox.AppendText(coloredStr + Environment.NewLine);
+                _richTextBox.AppendText(coloredStr);
+            }
+            _richTextBox.ScrollToCaret();    
+        }
+
         private void UpdateControl(LoggingEvent loggingEvent)
         {
             // There may be performance issues if the buffer gets too long
@@ -51,7 +137,7 @@ namespace Tizsoft.Log.Custom
                 else if (selectedStyle.PointSize > 0 && _richTextBox.Font.SizeInPoints != selectedStyle.PointSize)
                 {
                     // use control's font family, set size and styles
-                    float size = selectedStyle.PointSize > 0.0f ? selectedStyle.PointSize : _richTextBox.Font.SizeInPoints;
+                    var size = selectedStyle.PointSize > 0.0f ? selectedStyle.PointSize : _richTextBox.Font.SizeInPoints;
                     _richTextBox.SelectionFont = new Font(_richTextBox.Font.FontFamily.Name, size, selectedStyle.FontStyle);
                 }
                 else if (_richTextBox.Font.Style != selectedStyle.FontStyle)
@@ -60,8 +146,11 @@ namespace Tizsoft.Log.Custom
                     _richTextBox.SelectionFont = new Font(_richTextBox.Font, selectedStyle.FontStyle);
                 }
             }
-            _richTextBox.AppendText(RenderLoggingEvent(loggingEvent));
-            _richTextBox.ScrollToCaret();
+
+            ParseColorFormat(selectedStyle, RenderLoggingEvent(loggingEvent));
+
+            //_richTextBox.AppendText(RenderLoggingEvent(loggingEvent));
+            //_richTextBox.ScrollToCaret();
         }
 
         protected override void Append(LoggingEvent loggingEvent)
@@ -144,7 +233,7 @@ namespace Tizsoft.Log.Custom
 
             if (_fontFamilyName != null)
             {
-                float size = _pointSize > 0.0f ? _pointSize : 8.25f;
+                var size = _pointSize > 0.0f ? _pointSize : 8.25f;
                 try
                 {
                     _font = new Font(_fontFamilyName, size, _fontStyle);
