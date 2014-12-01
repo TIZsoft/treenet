@@ -153,7 +153,7 @@ namespace Tizsoft.Treenet
             if (isConnected)
                 return;
 
-            //FreeConnectComponent();
+            FreeConnectComponent();
             if (!connection.IsNull)
             {
                 _workingConnections.Remove(connection);
