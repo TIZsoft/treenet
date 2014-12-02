@@ -79,14 +79,22 @@ namespace Tizsoft.Log
             _log = LogManager.GetLogger(type);
         }
 
+        private void Print(string format, params object[] args)
+        {
+            System.Diagnostics.Debug.Print(format, args);
+        }
+
         public void Debug(object message)
         {
             try
             {
+                Print(message.ToString());
+                /*
                 if (_log.IsDebugEnabled)
                 {
                     _log.Debug(message);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -98,10 +106,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(format, args);
+                /*
                 if (_log.IsDebugEnabled)
                 {
                     _log.DebugFormat(format, args);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -113,10 +124,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(message.ToString());
+                /*
                 if (_log.IsErrorEnabled)
                 {
                     _log.Error(message);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -128,10 +142,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(format, args);
+                /*
                 if (_log.IsErrorEnabled)
                 {
                     _log.ErrorFormat(format, args);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -143,10 +160,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(message.ToString());
+                /*
                 if (_log.IsFatalEnabled)
                 {
                     _log.Fatal(message);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -158,10 +178,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(format, args);
+                /*
                 if (_log.IsFatalEnabled)
                 {
                     _log.FatalFormat(format, args);
                 }
+                 */
             }
             catch (Exception ex)
             {
@@ -173,10 +196,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(message.ToString());
+                /*
                 if (_log.IsInfoEnabled)
                 {
                     _log.Info(message);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -188,10 +214,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(format, args);
+                /*
                 if (_log.IsInfoEnabled)
                 {
                     _log.InfoFormat(format, args);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -203,10 +232,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(message.ToString());
+                /*
                 if (_log.IsWarnEnabled)
                 {
                     _log.Warn(message);
                 }
+                 * */
             }
             catch (Exception ex)
             {
@@ -218,10 +250,13 @@ namespace Tizsoft.Log
         {
             try
             {
+                Print(format, args);
+                /*
                 if (_log.IsWarnEnabled)
                 {
                     _log.WarnFormat(format, args);
                 }
+                 * */
             }
             catch (Exception ex)
             {
