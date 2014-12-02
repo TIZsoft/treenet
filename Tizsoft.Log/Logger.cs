@@ -90,7 +90,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -105,7 +105,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -120,7 +120,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -135,7 +135,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -150,7 +150,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -165,7 +165,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -180,7 +180,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -195,7 +195,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -210,7 +210,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
 
@@ -225,7 +225,7 @@ namespace Tizsoft.Log
             }
             catch (Exception ex)
             {
-                throw ex;
+                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
             }
         }
     }
