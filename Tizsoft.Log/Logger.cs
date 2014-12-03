@@ -79,6 +79,11 @@ namespace Tizsoft.Log
             _log = LogManager.GetLogger(type);
         }
 
+        void Print(string message)
+        {
+            System.Diagnostics.Debug.Print(message);
+        }
+
         private void Print(string format, params object[] args)
         {
             System.Diagnostics.Debug.Print(format, args);
@@ -274,10 +279,10 @@ namespace Tizsoft.Log
             Log.Debug(message);
         }
 
-        public static void Debug(string format)
-        {
-            Log.DebugFormat(format);
-        }
+        //public static void Debug(string format)
+        //{
+        //    Log.DebugFormat(format);
+        //}
 
         public static void Debug(string format, params object[] args)
         {
@@ -289,10 +294,10 @@ namespace Tizsoft.Log
             Log.Error(message);
         }
 
-        public static void Error(string format)
-        {
-            Log.ErrorFormat(format);
-        }
+        //public static void Error(string format)
+        //{
+        //    Log.ErrorFormat(format);
+        //}
 
         public static void Error(string format, params object[] args)
         {
@@ -304,10 +309,10 @@ namespace Tizsoft.Log
             Log.Fatal(message);
         }
 
-        public static void Fatal(string format)
-        {
-            Log.FatalFormat(format);
-        }
+        //public static void Fatal(string format)
+        //{
+        //    Log.FatalFormat(format);
+        //}
 
         public static void Fatal(string format, params object[] args)
         {
@@ -319,10 +324,10 @@ namespace Tizsoft.Log
             Log.Info(message);
         }
 
-        public static void Info(string format)
-        {
-            Log.InfoFormat(format);
-        }
+        //public static void Info(string format)
+        //{
+        //    Log.InfoFormat(format);
+        //}
 
         public static void Info(string format, params object[] args)
         {
@@ -334,10 +339,10 @@ namespace Tizsoft.Log
             Log.Warn(message);
         }
 
-        public static void Warn(string format)
-        {
-            Log.WarnFormat(format);
-        }
+        //public static void Warn(string format)
+        //{
+        //    Log.WarnFormat(format);
+        //}
 
         public static void Warn(string format, params object[] args)
         {

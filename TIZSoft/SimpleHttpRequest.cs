@@ -2,6 +2,7 @@
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Tizsoft
 {
@@ -16,6 +17,16 @@ namespace Tizsoft
                 wc.UploadValuesCompleted += uploadValuesCompletedEventHandler;
                 wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
                 wc.UploadValuesAsync(new Uri(url), "POST", valueCollection, userToken);
+            }
+        }
+
+        public static async Task<byte[]> HttpPostRequestAsync(string url, NameValueCollection valueCollection)
+        {
+            using (var wc = new WebClient())
+            {
+                wc.Encoding = Encoding.UTF8;
+                wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
+                return await wc.UploadValuesTaskAsync(url, "POST", valueCollection);
             }
         }
 
@@ -39,6 +50,15 @@ namespace Tizsoft
                 wc.Encoding = Encoding.UTF8;
                 wc.DownloadDataCompleted += downloadDataCompletedEventHandler;
                 wc.DownloadDataAsync(new Uri(url), userToken);
+            }
+        }
+
+        public static async Task<byte[]> DownloadDataAsync(string url)
+        {
+            using (var wc = new WebClient())
+            {
+                wc.Encoding = Encoding.UTF8;
+                return await wc.DownloadDataTaskAsync(url);
             }
         }
     }
