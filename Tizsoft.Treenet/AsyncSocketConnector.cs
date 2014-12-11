@@ -39,19 +39,19 @@ namespace Tizsoft.Treenet
                 case SocketError.Success:
                     if (_connectionPool.Count <= 0)
                     {
-                        GLogger.Warn((object) "連線數已達上限!");
+                        GLogger.Warn("連線數已達上限!");
                         return;
                     }
 
                     var newConnection = CreateNewConnection(connectOperation.AcceptSocket);
                     _workingConnections.Add(newConnection);
-                    GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
-                    GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+                    GLogger.Debug("IP: {0} 已連線", newConnection.DestAddress);
+                    GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
                     Notify(newConnection, true);
                     break;
 
                 default:
-                    GLogger.Debug(string.Format("因為 {0} ，所以無法連線", connectOperation.SocketError));
+                    GLogger.Debug("因為 {0} ，所以無法連線", connectOperation.SocketError);
                     Notify(Connection.Null, false);
                     break;
             }
@@ -160,8 +160,8 @@ namespace Tizsoft.Treenet
                 _connectionPool.Push(connection);
             }
 
-            GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
-            GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
+            GLogger.Debug("IP: {0} 已斷線", connection.DestAddress);
+            GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
             Notify(connection, false);
         }
 

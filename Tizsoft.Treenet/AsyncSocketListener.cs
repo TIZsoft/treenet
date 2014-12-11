@@ -79,9 +79,9 @@ namespace Tizsoft.Treenet
 
                 var newConnection = CreateNewConnection(acceptOperation.AcceptSocket);
                 _workingConnections.Add(newConnection);
-                GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已連線", newConnection.DestAddress));
-                GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
-                GLogger.Debug(string.Format("可連線數: {0}", _connectionPool.Count));
+                GLogger.Debug("IP: {0} 已連線", newConnection.DestAddress);
+                GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+                GLogger.Debug("可連線數: {0}", _connectionPool.Count);
                 Notify(newConnection, true);
             }
             else
@@ -285,11 +285,20 @@ namespace Tizsoft.Treenet
             if (connection == null)
                 return;
 
-            // O(2n) where n is count of observers.
-            RemoveNullObservers();
+            var needRemoveNullObservers = false;
 
             foreach (var observer in _observers)
+            {
+                if (observer == null)
+                {
+                    needRemoveNullObservers = true;
+                    continue;
+                }
                 observer.GetConnectionEvent(connection, isConnected);
+            }
+            
+            if (needRemoveNullObservers)
+                RemoveNullObservers();
         }
 
         #endregion
@@ -310,9 +319,9 @@ namespace Tizsoft.Treenet
             if (_maxNumberAcceptedClients != null)
                 _maxNumberAcceptedClients.Release();
 
-            GLogger.Debug(string.Format("IP: <color=cyan>{0}</color> 已斷線", connection.DestAddress));
-            GLogger.Debug(string.Format("目前連線數: {0}", _workingConnections.Count));
-            GLogger.Debug(string.Format("可連線數: {0}", _connectionPool.Count));
+            GLogger.Debug("IP: {0} 已斷線", connection.DestAddress);
+            GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+            GLogger.Debug("可連線數: {0}", _connectionPool.Count);
             Notify(connection, false);
         }
 

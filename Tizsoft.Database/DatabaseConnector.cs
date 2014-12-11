@@ -58,7 +58,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -78,7 +78,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -118,7 +118,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -150,7 +150,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -214,7 +214,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -247,7 +247,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -334,7 +334,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -393,7 +393,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -450,7 +450,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -482,7 +482,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -529,7 +529,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object)string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -561,7 +561,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -598,8 +598,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal(
-                    (object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {
@@ -631,7 +630,7 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal((object) string.Format("exception number: {0}\n{1}", mySqlException.Number, mySqlException));
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
             }
             catch (Exception exception)
             {

@@ -46,13 +46,13 @@ namespace Tizsoft.Treenet
 
             if (sendOperation.SocketError == SocketError.Success)
             {
-                GLogger.Debug(string.Format("sent <color=cyan>{0}</color> bytes msg to <color=cyan>{1}</color>",
-                    sendOperation.BytesTransferred, connection.DestAddress));
+                GLogger.Debug("sent {0} bytes msg to {1}",
+                    sendOperation.BytesTransferred, connection.DestAddress);
             }
             else
             {
-                GLogger.Error(string.Format("send msg to <color=cyan>{0}</color> failed due to <color=cyan>{1}</color>",
-                    connection.DestAddress, sendOperation.SocketError));
+                GLogger.Error("send msg to {0} failed due to {1}",
+                    connection.DestAddress, sendOperation.SocketError);
                 connection.Dispose();
             }
 

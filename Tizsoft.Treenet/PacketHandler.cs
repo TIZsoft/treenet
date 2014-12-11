@@ -24,7 +24,7 @@ namespace Tizsoft.Treenet
             }
             else
             {
-                GLogger.Warn((object) string.Format("封包類型 {0} 沒有指定處理方式!", packet.PacketType));
+                GLogger.Warn("封包類型 {0} 沒有指定處理方式!", packet.PacketType);
             }
         }
 
