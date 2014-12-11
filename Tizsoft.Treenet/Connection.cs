@@ -182,10 +182,6 @@ namespace Tizsoft.Treenet
                 IdleTime = 0;
                 _packetSender.SendMsg(this, content, packetType);
             }
-            else
-            {
-                throw new InvalidOperationException("Connection is disconnected.");
-            }
         }
 
         public bool IsActive { get; private set; }

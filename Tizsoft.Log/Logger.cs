@@ -1,352 +1,99 @@
-﻿using System;
-using System.IO;
-using log4net;
-using log4net.Appender;
-using log4net.Core;
-using log4net.Layout;
-using log4net.Repository.Hierarchy;
+﻿using NLog;
 
 namespace Tizsoft.Log
 {
-    public static class LoggerManager
-    {
-        const string ConfigFile = @"log4net.config";
-
-        public static void DefaultSetup()
-        {
-            var hierarchy = (Hierarchy)LogManager.GetRepository();
-
-            var patternLayout = new PatternLayout
-            {
-                ConversionPattern =
-                    "%date [%thread] %-5level %logger [%property{NDC}] [%property{MDC}] (%file:%line) %stacktrace{5} - %message%newline"
-            };
-            patternLayout.ActivateOptions();
-
-            var roller = new RollingFileAppender
-            {
-                AppendToFile = true,
-                File = @"logs\log.txt",
-                Layout = patternLayout,
-                MaximumFileSize = "1GB",
-                MaxSizeRollBackups = 5,
-                RollingStyle = RollingFileAppender.RollingMode.Size,
-                StaticLogFileName = true
-            };
-            roller.ActivateOptions();
-            hierarchy.Root.AddAppender(roller);
-
-            hierarchy.Root.Level = Level.Info;
-            hierarchy.Configured = true;
-        }
-
-        public static bool LoadConfig(string path)
-        {
-            var filepath = path.EndsWith("/")
-                ? string.Format("{0}{1}", path, ConfigFile)
-                : string.Format("{0}/{1}", path, ConfigFile);
-
-            if (File.Exists(filepath))
-            {
-                log4net.Config.XmlConfigurator.Configure(new FileInfo(filepath));
-                return true;
-            }
-
-            return false;
-        }
-
-        public static int GetCurrentLoggersCount()
-        {
-            return LogManager.GetCurrentLoggers().Length;
-        }
-    }
-
-    public class Logger : ILogger
-    {
-        readonly ILog _log;
-
-        public Logger(Type type)
-        {
-            if (LoggerManager.GetCurrentLoggersCount() == 0)
-            {
-                var filepath = System.Reflection.Assembly.GetAssembly(typeof(Logger)).Location;
-                filepath = Path.GetDirectoryName(filepath);
-                if (!LoggerManager.LoadConfig(filepath))
-                {
-                    LoggerManager.DefaultSetup();
-                }
-            }
-            _log = LogManager.GetLogger(type);
-        }
-
-        void Print(string message)
-        {
-            System.Diagnostics.Debug.Print(message);
-        }
-
-        private void Print(string format, params object[] args)
-        {
-            System.Diagnostics.Debug.Print(format, args);
-        }
-
-        public void Debug(object message)
-        {
-            try
-            {
-                Print(message.ToString());
-                /*
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug(message);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void DebugFormat(string format, params object[] args)
-        {
-            try
-            {
-                Print(format, args);
-                /*
-                if (_log.IsDebugEnabled)
-                {
-                    _log.DebugFormat(format, args);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void Error(object message)
-        {
-            try
-            {
-                Print(message.ToString());
-                /*
-                if (_log.IsErrorEnabled)
-                {
-                    _log.Error(message);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void ErrorFormat(string format, params object[] args)
-        {
-            try
-            {
-                Print(format, args);
-                /*
-                if (_log.IsErrorEnabled)
-                {
-                    _log.ErrorFormat(format, args);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void Fatal(object message)
-        {
-            try
-            {
-                Print(message.ToString());
-                /*
-                if (_log.IsFatalEnabled)
-                {
-                    _log.Fatal(message);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void FatalFormat(string format, params object[] args)
-        {
-            try
-            {
-                Print(format, args);
-                /*
-                if (_log.IsFatalEnabled)
-                {
-                    _log.FatalFormat(format, args);
-                }
-                 */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void Info(object message)
-        {
-            try
-            {
-                Print(message.ToString());
-                /*
-                if (_log.IsInfoEnabled)
-                {
-                    _log.Info(message);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void InfoFormat(string format, params object[] args)
-        {
-            try
-            {
-                Print(format, args);
-                /*
-                if (_log.IsInfoEnabled)
-                {
-                    _log.InfoFormat(format, args);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void Warn(object message)
-        {
-            try
-            {
-                Print(message.ToString());
-                /*
-                if (_log.IsWarnEnabled)
-                {
-                    _log.Warn(message);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-
-        public void WarnFormat(string format, params object[] args)
-        {
-            try
-            {
-                Print(format, args);
-                /*
-                if (_log.IsWarnEnabled)
-                {
-                    _log.WarnFormat(format, args);
-                }
-                 * */
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Print("{0}: {1}", ex, ex.Message);
-            }
-        }
-    }
-
     public static class GLogger
     {
-        static readonly ILogger Log = new Logger(typeof(GLogger));
+        static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public static void Debug(object message)
+        public static void Trace(string msg)
         {
-            Log.Debug(message);
+            _logger.Trace(msg);
         }
 
-        //public static void Debug(string format)
-        //{
-        //    Log.DebugFormat(format);
-        //}
-
-        public static void Debug(string format, params object[] args)
+        public static void Trace(string msg, params object[] args)
         {
-            Log.DebugFormat(format, args);
+            _logger.Trace(msg, args);
         }
 
-        public static void Error(object message)
+        public static void Trace(object msg)
         {
-            Log.Error(message);
+            _logger.Trace(msg);
         }
 
-        //public static void Error(string format)
-        //{
-        //    Log.ErrorFormat(format);
-        //}
-
-        public static void Error(string format, params object[] args)
+        public static void Debug(string msg)
         {
-            Log.ErrorFormat(format, args);
+            _logger.Debug(msg);
         }
 
-        public static void Fatal(object message)
+        public static void Debug(string msg, params object[] args)
         {
-            Log.Fatal(message);
+            _logger.Debug(msg, args);
         }
 
-        //public static void Fatal(string format)
-        //{
-        //    Log.FatalFormat(format);
-        //}
-
-        public static void Fatal(string format, params object[] args)
+        public static void Debug(object msg)
         {
-            Log.FatalFormat(format, args);
+            _logger.Debug(msg);
         }
 
-        public static void Info(object message)
+        public static void Info(string msg)
         {
-            Log.Info(message);
+            _logger.Info(msg);
         }
 
-        //public static void Info(string format)
-        //{
-        //    Log.InfoFormat(format);
-        //}
-
-        public static void Info(string format, params object[] args)
+        public static void Info(string msg, params object[] args)
         {
-            Log.InfoFormat(format, args);
+            _logger.Info(msg, args);
         }
 
-        public static void Warn(object message)
+        public static void Info(object msg)
         {
-            Log.Warn(message);
+            _logger.Info(msg);
         }
 
-        //public static void Warn(string format)
-        //{
-        //    Log.WarnFormat(format);
-        //}
-
-        public static void Warn(string format, params object[] args)
+        public static void Warn(string msg)
         {
-            Log.WarnFormat(format, args);
+            _logger.Warn(msg);
+        }
+
+        public static void Warn(string msg, params object[] args)
+        {
+            _logger.Warn(msg, args);
+        }
+
+        public static void Warn(object msg)
+        {
+            _logger.Warn(msg);
+        }
+
+        public static void Error(string msg)
+        {
+            _logger.Error(msg);
+        }
+
+        public static void Error(string msg, params object[] args)
+        {
+            _logger.Error(msg, args);
+        }
+
+        public static void Error(object msg)
+        {
+            _logger.Error(msg);
+        }
+
+        public static void Fatal(string msg)
+        {
+            _logger.Fatal(msg);
+        }
+
+        public static void Fatal(string msg, params object[] args)
+        {
+            _logger.Fatal(msg, args);
+        }
+
+        public static void Fatal(object msg)
+        {
+            _logger.Fatal(msg);
         }
     }
 }

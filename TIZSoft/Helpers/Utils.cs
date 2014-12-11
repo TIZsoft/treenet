@@ -5,6 +5,8 @@ namespace Tizsoft.Helpers
 {
     public class Utils
     {
+        public static string MysqlTimeStampFormat = "yyyy-MM-dd HH:mm:ss";
+
         /// <summary>
         /// The TIMESTAMP data type is used for values that contain both date and time parts. 
         /// Min value is '1970-01-01 00:00:01' UTC.

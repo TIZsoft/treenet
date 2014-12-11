@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Tizsoft.Log;
 
@@ -107,11 +108,42 @@ namespace Tizsoft.Treenet
             return config;
         }
 
+        public static async Task<ServerConfig> ReadAsync(string appPath)
+        {
+            var config = new ServerConfig();
+
+            if (File.Exists(ConfigFullPath(appPath)))
+            {
+                using (var configFile = File.OpenText(ConfigFullPath(appPath)))
+                {
+                    var configString = await configFile.ReadToEndAsync();
+
+                    if (!string.IsNullOrEmpty(configString))
+                        config = await Task.Run(() => JsonConvert.DeserializeObject<ServerConfig>(configString));
+                }
+            }
+
+            return config;
+        }
+
         public static void Save(string appPath, ServerConfig config)
         {
             var jsonStr = JsonConvert.SerializeObject(config);
             File.WriteAllText(ConfigFullPath(appPath), jsonStr, Encoding.UTF8);
-            GLogger.Debug((object)jsonStr);
+            GLogger.Debug(jsonStr);
+        }
+
+        public static async Task SaveAsync(string appPath, ServerConfig config)
+        {
+            var jsonStr = await Task.Run(() => JsonConvert.SerializeObject(config));
+            using (var configFile = File.OpenWrite(ConfigFullPath(appPath)))
+            {
+                configFile.Seek(0, SeekOrigin.Begin);
+                var datas = Encoding.UTF8.GetBytes(jsonStr);
+                await configFile.WriteAsync(datas, 0, datas.Length);
+                await configFile.FlushAsync();
+            }
+            GLogger.Debug(jsonStr);
         }
     }
 }

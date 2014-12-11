@@ -30,6 +30,16 @@ namespace Tizsoft
             }
         }
 
+        public static async Task<byte[]> HttpPostRequestAsync(string url, byte[] data)
+        {
+            using (var wc = new WebClient())
+            {
+                wc.Encoding = Encoding.UTF8;
+                wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
+                return await wc.UploadDataTaskAsync(url, "POST", data);
+            }
+        }
+
         public static void HttpPostRequest(string url, byte[] data,
             UploadDataCompletedEventHandler uploadDataCompletedEventHandler, object userToken = null)
         {
