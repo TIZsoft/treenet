@@ -21,9 +21,10 @@ namespace Tizsoft.Tests
             _id = new TizIdIncrement();
             for (var i = 0; i < v; i++)
             {
-                _id.Next();
+                var next = _id.Next();
                 var id = _id.Current();
                 Assert.AreEqual(id, i + 1);
+                Assert.AreEqual(_id.CurrentCounter, next);
             }
         }
 

@@ -17,6 +17,7 @@ namespace Tizsoft
                 ? id.ToString(CultureInfo.InvariantCulture)
                 : string.Format(format, id);
         }
+        public uint CurrentCounter { get { return IdCounter; } }
 
         public abstract uint Next();
         public abstract uint Current();
