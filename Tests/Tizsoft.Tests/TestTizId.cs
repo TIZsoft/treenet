@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 
 namespace Tizsoft.Tests
@@ -13,7 +14,7 @@ namespace Tizsoft.Tests
             _id = null;
         }
 
-        [TestCase((uint)1)]
+        [TestCase((uint)10)]
         [TestCase((uint)10000)]
         [TestCase((uint)10000000)]
         public void TestTizIdIncrement(uint v)
@@ -24,11 +25,11 @@ namespace Tizsoft.Tests
                 var next = _id.Next();
                 var id = _id.Current();
                 Assert.AreEqual(id, i + 1);
-                Assert.AreEqual(_id.CurrentCounter, next);
+                Assert.AreEqual(_id.CurrentCounter, i + 2);
             }
         }
 
-        [TestCase((uint)1)]
+        [TestCase((uint)10)]
         [TestCase((uint)10000)]
         [TestCase((uint)10000000)]
         public void TestTizIdDecrease(uint v)
