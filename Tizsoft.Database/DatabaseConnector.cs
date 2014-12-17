@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Text;
@@ -13,7 +12,7 @@ namespace Tizsoft.Database
     public class DatabaseConnector
     {
         readonly StringBuilder _queryBuilder = new StringBuilder();
-        string _connectionString;
+        readonly string _connectionString;
 
         async void DisconnectAsync(MySqlConnection connection)
         {
@@ -292,6 +291,89 @@ namespace Tizsoft.Database
             return _queryBuilder.ToString();
         }
 
+        public async Task<List<Dictionary<string, object>>> RequestJoinAsync(List<string> tables, 
+            List<string> columns, string whereClause)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                throw new Exception("Connection doesn't establish yet.");
+            }
+
+            var queryString = BuildRequestJoinQueryString(tables, columns, whereClause);
+            var result = new List<Dictionary<string, object>>();
+            DbDataReader dataReader = null;
+            MySqlConnection connection = null;
+            try
+            {
+                connection = await ConnectAsync();
+                var requestCommand = new MySqlCommand(queryString, connection);
+                dataReader = await requestCommand.ExecuteReaderAsync();
+
+                if (!dataReader.HasRows)
+                {
+                    dataReader.Close();
+                    DisconnectAsync(connection);
+                    return result;
+                }
+
+                while (dataReader.Read())
+                {
+                    var row = new Dictionary<string, object>();
+                    if (columns != null)
+                    {
+                        for (var i = 0; i < dataReader.FieldCount; ++i)
+                        {
+                            var name = dataReader.GetName(i);
+                            var idx = columns.FindIndex(s => string.CompareOrdinal(s, name) == 0);
+                            if (idx == -1)
+                            {
+                                continue;
+                            }
+
+                            if (row.ContainsKey(name))
+                            {
+                                continue;
+                            }
+
+                            row.Add(name, dataReader.GetValue(i));
+                        }
+                    }
+                    else
+                    {
+                        for (var i = 0; i < dataReader.FieldCount; ++i)
+                        {
+                            var name = dataReader.GetName(i);
+                            if (row.ContainsKey(name))
+                            {
+                                continue;
+                            }
+                            row.Add(name, dataReader.GetValue(i));
+                        }
+                    }
+                    result.Add(row);
+                }
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal(exception);
+                throw;
+            }
+            finally
+            {
+                if (dataReader != null)
+                {
+                    dataReader.Close();
+                }
+                DisconnectAsync(connection);
+            }
+
+            return result;
+        }
+
         public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns, string whereClause)
         {
             if (string.IsNullOrEmpty(_connectionString))
@@ -425,6 +507,34 @@ namespace Tizsoft.Database
 
             _queryBuilder.AppendFormat("FROM `{0}` ", table);
 
+            if (!string.IsNullOrEmpty(whereClause))
+                _queryBuilder.AppendFormat("WHERE {0}", whereClause);
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildRequestJoinQueryString(List<string> tables, List<string> columns, string whereClause)
+        {
+            ResetQueryBuilder();
+            
+            // SELECT
+            _queryBuilder.Append("SELECT ");
+            if (columns == null || columns.Count == 0)
+                _queryBuilder.Append("* ");
+            else
+            {
+                for (var i = 0; i < columns.Count; ++i)
+                    _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? " " : ",");
+            }
+            
+            // FROM
+            _queryBuilder.Append("FROM ");
+            for (var i = 0; i < tables.Count; ++i)
+            {
+                _queryBuilder.AppendFormat("{0}{1}", tables[i], i == tables.Count - 1 ? " " : ",");
+            }
+            
+            // WHERE
             if (!string.IsNullOrEmpty(whereClause))
                 _queryBuilder.AppendFormat("WHERE {0}", whereClause);
 
