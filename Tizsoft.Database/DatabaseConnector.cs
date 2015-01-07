@@ -41,8 +41,8 @@ namespace Tizsoft.Database
             if (config == null)
                 throw new InvalidCastException("configArgs");
 
-            _connectionString = string.Format("server={0};uid={1};pwd={2};database={3};Charset=utf8;{4}",
-                    config.HostName, config.UserName, config.Password, config.DataBase, config.Option);
+            _connectionString = string.Format("server={0};port={1};uid={2};pwd={3};database={4};Charset=utf8;{5}",
+                    config.HostName, config.Port, config.UserName, config.Password, config.DataBase, config.Option);
 
             GLogger.Debug(config.Option);
         }
@@ -117,11 +117,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -149,11 +149,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -213,11 +213,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -242,15 +242,14 @@ namespace Tizsoft.Database
                 connection = Connect();
                 var createCommand = new MySqlCommand(queryString, connection);
                 createCommand.ExecuteNonQuery();
-                //createCommand.ExecuteNonQueryAsync();
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -416,11 +415,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -475,11 +474,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -560,11 +559,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -592,11 +591,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -639,11 +638,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -671,11 +670,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -708,11 +707,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
@@ -740,11 +739,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally

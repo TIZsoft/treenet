@@ -128,14 +128,14 @@ namespace Tizsoft.Treenet
 
         public static void Save(string appPath, ServerConfig config)
         {
-            var jsonStr = JsonConvert.SerializeObject(config);
+            var jsonStr = JsonConvert.SerializeObject(config, Formatting.Indented);
             File.WriteAllText(ConfigFullPath(appPath), jsonStr, Encoding.UTF8);
             GLogger.Debug(jsonStr);
         }
 
         public static async Task SaveAsync(string appPath, ServerConfig config)
         {
-            var jsonStr = await Task.Run(() => JsonConvert.SerializeObject(config));
+            var jsonStr = await Task.Run(() => JsonConvert.SerializeObject(config, Formatting.Indented));
             using (var configFile = File.OpenWrite(ConfigFullPath(appPath)))
             {
                 configFile.Seek(0, SeekOrigin.Begin);
