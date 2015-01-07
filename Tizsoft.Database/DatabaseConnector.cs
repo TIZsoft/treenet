@@ -354,11 +354,11 @@ namespace Tizsoft.Database
             }
             catch (MySqlException mySqlException)
             {
-                GLogger.Fatal("exception number: {0}\n{1}", mySqlException.Number, mySqlException);
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
             }
             catch (Exception exception)
             {
-                GLogger.Fatal(exception);
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
                 throw;
             }
             finally
