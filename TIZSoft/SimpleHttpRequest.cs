@@ -26,7 +26,7 @@ namespace Tizsoft
             {
                 wc.Encoding = Encoding.UTF8;
                 wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
-                return await wc.UploadValuesTaskAsync(url, "POST", valueCollection);
+                return await wc.UploadValuesTaskAsync(url, "POST", valueCollection).ConfigureAwait(false);
             }
         }
 
@@ -36,7 +36,7 @@ namespace Tizsoft
             {
                 wc.Encoding = Encoding.UTF8;
                 wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
-                return await wc.UploadDataTaskAsync(url, "POST", data);
+                return await wc.UploadDataTaskAsync(url, "POST", data).ConfigureAwait(false);
             }
         }
 
@@ -68,7 +68,26 @@ namespace Tizsoft
             using (var wc = new WebClient())
             {
                 wc.Encoding = Encoding.UTF8;
-                return await wc.DownloadDataTaskAsync(url);
+                return await wc.DownloadDataTaskAsync(url).ConfigureAwait(false);
+            }
+        }
+
+        public static void DownloadString(string url, DownloadStringCompletedEventHandler downloadStringCompletedEventHandler, object userToken = null)
+        {
+            using (var wc = new WebClient())
+            {
+                wc.Encoding = Encoding.UTF8;
+                wc.DownloadStringCompleted += downloadStringCompletedEventHandler;
+                wc.DownloadStringAsync(new Uri(url), userToken);
+            }
+        }
+
+        public static async Task<string> DownloadStringAsync(string url)
+        {
+            using (var wc = new WebClient())
+            {
+                wc.Encoding = Encoding.UTF8;
+                return await wc.DownloadStringTaskAsync(url).ConfigureAwait(false);
             }
         }
     }

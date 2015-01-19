@@ -43,8 +43,6 @@ namespace Tizsoft.Database
 
             _connectionString = string.Format("server={0};port={1};uid={2};pwd={3};database={4};Charset=utf8;{5}",
                     config.HostName, config.Port, config.UserName, config.Password, config.DataBase, config.Option);
-
-            GLogger.Debug(config.Option);
         }
 
         async Task<MySqlConnection> ConnectAsync()
