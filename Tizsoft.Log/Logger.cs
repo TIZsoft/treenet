@@ -1,10 +1,39 @@
 ﻿using NLog;
+using NLog.Config;
+using NLog.Targets;
 
 namespace Tizsoft.Log
 {
     public static class GLogger
     {
         static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
+        /// <summary>
+        /// Reference https://gist.github.com/1162357/930f9c124b9ba05c819474da26551a5aadf35aec#file-gistfile1-txt-L21 to create NLog config programmatically.
+        /// </summary>
+        static LoggingConfiguration CreateDefaultRichTextBoxConfig(string name, string layout, bool autoScroll, int maxLines, string controlName, string formName)
+        {
+            var config = new LoggingConfiguration();
+            var target = new RichTextBoxTarget
+            {
+                Name = name,
+                Layout = layout,
+                AutoScroll = autoScroll,
+                MaxLines = maxLines,
+                ControlName = controlName,
+                FormName = formName,
+                UseDefaultRowColoringRules = true
+            };
+            target.RowColoringRules.Add(new RichTextBoxRowColoringRule("level == LogLevel.Info", "Empty", "Black"));
+            config.AddTarget(name, target);
+            var rule = new LoggingRule("*", LogLevel.Info, target);
+            config.LoggingRules.Add(rule);
+            return config;
+
+            // using config like below: 
+            //_logger = LogManager.GetCurrentClassLogger();
+            //_logger.Debug("using programmatic config");
+        }
 
         public static void Trace(string msg)
         {
