@@ -21,7 +21,7 @@ namespace Tizsoft.Treenet
 
         public const int DefaultPortNumber = 5566;
 
-        public const double DefaultTimeOut = 5000;
+        public const int DefaultTimeOut = 5000;
 
         public const double DefaultTimeOutTick = 1000;
 

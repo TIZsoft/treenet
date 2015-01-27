@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Timers;
@@ -194,35 +196,32 @@ namespace Tizsoft.Treenet
             _listenSocket = new Socket(endPoint.AddressFamily, config.TransferType, config.UseProtocol);
             _listenSocket.Bind(endPoint);
             
-            InitialHeartBeatTime();
+            InitialHeartBeatTime(config.TimeOut);
         }
 
-        void InitialHeartBeatTime()
+        void InitialHeartBeatTime(int timeOut)
         {
             if (_heartBeatTimer != null)
                 _heartBeatTimer.Close();
 
-            _heartBeatTimer = new Timer(Network.DefaultTimeOutTick);
-            _heartBeatTimer.AutoReset = true;
-            _heartBeatTimer.Elapsed += HeartBeatTimerOnElapsed;
-            _heartBeatTimer.Start();
-        }
-
-        void HeartBeatTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
-        {
-            if (_workingConnections.Count == 0)
+            if (timeOut == 0)
                 return;
 
-            foreach (var workingConnection in _workingConnections)
+            _heartBeatTimer = new Timer(timeOut) {AutoReset = true};
+            _heartBeatTimer.Elapsed += (sender, args) =>
             {
-                if (!workingConnection.IsActive)
-                    continue;
+                if (_workingConnections.Count == 0)
+                    return;
 
-                workingConnection.IdleTime += Network.DefaultTimeOutTick;
+                foreach (var workingConnection in _workingConnections.Where(workingConnection => workingConnection.IsActive))
+                {
+                    workingConnection.IdleTime += Network.DefaultTimeOutTick;
 
-                if (workingConnection.IdleTime > _config.TimeOut)
-                    workingConnection.Send(null, PacketType.Stream);
-            }
+                    if (workingConnection.IdleTime > _config.TimeOut)
+                        workingConnection.Send(null, PacketType.Stream);
+                }
+            };
+            _heartBeatTimer.Start();
         }
 
         public void Start()

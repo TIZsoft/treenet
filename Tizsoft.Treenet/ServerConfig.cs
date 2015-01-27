@@ -70,7 +70,11 @@ namespace Tizsoft.Treenet
         /// </remarks>
         public ProtocolType UseProtocol { get; set; }
 
-        public double TimeOut { get; set; }
+        /// <summary>
+        /// The time(in millisecond) to check when to time out, used for heart beat packet.
+        /// Use 0 means there is no time out.
+        /// </summary>
+        public int TimeOut { get; set; }
 
         public PacketProtocolSettings PacketProtocolSettings { get; set; }
 
@@ -112,15 +116,23 @@ namespace Tizsoft.Treenet
         {
             var config = new ServerConfig();
 
-            if (File.Exists(ConfigFullPath(appPath)))
+            try
             {
-                using (var configFile = File.OpenText(ConfigFullPath(appPath)))
+                if (File.Exists(ConfigFullPath(appPath)))
                 {
-                    var configString = await configFile.ReadToEndAsync();
+                    using (var configFile = File.OpenText(ConfigFullPath(appPath)))
+                    {
+                        var configString = await configFile.ReadToEndAsync();
 
-                    if (!string.IsNullOrEmpty(configString))
-                        config = await Task.Run(() => JsonConvert.DeserializeObject<ServerConfig>(configString));
+                        if (!string.IsNullOrEmpty(configString))
+                            config = await Task.Run(() => JsonConvert.DeserializeObject<ServerConfig>(configString));
+                    }
                 }
+            }
+            catch (Exception exception)
+            {
+                GLogger.Error(exception);
+                return config;
             }
 
             return config;
@@ -141,7 +153,6 @@ namespace Tizsoft.Treenet
                 configFile.Seek(0, SeekOrigin.Begin);
                 var datas = Encoding.UTF8.GetBytes(jsonStr);
                 await configFile.WriteAsync(datas, 0, datas.Length);
-                await configFile.FlushAsync();
             }
             GLogger.Debug(jsonStr);
         }

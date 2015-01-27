@@ -87,6 +87,8 @@ namespace Tizsoft.Treenet
             if (connectSocket == null)
             {
                 GLogger.Error("You're trying to send a message but socket is null.");
+                //still need to try send next message.
+                StartSend(asyncSendOperation);
                 return;
             }
 
