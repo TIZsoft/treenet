@@ -14,7 +14,14 @@ namespace Tizsoft.Caching.Cache
         public void Add(string key, T obj)
         {
             var cacheObj = new CacheData<T>(obj);
-            _cacheObjects.Add(key, cacheObj);
+            if (!_cacheObjects.ContainsKey(key))
+            {
+                _cacheObjects.Add(key, cacheObj);
+            }
+            else
+            {
+                _cacheObjects[key] = cacheObj;
+            }
         }
 
         public T Get(string key)
