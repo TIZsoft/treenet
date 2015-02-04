@@ -123,7 +123,6 @@ namespace Tizsoft.Treenet
                     using (var configFile = File.OpenText(ConfigFullPath(appPath)))
                     {
                         var configString = await configFile.ReadToEndAsync();
-
                         if (!string.IsNullOrEmpty(configString))
                             config = await Task.Run(() => JsonConvert.DeserializeObject<ServerConfig>(configString));
                     }
@@ -150,7 +149,7 @@ namespace Tizsoft.Treenet
             var jsonStr = await Task.Run(() => JsonConvert.SerializeObject(config, Formatting.Indented));
             using (var configFile = File.OpenWrite(ConfigFullPath(appPath)))
             {
-                configFile.Seek(0, SeekOrigin.Begin);
+                configFile.SetLength(0);
                 var datas = Encoding.UTF8.GetBytes(jsonStr);
                 await configFile.WriteAsync(datas, 0, datas.Length);
             }
