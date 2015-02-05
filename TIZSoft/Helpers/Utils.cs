@@ -5,18 +5,18 @@ namespace Tizsoft.Helpers
 {
     public class Utils
     {
-        public static string MysqlTimeStampFormat = "yyyy-MM-dd HH:mm:ss";
+        public const string MysqlTimeStampFormat = "yyyy-MM-dd HH:mm:ss";
 
         /// <summary>
         /// The TIMESTAMP data type is used for values that contain both date and time parts. 
         /// Min value is '1970-01-01 00:00:01' UTC.
         /// </summary>
-        public static DateTime MySqlTimeStampMinValue { get { return new DateTime(1970, 1, 1, 0, 0, 1); } }
+        public static DateTime MySqlTimeStampMinValue { get { return new DateTime(1970, 1, 1, 0, 0, 1, DateTimeKind.Utc); } }
         /// <summary>
         /// The TIMESTAMP data type is used for values that contain both date and time parts. 
         /// Max value is '2038-01-19 03:14:07' UTC.
         /// </summary>
-        public static DateTime MySqlTimeStampMaxValue { get { return new DateTime(2038, 1, 19, 3, 14, 7); } }
+        public static DateTime MySqlTimeStampMaxValue { get { return new DateTime(2038, 1, 19, 3, 14, 7, DateTimeKind.Utc); } }
         /// <summary>
         /// The DATE type is used for values with a date part but no time part. 
         /// MySQL retrieves and displays DATE values in 'YYYY-MM-DD' format. 
