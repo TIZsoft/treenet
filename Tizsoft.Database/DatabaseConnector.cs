@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json.Linq;
+using Tizsoft.Database.Helper_Interface;
 using Tizsoft.Log;
 
 namespace Tizsoft.Database
@@ -14,13 +17,13 @@ namespace Tizsoft.Database
         readonly StringBuilder _queryBuilder = new StringBuilder();
         readonly string _connectionString;
 
-        async void DisconnectAsync(MySqlConnection connection)
+        static async void DisconnectAsync(MySqlConnection connection)
         {
             if (connection != null)
                 await connection.CloseAsync();
         }
 
-        void Disconnect(MySqlConnection connection)
+        static void Disconnect(IDbConnection connection)
         {
             if (connection != null)
                 connection.Close();
@@ -85,6 +88,152 @@ namespace Tizsoft.Database
             return null;
         }
 
+        static MySqlCommand CreateStoredProcedureCommand(MySqlConnection connection, IMySqlStoredProcedureHelper helper)
+        {
+            var cmd = new MySqlCommand(helper.Function, connection) {CommandType = CommandType.StoredProcedure};
+            foreach (var parameter in helper.Parameters())
+                cmd.Parameters.AddWithValue(string.Format("@{0}", parameter.Key), parameter.Value);
+            return cmd;
+        }
+
+        static List<Dictionary<string, object>> FetchSqlResultToList(IDataReader dataReader)
+        {
+            var result = new List<Dictionary<string, object>>();
+
+            try
+            {
+                while (dataReader.Read())
+                {
+                    var row = new Dictionary<string, object>();
+                    for (var i = 0; i < dataReader.FieldCount; ++i)
+                        row.Add(dataReader.GetName(i), dataReader[i]);
+                    result.Add(row);
+                }
+                return result;
+            }
+            catch (Exception exception)
+            {
+                GLogger.Error(exception);
+                return result;
+            }
+        }
+
+        public async Task ExecuteNonQueryAsync(string query)
+        {
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var cmd = new MySqlCommand(query, connection);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("execute query \"{0}\" get mysql exception {1} with number {2}", query, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("execute query \"{0}\" get exception {1}", query, exception);
+            }
+            finally
+            {
+                DisconnectAsync(connection);
+            }
+        }
+
+        public async Task<JArray> ExecuteQueryAsync(string query)
+        {
+            var result = new JArray();
+            MySqlConnection connection = null;
+            DbDataReader dataReader = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var cmd = new MySqlCommand(query, connection);
+                dataReader = await cmd.ExecuteReaderAsync();
+                result = JArray.FromObject(FetchSqlResultToList(dataReader));
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("execute query \"{0}\" get mysql exception {1} with number {2}", query, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("execute query \"{0}\" get exception {1}", query, exception);
+            }
+            finally
+            {
+                if (dataReader != null)
+                    dataReader.Close();
+                DisconnectAsync(connection);
+            }
+
+            return result;
+        }
+
+        public async Task ExecuteNonQueryStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
+        {
+            if (helper == null)
+                throw new NullReferenceException("helper can't be null");
+
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var cmd = CreateStoredProcedureCommand(connection, helper);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("execute stored procedure \"{0}\" get mysql exception {1} with number {2}", helper.Function, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("execute stored procedure \"{0}\" get exception {1}", helper.Function, exception);
+            }
+            finally
+            {
+                DisconnectAsync(connection);
+            }
+        }
+
+        public async Task<JArray> ExecuteQueryStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
+        {
+            if (helper == null)
+                throw new NullReferenceException("helper can't be null");
+
+            var result = new JArray();
+            MySqlConnection connection = null;
+            DbDataReader dataReader = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var cmd = CreateStoredProcedureCommand(connection, helper);
+                dataReader = await cmd.ExecuteReaderAsync();
+                result = JArray.FromObject(FetchSqlResultToList(dataReader));
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("execute stored procedure \"{0}\" get mysql exception {1} with number {2}", helper.Function, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("execute stored procedure \"{0}\" get exception {1}", helper.Function, exception);
+            }
+            finally
+            {
+                if (dataReader != null)
+                    dataReader.Close();
+                DisconnectAsync(connection);
+            }
+
+            return result;
+        }
+
         public async Task CreateAsync(string table, List<string> columns, List<object> values)
         {
             await CreateOnDuplicateAsync(table, columns, values, string.Empty);
@@ -120,7 +269,6 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
             }
             finally
             {
@@ -152,7 +300,6 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
             }
             finally
             {
@@ -160,7 +307,7 @@ namespace Tizsoft.Database
             }
         }
 
-        string BuildCreateOnDuplicateQueryString(string table, List<string> columns, List<object> values, string duplicateKeyClause)
+        string BuildCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string duplicateKeyClause)
         {
             ResetQueryBuilder();
             _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
@@ -216,7 +363,6 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
             }
             finally
             {
@@ -248,7 +394,6 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
             }
             finally
             {
@@ -256,7 +401,7 @@ namespace Tizsoft.Database
             }
         }
 
-        string BuildMultiCreateOnDuplicateQueryString(string table, List<string> columns, List<List<object>> multiValueLists, string duplicateKeyClause)
+        string BuildMultiCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<List<object>> multiValueLists, string duplicateKeyClause)
         {
             ResetQueryBuilder();
             _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
@@ -270,16 +415,16 @@ namespace Tizsoft.Database
             {
                 var valueList = multiValueLists[i];
 
-                if (valueList != null && valueList.Count > 0)
-                {
-                    _queryBuilder.Append("(");
+                if (valueList == null || valueList.Count <= 0) 
+                    continue;
 
-                    for (var j = 0; j < minColumnCount; ++j)
-                        _queryBuilder.AppendFormat(@"'{0}'{1}", valueList[j],
-                            j == minColumnCount - 1 ? ")" : ",");
+                _queryBuilder.Append("(");
 
-                    _queryBuilder.Append(i == multiValueLists.Count - 1 ? " " : ",");
-                }
+                for (var j = 0; j < minColumnCount; ++j)
+                    _queryBuilder.AppendFormat(@"'{0}'{1}", valueList[j],
+                        j == minColumnCount - 1 ? ")" : ",");
+
+                _queryBuilder.Append(i == multiValueLists.Count - 1 ? " " : ",");
             }
 
             if (!string.IsNullOrEmpty(duplicateKeyClause))
@@ -305,50 +450,7 @@ namespace Tizsoft.Database
                 connection = await ConnectAsync();
                 var requestCommand = new MySqlCommand(queryString, connection);
                 dataReader = await requestCommand.ExecuteReaderAsync();
-
-                if (!dataReader.HasRows)
-                {
-                    dataReader.Close();
-                    DisconnectAsync(connection);
-                    return result;
-                }
-
-                while (dataReader.Read())
-                {
-                    var row = new Dictionary<string, object>();
-                    if (columns != null)
-                    {
-                        for (var i = 0; i < dataReader.FieldCount; ++i)
-                        {
-                            var name = dataReader.GetName(i);
-                            var idx = columns.FindIndex(s => string.CompareOrdinal(s, name) == 0);
-                            if (idx == -1)
-                            {
-                                continue;
-                            }
-
-                            if (row.ContainsKey(name))
-                            {
-                                continue;
-                            }
-
-                            row.Add(name, dataReader.GetValue(i));
-                        }
-                    }
-                    else
-                    {
-                        for (var i = 0; i < dataReader.FieldCount; ++i)
-                        {
-                            var name = dataReader.GetName(i);
-                            if (row.ContainsKey(name))
-                            {
-                                continue;
-                            }
-                            row.Add(name, dataReader.GetValue(i));
-                        }
-                    }
-                    result.Add(row);
-                }
+                result = FetchSqlResultToList(dataReader);
             }
             catch (MySqlException mySqlException)
             {
@@ -357,7 +459,6 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
             }
             finally
             {
@@ -387,29 +488,7 @@ namespace Tizsoft.Database
                 connection = await ConnectAsync();
                 var requestCommand = new MySqlCommand(queryString, connection);
                 dataReader = await requestCommand.ExecuteReaderAsync();
-
-                if (!dataReader.HasRows)
-                {
-                    dataReader.Close();
-                    DisconnectAsync(connection);
-                    return result;
-                }
-
-                while (dataReader.Read())
-                {
-                    if (columns != null)
-                    {
-                        var row = columns.ToDictionary(column => column, column => dataReader[column]);
-                        result.Add(row);
-                    }
-                    else
-                    {
-                        var row = new Dictionary<string, object>();
-                        for (var i = 0; i < dataReader.FieldCount; ++i)
-                            row.Add(dataReader.GetName(i), dataReader[i]);
-                        result.Add(row);
-                    }
-                }
+                result = FetchSqlResultToList(dataReader);
             }
             catch (MySqlException mySqlException)
             {
@@ -418,7 +497,6 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
             }
             finally
             {
@@ -446,29 +524,7 @@ namespace Tizsoft.Database
                 connection = Connect();
                 var requestCommand = new MySqlCommand(queryString, connection);
                 dataReader = requestCommand.ExecuteReader();
-
-                if (!dataReader.HasRows)
-                {
-                    dataReader.Close();
-                    Disconnect(connection);
-                    return result;
-                }
-
-                while (dataReader.Read())
-                {
-                    if (columns != null)
-                    {
-                        var row = columns.ToDictionary(column => column, column => dataReader[column]);
-                        result.Add(row);
-                    }
-                    else
-                    {
-                        var row = new Dictionary<string, object>();
-                        for (var i = 0; i < dataReader.FieldCount; ++i)
-                            row.Add(dataReader.GetName(i), dataReader[i]);
-                        result.Add(row);
-                    }
-                }
+                result = FetchSqlResultToList(dataReader);
             }
             catch (MySqlException mySqlException)
             {
@@ -477,7 +533,6 @@ namespace Tizsoft.Database
             catch (Exception exception)
             {
                 GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
             }
             finally
             {
@@ -489,7 +544,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildRequestQueryString(string table, List<string> columns, string whereClause)
+        string BuildRequestQueryString(string table, IReadOnlyList<string> columns, string whereClause)
         {
             ResetQueryBuilder();
             _queryBuilder.Append("SELECT ");
@@ -510,7 +565,7 @@ namespace Tizsoft.Database
             return _queryBuilder.ToString();
         }
 
-        string BuildRequestJoinQueryString(List<string> tables, List<string> columns, string whereClause)
+        string BuildRequestJoinQueryString(IReadOnlyList<string> tables, IReadOnlyList<string> columns, string whereClause)
         {
             ResetQueryBuilder();
             
@@ -602,7 +657,7 @@ namespace Tizsoft.Database
             }
         }
 
-        string BuildUpdateQueryString(string table, List<string> columns, List<object> values, string whereClause)
+        string BuildUpdateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string whereClause)
         {
             ResetQueryBuilder();
             _queryBuilder.AppendFormat("UPDATE `{0}` SET ", table);
