@@ -59,7 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DatabaseConfig.cs" />
-    <Compile Include="DatabaseConnector.cs" />
+    <Compile Include="TizMySql.cs" />
     <Compile Include="Helper Interface\IMysqlStoredProcedureHelper.cs" />
     <Compile Include="MongoConnector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

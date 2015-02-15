@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
@@ -12,7 +11,7 @@ using Tizsoft.Log;
 
 namespace Tizsoft.Database
 {
-    public class DatabaseConnector
+    public class TizMySql
     {
         readonly StringBuilder _queryBuilder = new StringBuilder();
         readonly string _connectionString;
@@ -34,7 +33,7 @@ namespace Tizsoft.Database
             _queryBuilder.Remove(0, _queryBuilder.Length);
         }
 
-        public DatabaseConnector(EventArgs configArgs)
+        public TizMySql(EventArgs configArgs)
         {
             if (configArgs == null)
                 throw new ArgumentNullException("configArgs");
@@ -142,9 +141,9 @@ namespace Tizsoft.Database
             }
         }
 
-        public async Task<JArray> ExecuteQueryAsync(string query)
+        public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query)
         {
-            var result = new JArray();
+            List<Dictionary<string, object>> result = null;
             MySqlConnection connection = null;
             DbDataReader dataReader = null;
 
@@ -153,7 +152,7 @@ namespace Tizsoft.Database
                 connection = await ConnectAsync();
                 var cmd = new MySqlCommand(query, connection);
                 dataReader = await cmd.ExecuteReaderAsync();
-                result = JArray.FromObject(FetchSqlResultToList(dataReader));
+                result = FetchSqlResultToList(dataReader);
             }
             catch (MySqlException mySqlException)
             {
@@ -168,6 +167,26 @@ namespace Tizsoft.Database
                 if (dataReader != null)
                     dataReader.Close();
                 DisconnectAsync(connection);
+            }
+
+            return result;
+        }
+
+        public async Task<JArray> ExecuteQueryJsonAsync(string query)
+        {
+            var result = new JArray();
+
+            try
+            {
+                result = JArray.FromObject(await ExecuteQueryAsync(query));
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("execute query \"{0}\" get mysql exception {1} with number {2}", query, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("execute query \"{0}\" get exception {1}", query, exception);
             }
 
             return result;
@@ -200,12 +219,13 @@ namespace Tizsoft.Database
             }
         }
 
-        public async Task<JArray> ExecuteQueryStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
+        public async Task<List<Dictionary<string, object>>> ExecuteQueryStoredProcedureAsync(
+            IMySqlStoredProcedureHelper helper)
         {
             if (helper == null)
                 throw new NullReferenceException("helper can't be null");
 
-            var result = new JArray();
+            var result = new List<Dictionary<string, object>>();
             MySqlConnection connection = null;
             DbDataReader dataReader = null;
 
@@ -214,7 +234,7 @@ namespace Tizsoft.Database
                 connection = await ConnectAsync();
                 var cmd = CreateStoredProcedureCommand(connection, helper);
                 dataReader = await cmd.ExecuteReaderAsync();
-                result = JArray.FromObject(FetchSqlResultToList(dataReader));
+                result = FetchSqlResultToList(dataReader);
             }
             catch (MySqlException mySqlException)
             {
@@ -229,6 +249,26 @@ namespace Tizsoft.Database
                 if (dataReader != null)
                     dataReader.Close();
                 DisconnectAsync(connection);
+            }
+
+            return result;
+        }
+
+        public async Task<JArray> ExecuteQueryJsonStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
+        {
+            var result = new JArray();
+
+            try
+            {
+                result = JArray.FromObject(await ExecuteQueryStoredProcedureAsync(helper));
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("execute stored procedure \"{0}\" get mysql exception {1} with number {2}", helper.Function, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("execute stored procedure \"{0}\" get exception {1}", helper.Function, exception);
             }
 
             return result;
@@ -472,6 +512,54 @@ namespace Tizsoft.Database
             return result;
         }
 
+        /// <summary>
+        /// Request data async with "WHERE `key`='value'" condition.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="columns"></param>
+        /// <param name="singleCondition"></param>
+        /// <returns></returns>
+        public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns,
+            KeyValuePair<string, object> singleCondition)
+        {
+            return
+                await
+                    RequestAsync(table, columns, SingleKeyValueWhereClause(singleCondition));
+        }
+
+        /// <summary>
+        /// Request data(in json format returned) async with "WHERE `key`='value'" condition.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="columns"></param>
+        /// <param name="singleCondition"></param>
+        /// <returns></returns>
+        public async Task<JArray> RequestJsonAsync(string table, List<string> columns,
+            KeyValuePair<string, object> singleCondition)
+        {
+            return await RequestJsonAsync(table, columns, SingleKeyValueWhereClause(singleCondition));
+        }
+
+        static string SingleKeyValueWhereClause(KeyValuePair<string, object> singleCondition)
+        {
+            return string.Format("`{0}`='{1}'", singleCondition.Key, singleCondition.Value);
+        }
+
+        public async Task<JArray> RequestJsonAsync(string table, List<string> columns, string whereClause)
+        {
+            var result = new JArray();
+            try
+            {
+                result = JArray.FromObject(await RequestAsync(table, columns, whereClause));
+            }
+            catch (Exception exception)
+            {
+                GLogger.Error(exception);
+            }
+
+            return result;
+        }
+
         public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns, string whereClause)
         {
             if (string.IsNullOrEmpty(_connectionString))
@@ -506,6 +594,19 @@ namespace Tizsoft.Database
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Request data with "WHERE `key`='value'" condition.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="columns"></param>
+        /// <param name="singleCondition"></param>
+        /// <returns></returns>
+        public List<Dictionary<string, object>> Request(string table, List<string> columns,
+            KeyValuePair<string, object> singleCondition)
+        {
+            return Request(table, columns, SingleKeyValueWhereClause(singleCondition));
         }
 
         public List<Dictionary<string, object>> Request(string table, List<string> columns, string whereClause)
@@ -593,6 +694,20 @@ namespace Tizsoft.Database
             return _queryBuilder.ToString();
         }
 
+        /// <summary>
+        /// Update data async with single condition with "WHERE `key`='value'".
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="columns"></param>
+        /// <param name="values"></param>
+        /// <param name="singleCondition"></param>
+        /// <returns></returns>
+        public async Task UpdateAsync(string table, List<string> columns, List<object> values,
+            KeyValuePair<string, object> singleCondition)
+        {
+            await UpdateAsync(table, columns, values, SingleKeyValueWhereClause(singleCondition));
+        }
+
         public async Task UpdateAsync(string table, List<string> columns, List<object> values, string whereClause)
         {
             if (string.IsNullOrEmpty(_connectionString))
@@ -623,6 +738,19 @@ namespace Tizsoft.Database
             {
                 DisconnectAsync(connection);
             }
+        }
+
+        /// <summary>
+        /// Update data with single condition with "WHERE `key`='value'".
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="columns"></param>
+        /// <param name="values"></param>
+        /// <param name="singleCondition"></param>
+        public void Update(string table, List<string> columns, List<object> values,
+            KeyValuePair<string, object> singleCondition)
+        {
+            Update(table, columns, values, SingleKeyValueWhereClause(singleCondition));
         }
 
         public void Update(string table, List<string> columns, List<object> values, string whereClause)
@@ -672,6 +800,17 @@ namespace Tizsoft.Database
             return _queryBuilder.ToString();
         }
 
+        /// <summary>
+        /// Delete data async with only one condition to create a `WHERE key`='value' query.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="singleCondition"></param>
+        /// <returns></returns>
+        public async Task DeleteAsync(string table, KeyValuePair<string, object> singleCondition)
+        {
+            await DeleteAsync(table, SingleKeyValueWhereClause(singleCondition));
+        }
+
         public async Task DeleteAsync(string table, string whereClause)
         {
             if (string.IsNullOrEmpty(_connectionString))
@@ -702,6 +841,17 @@ namespace Tizsoft.Database
             {
                 DisconnectAsync(connection);
             }
+        }
+
+        /// <summary>
+        /// Delete data with only one condition to create a `WHERE key`='value' query.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="singleCondition"></param>
+        /// <returns></returns>
+        public void Delete(string table, KeyValuePair<string, object> singleCondition)
+        {
+            Delete(table, SingleKeyValueWhereClause(singleCondition));
         }
 
         public void Delete(string table, string whereClause)
