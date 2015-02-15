@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Tizsoft
 {
@@ -7,6 +8,7 @@ namespace Tizsoft
     {
         static readonly RandomNumberGenerator _generator = new RNGCryptoServiceProvider();
         static readonly byte[] _randomBytes = new byte[4];
+        static readonly string _availableRandomChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         /// <summary>
         /// generate one non-negative integer
@@ -59,6 +61,14 @@ namespace Tizsoft
         public static uint Next(uint min, uint max)
         {
             return Next(max - min) + min;
+        }
+
+        public static string RandomString(int length)
+        {
+            var stringBuilder = new StringBuilder(length);
+            for (var i = 0; i < length; i++)
+                stringBuilder.Append(_availableRandomChars[Next(_availableRandomChars.Length)]);
+            return stringBuilder.ToString();
         }
     }
 }
