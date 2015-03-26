@@ -363,7 +363,7 @@ namespace Tizsoft.Database
             _queryBuilder.Append(") ");
 
             if (!string.IsNullOrEmpty(duplicateKeyClause))
-                _queryBuilder.Append(duplicateKeyClause);
+                _queryBuilder.AppendFormat("ON DUPLICATE KEY UPDATE {0}", duplicateKeyClause);
 
             return _queryBuilder.ToString();
         }
