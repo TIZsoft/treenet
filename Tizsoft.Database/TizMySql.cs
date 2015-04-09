@@ -43,7 +43,7 @@ namespace Tizsoft.Database
             if (config == null)
                 throw new InvalidCastException("configArgs");
 
-            _connectionString = string.Format("server={0};port={1};uid={2};pwd={3};database={4};Charset=utf8;{5}",
+            _connectionString = string.Format("server={0};port={1};uid={2};pwd={3};database={4};Charset=utf8;ConvertZeroDateTime=true;{5}",
                     config.HostName, config.Port, config.UserName, config.Password, config.DataBase, config.Option);
         }
 

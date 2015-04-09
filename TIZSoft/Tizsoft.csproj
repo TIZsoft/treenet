@@ -54,6 +54,8 @@
     <Compile Include="Collections\IPool.cs" />
     <Compile Include="Collections\IPoolObject.cs" />
     <Compile Include="Extensions\DateTimeExt.cs" />
+    <Compile Include="Extensions\LinqExt.cs" />
+    <Compile Include="Extensions\NumberExt.cs" />
     <Compile Include="GuidUtil.cs" />
     <Compile Include="Random.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

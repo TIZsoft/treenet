@@ -7,16 +7,16 @@ namespace Tizsoft
     public class TizRandom
     {
         static readonly RandomNumberGenerator _generator = new RNGCryptoServiceProvider();
-        static readonly byte[] _randomBytes = new byte[4];
-        static readonly string _availableRandomChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        static readonly byte[] RandomBytes = new byte[4];
+        const string AvailableRandomChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         /// <summary>
         /// generate one non-negative integer
         /// </summary>
         public static int Next()
         {
-            _generator.GetBytes(_randomBytes);
-            var value = BitConverter.ToInt32(_randomBytes, 0);
+            _generator.GetBytes(RandomBytes);
+            var value = BitConverter.ToInt32(RandomBytes, 0);
             return value < 0 ? -value : value;
         }
 
@@ -26,8 +26,8 @@ namespace Tizsoft
         /// <param name="max">max value</param>
         public static int Next(int max)
         {
-            _generator.GetBytes(_randomBytes);
-            var value = BitConverter.ToInt32(_randomBytes, 0);
+            _generator.GetBytes(RandomBytes);
+            var value = BitConverter.ToInt32(RandomBytes, 0);
             value %= max;
             return value < 0 ? -value : value;
         }
@@ -48,8 +48,8 @@ namespace Tizsoft
         /// <param name="max">max value</param>
         public static uint Next(uint max)
         {
-            _generator.GetBytes(_randomBytes);
-            var value = BitConverter.ToUInt32(_randomBytes, 0);
+            _generator.GetBytes(RandomBytes);
+            var value = BitConverter.ToUInt32(RandomBytes, 0);
             return value % max;
         }
 
@@ -67,7 +67,7 @@ namespace Tizsoft
         {
             var stringBuilder = new StringBuilder(length);
             for (var i = 0; i < length; i++)
-                stringBuilder.Append(_availableRandomChars[Next(_availableRandomChars.Length)]);
+                stringBuilder.Append(AvailableRandomChars[Next(AvailableRandomChars.Length)]);
             return stringBuilder.ToString();
         }
     }
