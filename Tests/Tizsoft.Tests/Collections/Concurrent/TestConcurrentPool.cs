@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using Tizsoft.Collections;
 using Tizsoft.Collections.Concurrent;
+using Assert = NUnit.Framework.Assert;
 
 namespace Tizsoft.Tests.Collections.Concurrent
 {
@@ -34,7 +35,7 @@ namespace Tizsoft.Tests.Collections.Concurrent
 
         [Test]
         [Category("Exception")]
-        [ExpectedException(typeof(ArgumentNullException))]
+        //[ExpectedException(typeof(ArgumentNullException))]
         public void TestConstructorWithNullArgs()
         {
             _pool = new ConcurrentPool<object>(null);

@@ -26,7 +26,7 @@ namespace Tizsoft.Security.Tests.Cryptography
         [TestCase(" ")]
         [TestCase(null)]
         [Category("Exception")]
-        [ExpectedException(typeof(ArgumentException))]
+        //[ExpectedException(typeof(ArgumentException))]
         public void TestConstructorWithInvalidArgumentByString(string key)
         {
             xor = new XorCryptoProvider(key);
@@ -35,7 +35,7 @@ namespace Tizsoft.Security.Tests.Cryptography
 
         [Test]
         [Category("Exception")]
-        [ExpectedException(typeof(ArgumentNullException))]
+        //[ExpectedException(typeof(ArgumentNullException))]
         public void TestConstructorWithNullArgumentByByte()
         {
             xor = new XorCryptoProvider((byte[])null);
@@ -44,7 +44,7 @@ namespace Tizsoft.Security.Tests.Cryptography
 
         [Test]
         [Category("Exception")]
-        [ExpectedException(typeof(ArgumentException))]
+        //[ExpectedException(typeof(ArgumentException))]
         public void TestConstructorWithEmptyArgumentByByte()
         {
             xor = new XorCryptoProvider(new byte[0]);
@@ -53,7 +53,7 @@ namespace Tizsoft.Security.Tests.Cryptography
 
         [Test]
         [Category("Exception")]
-        [ExpectedException(typeof(ArgumentNullException))]
+        //[ExpectedException(typeof(ArgumentNullException))]
         public void TestEncryptWithEmptyArgument()
         {
             xor.Encrypt(null);
@@ -62,7 +62,7 @@ namespace Tizsoft.Security.Tests.Cryptography
         
         [Test]
         [Category("Exception")]
-        [ExpectedException(typeof(ArgumentNullException))]
+        //[ExpectedException(typeof(ArgumentNullException))]
         public void TestDecryptWithEmptyArgument()
         {
             xor.Decrypt(null);

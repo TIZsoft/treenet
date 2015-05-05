@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
@@ -13,6 +14,8 @@ namespace Tizsoft.Database
 {
     public class TizMySql
     {
+        readonly static StringBuilder _duplicateBuilder = new StringBuilder();
+        readonly StringBuilder _whereBuilder = new StringBuilder();
         readonly StringBuilder _queryBuilder = new StringBuilder();
         readonly string _connectionString;
 
@@ -32,6 +35,377 @@ namespace Tizsoft.Database
         {
             _queryBuilder.Remove(0, _queryBuilder.Length);
         }
+
+        #region build mysql query string
+
+        string BuildCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string duplicateKeyClause)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
+
+            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
+                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
+
+            _queryBuilder.Append(") VALUES(");
+
+            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
+                _queryBuilder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
+
+            _queryBuilder.Append(") ");
+
+            if (!string.IsNullOrEmpty(duplicateKeyClause))
+            {
+                if (!duplicateKeyClause.ToUpper().Contains("ON DUPLICATE KEY UPDATE"))
+                    _queryBuilder.Append("ON DUPLICATE KEY UPDATE ");
+
+                _queryBuilder.Append(duplicateKeyClause);
+            }
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildMultiCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<List<object>> multiValueLists, string duplicateKeyClause)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
+            var minColumnCount = Math.Min(columns.Count, multiValueLists[0].Count);
+            for (var i = 0; i < minColumnCount; ++i)
+                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == minColumnCount - 1 ? ") " : ",");
+
+            _queryBuilder.Append("VALUES");
+
+            for (var i = 0; i < multiValueLists.Count; ++i)
+            {
+                var valueList = multiValueLists[i];
+
+                if (valueList == null || valueList.Count <= 0)
+                    continue;
+
+                _queryBuilder.Append("(");
+
+                for (var j = 0; j < minColumnCount; ++j)
+                    _queryBuilder.AppendFormat(@"'{0}'{1}", valueList[j],
+                        j == minColumnCount - 1 ? ")" : ",");
+
+                _queryBuilder.Append(i == multiValueLists.Count - 1 ? " " : ",");
+            }
+
+            if (!string.IsNullOrEmpty(duplicateKeyClause))
+            {
+                if (!duplicateKeyClause.ToUpper().Contains("ON DUPLICATE KEY UPDATE"))
+                    _queryBuilder.Append("ON DUPLICATE KEY UPDATE ");
+
+                _queryBuilder.Append(duplicateKeyClause);
+            }
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildRequestQueryString(string table, IReadOnlyList<string> columns, string conditions)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.Append("SELECT ");
+
+            if (columns == null || columns.Count == 0)
+                _queryBuilder.Append("* ");
+            else
+            {
+                for (var i = 0; i < columns.Count; ++i)
+                    _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? " " : ",");
+            }
+
+            _queryBuilder.AppendFormat("FROM `{0}` ", table);
+
+            if (!string.IsNullOrEmpty(conditions))
+            {
+                if (!conditions.ToUpper().Contains("WHERE"))
+                    _queryBuilder.Append("WHERE ");
+
+                _queryBuilder.Append(conditions);
+            }
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildRequestJoinQueryString(IReadOnlyList<string> tables, IReadOnlyList<string> columns, string conditions)
+        {
+            ResetQueryBuilder();
+
+            // SELECT
+            _queryBuilder.Append("SELECT ");
+            if (columns == null || columns.Count == 0)
+                _queryBuilder.Append("* ");
+            else
+            {
+                for (var i = 0; i < columns.Count; ++i)
+                    _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? " " : ",");
+            }
+
+            // FROM
+            _queryBuilder.Append("FROM ");
+            for (var i = 0; i < tables.Count; ++i)
+            {
+                _queryBuilder.AppendFormat("{0}{1}", tables[i], i == tables.Count - 1 ? " " : ",");
+            }
+
+            // WHERE
+            if (!string.IsNullOrEmpty(conditions))
+            {
+                if (!conditions.ToUpper().Contains("WHERE"))
+                    _queryBuilder.Append("WHERE ");
+
+                _queryBuilder.Append(conditions);
+            }
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildUpdateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string conditions)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("UPDATE `{0}` SET ", table);
+            var bound = Math.Min(columns.Count, values.Count);
+
+            for (var i = 0; i < bound; ++i)
+                _queryBuilder.AppendFormat(@"`{0}` = '{1}'{2}", columns[i], values[i], i == bound - 1 ? " " : ",");
+
+            if (!string.IsNullOrEmpty(conditions))
+            {
+                if (!conditions.ToUpper().Contains("WHERE"))
+                    _queryBuilder.Append("WHERE ");
+
+                _queryBuilder.Append(conditions);
+            }
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildDeleteQueryString(string table, string conditions)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("DELETE FROM `{0}` ", table);
+
+            if (!string.IsNullOrEmpty(conditions))
+            {
+                if (!conditions.ToUpper().Contains("WHERE"))
+                    _queryBuilder.Append("WHERE ");
+
+                _queryBuilder.Append(conditions);
+            }
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildCountQueryString(string table, string conditions)
+        {
+            ResetQueryBuilder();
+            _queryBuilder.AppendFormat("SELECT COUNT(*) FROM {0} ", table);
+
+            if (!string.IsNullOrEmpty(conditions))
+            {
+                if (!conditions.ToUpper().Contains("WHERE"))
+                    _queryBuilder.Append("WHERE ");
+
+                _queryBuilder.Append(conditions);
+            }
+
+            return _queryBuilder.ToString();
+        }
+
+        string BuildWhereClauseString(params KeyValuePair<string, object>[] whereClauses)
+        {
+            if (whereClauses.Length <= 0) 
+                return string.Empty;
+
+            _whereBuilder.Remove(0, _whereBuilder.Length);
+            _whereBuilder.Append("WHERE ");
+            _whereBuilder.Append(string.Join(" AND ",
+                whereClauses.Select(pair => string.Format("{0}=@{0}", pair.Key))));
+
+            return _whereBuilder.ToString();
+        }
+
+        #endregion
+
+        #region Execute command in sync mode
+
+        bool ExecuteNonQueryCommand(string queryString, params KeyValuePair<string, object>[] parameters)
+        {
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var cmd = CreateMySqlCommand(queryString, connection, parameters);
+                cmd.ExecuteNonQuery();
+                return true;
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
+                return false;
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
+                return false;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        int ExecuteScalarCommand(string queryString, params KeyValuePair<string, object>[] parameters)
+        {
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var cmd = CreateMySqlCommand(queryString, connection, parameters);
+                var count = cmd.ExecuteScalar();
+                return Convert.ToInt32(count);
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
+                return 0;
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
+                return 0;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        List<Dictionary<string, object>> ExecuteReaderCommand(string queryString,
+            params KeyValuePair<string, object>[] conditions)
+        {
+            var result = new List<Dictionary<string, object>>();
+            MySqlDataReader dataReader = null;
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = Connect();
+                var requestCommand = CreateMySqlCommand(queryString, connection, conditions);
+                dataReader = requestCommand.ExecuteReader();
+                return FetchSqlResultToList(dataReader);
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
+            }
+            finally
+            {
+                if (dataReader != null)
+                    dataReader.Close();
+                Disconnect(connection);
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Execute command in async mode
+
+        async Task<bool> ExecuteNonQueryCommandAsync(string queryString, params KeyValuePair<string, object>[] parameters)
+        {
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var cmd = CreateMySqlCommand(queryString, connection, parameters);
+                await cmd.ExecuteNonQueryAsync();
+                return true;
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
+                return false;
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
+                return false;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        async Task<int> ExecuteScalarCommandAsync(string queryString, params KeyValuePair<string, object>[] parameters)
+        {
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var cmd = CreateMySqlCommand(queryString, connection, parameters);
+                var count = await cmd.ExecuteScalarAsync();
+                return Convert.ToInt32(count);
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
+                return 0;
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
+                return 0;
+            }
+            finally
+            {
+                Disconnect(connection);
+            }
+        }
+
+        async Task<List<Dictionary<string, object>>> ExecuteReaderCommandAsync(string queryString,
+            params KeyValuePair<string, object>[] conditions)
+        {
+            var result = new List<Dictionary<string, object>>();
+            DbDataReader dataReader = null;
+            MySqlConnection connection = null;
+
+            try
+            {
+                connection = await ConnectAsync();
+                var cmd = CreateMySqlCommand(queryString, connection, conditions);
+                dataReader = await cmd.ExecuteReaderAsync();
+                return FetchSqlResultToList(dataReader);
+            }
+            catch (MySqlException mySqlException)
+            {
+                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
+            }
+            catch (Exception exception)
+            {
+                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
+            }
+            finally
+            {
+                if (dataReader != null)
+                    dataReader.Close();
+                Disconnect(connection);
+            }
+
+            return result;
+        }
+
+        #endregion
 
         public TizMySql(EventArgs configArgs)
         {
@@ -95,6 +469,20 @@ namespace Tizsoft.Database
             return cmd;
         }
 
+        static MySqlCommand CreateMySqlCommand(string query, MySqlConnection connection,
+            params KeyValuePair<string, object>[] parameters)
+        {
+            var cmd = new MySqlCommand(query, connection);
+
+            if (parameters.Length <= 0) 
+                return cmd;
+
+            foreach (var parameter in parameters)
+                cmd.Parameters.AddWithValue(string.Format("@{0}", parameter.Key), parameter.Value);
+
+            return cmd;
+        }
+
         static List<Dictionary<string, object>> FetchSqlResultToList(IDataReader dataReader)
         {
             var result = new List<Dictionary<string, object>>();
@@ -117,82 +505,27 @@ namespace Tizsoft.Database
             }
         }
 
-        public async Task ExecuteNonQueryAsync(string query)
+        public async Task<int> ExecuteScalarAsync(string query)
         {
-            MySqlConnection connection = null;
+            return await ExecuteScalarCommandAsync(query);
+        }
 
-            try
-            {
-                connection = await ConnectAsync();
-                var cmd = new MySqlCommand(query, connection);
-                await cmd.ExecuteNonQueryAsync();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("execute query \"{0}\" get mysql exception {1} with number {2}", query, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("execute query \"{0}\" get exception {1}", query, exception);
-            }
-            finally
-            {
-                DisconnectAsync(connection);
-            }
+        public async Task<bool> ExecuteNonQueryAsync(string query)
+        {
+            return await ExecuteNonQueryCommandAsync(query);
         }
 
         public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query)
         {
-            List<Dictionary<string, object>> result = null;
-            MySqlConnection connection = null;
-            DbDataReader dataReader = null;
-
-            try
-            {
-                connection = await ConnectAsync();
-                var cmd = new MySqlCommand(query, connection);
-                dataReader = await cmd.ExecuteReaderAsync();
-                result = FetchSqlResultToList(dataReader);
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("execute query \"{0}\" get mysql exception {1} with number {2}", query, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("execute query \"{0}\" get exception {1}", query, exception);
-            }
-            finally
-            {
-                if (dataReader != null)
-                    dataReader.Close();
-                DisconnectAsync(connection);
-            }
-
-            return result;
+            return await ExecuteReaderCommandAsync(query);
         }
 
         public async Task<JArray> ExecuteQueryJsonAsync(string query)
         {
-            var result = new JArray();
-
-            try
-            {
-                result = JArray.FromObject(await ExecuteQueryAsync(query));
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("execute query \"{0}\" get mysql exception {1} with number {2}", query, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("execute query \"{0}\" get exception {1}", query, exception);
-            }
-
-            return result;
+            return JArray.FromObject(await ExecuteQueryAsync(query));
         }
 
-        public async Task ExecuteNonQueryStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
+        public async Task<bool> ExecuteNonQueryStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
         {
             if (helper == null)
                 throw new NullReferenceException("helper can't be null");
@@ -204,14 +537,17 @@ namespace Tizsoft.Database
                 connection = await ConnectAsync();
                 var cmd = CreateStoredProcedureCommand(connection, helper);
                 await cmd.ExecuteNonQueryAsync();
+                return true;
             }
             catch (MySqlException mySqlException)
             {
                 GLogger.Fatal("execute stored procedure \"{0}\" get mysql exception {1} with number {2}", helper.Function, mySqlException, mySqlException.Number);
+                return false;
             }
             catch (Exception exception)
             {
                 GLogger.Fatal("execute stored procedure \"{0}\" get exception {1}", helper.Function, exception);
+                return false;
             }
             finally
             {
@@ -256,275 +592,90 @@ namespace Tizsoft.Database
 
         public async Task<JArray> ExecuteQueryJsonStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
         {
-            var result = new JArray();
-
-            try
-            {
-                result = JArray.FromObject(await ExecuteQueryStoredProcedureAsync(helper));
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("execute stored procedure \"{0}\" get mysql exception {1} with number {2}", helper.Function, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("execute stored procedure \"{0}\" get exception {1}", helper.Function, exception);
-            }
-
-            return result;
+            return JArray.FromObject(await ExecuteQueryStoredProcedureAsync(helper));
         }
 
-        public async Task CreateAsync(string table, List<string> columns, List<object> values)
+        public async Task<bool> CreateAsync(string table, List<string> columns, List<object> values)
         {
-            await CreateOnDuplicateAsync(table, columns, values, string.Empty);
+            return await CreateOnDuplicateAsync(table, columns, values);
         }
 
-        public void Create(string table, List<string> columns, List<object> values)
-        {
-            CreateOnDuplicate(table, columns, values, string.Empty);
-        }
-
-        public async Task CreateOnDuplicateAsync(string table, List<string> columns, List<object> values,
-            string duplicateKeyClause)
+        public async Task<bool> CreateOnDuplicateAsync(string table, List<string> columns, List<object> values,
+            string duplicateKeyClause = "")
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || values == null)
-                return;
+                return false;
 
             var queryString = BuildCreateOnDuplicateQueryString(table, columns, values, duplicateKeyClause);
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = await ConnectAsync();
-                var createCommand = new MySqlCommand(queryString, connection);
-                await createCommand.ExecuteNonQueryAsync();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-            }
-            finally
-            {
-                DisconnectAsync(connection);
-            }
+            return await ExecuteNonQueryCommandAsync(queryString);
         }
 
-        public void CreateOnDuplicate(string table, List<string> columns, List<object> values, string duplicateKeyClause)
+        public bool Create(string table, List<string> columns, List<object> values)
+        {
+            return CreateOnDuplicate(table, columns, values);
+        }
+
+        public bool CreateOnDuplicate(string table, List<string> columns, List<object> values, string duplicateKeyClause = "")
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || values == null)
-                return;
+                return false;
 
             var queryString = BuildCreateOnDuplicateQueryString(table, columns, values, duplicateKeyClause);
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = Connect();
-                var createCommand = new MySqlCommand(queryString, connection);
-                createCommand.ExecuteNonQuery();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-            }
-            finally
-            {
-                Disconnect(connection);
-            }
+            return ExecuteNonQueryCommand(queryString);
         }
 
-        string BuildCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string duplicateKeyClause)
+        public async Task<bool> MultiCreateAsync(string table, List<string> columns,
+            List<List<object>> multiValueLists)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
-
-            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
-                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
-
-            _queryBuilder.Append(") VALUES(");
-
-            for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
-                _queryBuilder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
-
-            _queryBuilder.Append(") ");
-
-            if (!string.IsNullOrEmpty(duplicateKeyClause))
-                _queryBuilder.AppendFormat("ON DUPLICATE KEY UPDATE {0}", duplicateKeyClause);
-
-            return _queryBuilder.ToString();
+            return await MultiCreateOnDuplicateAsync(table, columns, multiValueLists);
         }
 
-        public async Task MultiCreateAsync(string table, List<string> columns, List<List<object>> multiValueLists)
-        {
-            await MultiCreateOnDuplicateAsync(table, columns, multiValueLists, string.Empty);
-        }
-
-        public void MultiCreate(string table, List<string> columns, List<List<object>> multiValueLists)
-        {
-            MultiCreateOnDuplicate(table, columns, multiValueLists, string.Empty);
-        }
-
-        public async Task MultiCreateOnDuplicateAsync(string table, List<string> columns,
-            List<List<object>> multiValueLists, string duplicateKeyClause)
+        public async Task<bool> MultiCreateOnDuplicateAsync(string table, List<string> columns,
+            List<List<object>> multiValueLists, string duplicateKeyClause = "")
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || multiValueLists == null || columns.Count == 0 || multiValueLists.Count == 0)
-                return;
+                return false;
 
             var queryString = BuildMultiCreateOnDuplicateQueryString(table, columns, multiValueLists, duplicateKeyClause);
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = await ConnectAsync();
-                var createCommand = new MySqlCommand(queryString, connection);
-                await createCommand.ExecuteNonQueryAsync();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-            }
-            finally
-            {
-                DisconnectAsync(connection);
-            }
+            return await ExecuteNonQueryCommandAsync(queryString);
         }
 
-        public void MultiCreateOnDuplicate(string table, List<string> columns, List<List<object>> multiValueLists, string duplicateKeyClause)
+        public bool MultiCreate(string table, List<string> columns, List<List<object>> multiValueLists)
+        {
+            return MultiCreateOnDuplicate(table, columns, multiValueLists);
+        }
+
+        public bool MultiCreateOnDuplicate(string table, List<string> columns, List<List<object>> multiValueLists, string duplicateKeyClause = "")
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || multiValueLists == null || columns.Count == 0 || multiValueLists.Count == 0)
-                return;
+                return false;
 
             var queryString = BuildMultiCreateOnDuplicateQueryString(table, columns, multiValueLists, duplicateKeyClause);
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = Connect();
-                var createCommand = new MySqlCommand(queryString, connection);
-                createCommand.ExecuteNonQuery();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-            }
-            finally
-            {
-                Disconnect(connection);
-            }
-        }
-
-        string BuildMultiCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<List<object>> multiValueLists, string duplicateKeyClause)
-        {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
-            var minColumnCount = Math.Min(columns.Count, multiValueLists[0].Count);
-            for (var i = 0; i < minColumnCount; ++i)
-                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == minColumnCount - 1 ? ") " : ",");
-
-            _queryBuilder.Append("VALUES");
-
-            for (var i = 0; i < multiValueLists.Count; ++i)
-            {
-                var valueList = multiValueLists[i];
-
-                if (valueList == null || valueList.Count <= 0) 
-                    continue;
-
-                _queryBuilder.Append("(");
-
-                for (var j = 0; j < minColumnCount; ++j)
-                    _queryBuilder.AppendFormat(@"'{0}'{1}", valueList[j],
-                        j == minColumnCount - 1 ? ")" : ",");
-
-                _queryBuilder.Append(i == multiValueLists.Count - 1 ? " " : ",");
-            }
-
-            if (!string.IsNullOrEmpty(duplicateKeyClause))
-                _queryBuilder.AppendFormat(@"ON DUPLICATE KEY UPDATE {0}", duplicateKeyClause);
-
-            return _queryBuilder.ToString();
+            return ExecuteNonQueryCommand(queryString);
         }
 
         public async Task<List<Dictionary<string, object>>> RequestJoinAsync(List<string> tables, 
-            List<string> columns, string whereClause)
+            List<string> columns, params KeyValuePair<string, object>[] conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
             {
                 throw new Exception("Connection doesn't establish yet.");
             }
 
-            var queryString = BuildRequestJoinQueryString(tables, columns, whereClause);
-            var result = new List<Dictionary<string, object>>();
-            DbDataReader dataReader = null;
-            MySqlConnection connection = null;
-            try
-            {
-                connection = await ConnectAsync();
-                var requestCommand = new MySqlCommand(queryString, connection);
-                dataReader = await requestCommand.ExecuteReaderAsync();
-                result = FetchSqlResultToList(dataReader);
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-            }
-            finally
-            {
-                if (dataReader != null)
-                {
-                    dataReader.Close();
-                }
-                DisconnectAsync(connection);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Request data async with "WHERE `key`='value'" condition.
-        /// </summary>
-        /// <param name="table"></param>
-        /// <param name="columns"></param>
-        /// <param name="singleCondition"></param>
-        /// <returns></returns>
-        public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns,
-            KeyValuePair<string, object> singleCondition)
-        {
-            return
-                await
-                    RequestAsync(table, columns, SingleKeyValueWhereClause(singleCondition));
+            var queryString = BuildRequestJoinQueryString(tables, columns, BuildWhereClauseString(conditions));
+            return await ExecuteReaderCommandAsync(queryString, conditions);
         }
 
         /// <summary>
@@ -532,68 +683,42 @@ namespace Tizsoft.Database
         /// </summary>
         /// <param name="table"></param>
         /// <param name="columns"></param>
-        /// <param name="singleCondition"></param>
+        /// <param name="conditions"></param>
         /// <returns></returns>
         public async Task<JArray> RequestJsonAsync(string table, List<string> columns,
-            KeyValuePair<string, object> singleCondition)
+            params KeyValuePair<string, object>[] conditions)
         {
-            return await RequestJsonAsync(table, columns, SingleKeyValueWhereClause(singleCondition));
+            return JArray.FromObject(await RequestAsync(table, columns, conditions));
         }
 
-        static string SingleKeyValueWhereClause(KeyValuePair<string, object> singleCondition)
+        public async Task<JArray> RequestJsonAsync(string table, List<string> columns, string conditions)
         {
-            return string.Format("`{0}`='{1}'", singleCondition.Key, singleCondition.Value);
+            return JArray.FromObject(await RequestAsync(table, columns, conditions));
         }
 
-        public async Task<JArray> RequestJsonAsync(string table, List<string> columns, string whereClause)
-        {
-            var result = new JArray();
-            try
-            {
-                result = JArray.FromObject(await RequestAsync(table, columns, whereClause));
-            }
-            catch (Exception exception)
-            {
-                GLogger.Error(exception);
-            }
-
-            return result;
-        }
-
-        public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns, string whereClause)
+        /// <summary>
+        /// Request data async with "WHERE `key`='value'" condition.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="columns"></param>
+        /// <param name="conditions"></param>
+        /// <returns></returns>
+        public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns, params KeyValuePair<string, object>[] conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
-            var queryString = BuildRequestQueryString(table, columns, whereClause);
+            var queryString = BuildRequestQueryString(table, columns, BuildWhereClauseString(conditions));
+            return await ExecuteReaderCommandAsync(queryString, conditions);
+        }
 
-            var result = new List<Dictionary<string, object>>();
-            DbDataReader dataReader = null;
-            MySqlConnection connection = null;
+        public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns, string conditions)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
 
-            try
-            {
-                connection = await ConnectAsync();
-                var requestCommand = new MySqlCommand(queryString, connection);
-                dataReader = await requestCommand.ExecuteReaderAsync();
-                result = FetchSqlResultToList(dataReader);
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-            }
-            finally
-            {
-                if (dataReader != null)
-                    dataReader.Close();
-                DisconnectAsync(connection);
-            }
-
-            return result;
+            var queryString = BuildRequestQueryString(table, columns, conditions);
+            return await ExecuteReaderCommandAsync(queryString);
         }
 
         /// <summary>
@@ -601,97 +726,16 @@ namespace Tizsoft.Database
         /// </summary>
         /// <param name="table"></param>
         /// <param name="columns"></param>
-        /// <param name="singleCondition"></param>
+        /// <param name="conditions"></param>
         /// <returns></returns>
         public List<Dictionary<string, object>> Request(string table, List<string> columns,
-            KeyValuePair<string, object> singleCondition)
-        {
-            return Request(table, columns, SingleKeyValueWhereClause(singleCondition));
-        }
-
-        public List<Dictionary<string, object>> Request(string table, List<string> columns, string whereClause)
+            params KeyValuePair<string, object>[] conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
-            var queryString = BuildRequestQueryString(table, columns, whereClause);
-
-            var result = new List<Dictionary<string, object>>();
-            MySqlDataReader dataReader = null;
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = Connect();
-                var requestCommand = new MySqlCommand(queryString, connection);
-                dataReader = requestCommand.ExecuteReader();
-                result = FetchSqlResultToList(dataReader);
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-            }
-            finally
-            {
-                if (dataReader != null)
-                    dataReader.Close();
-                Disconnect(connection);
-            }
-            
-            return result;
-        }
-
-        string BuildRequestQueryString(string table, IReadOnlyList<string> columns, string whereClause)
-        {
-            ResetQueryBuilder();
-            _queryBuilder.Append("SELECT ");
-
-            if (columns == null || columns.Count == 0)
-                _queryBuilder.Append("* ");
-            else
-            {
-                for (var i = 0; i < columns.Count; ++i)
-                    _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? " " : ",");
-            }
-
-            _queryBuilder.AppendFormat("FROM `{0}` ", table);
-
-            if (!string.IsNullOrEmpty(whereClause))
-                _queryBuilder.AppendFormat("WHERE {0}", whereClause);
-
-            return _queryBuilder.ToString();
-        }
-
-        string BuildRequestJoinQueryString(IReadOnlyList<string> tables, IReadOnlyList<string> columns, string whereClause)
-        {
-            ResetQueryBuilder();
-            
-            // SELECT
-            _queryBuilder.Append("SELECT ");
-            if (columns == null || columns.Count == 0)
-                _queryBuilder.Append("* ");
-            else
-            {
-                for (var i = 0; i < columns.Count; ++i)
-                    _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? " " : ",");
-            }
-            
-            // FROM
-            _queryBuilder.Append("FROM ");
-            for (var i = 0; i < tables.Count; ++i)
-            {
-                _queryBuilder.AppendFormat("{0}{1}", tables[i], i == tables.Count - 1 ? " " : ",");
-            }
-            
-            // WHERE
-            if (!string.IsNullOrEmpty(whereClause))
-                _queryBuilder.AppendFormat("WHERE {0}", whereClause);
-
-            return _queryBuilder.ToString();
+            var queryString = BuildRequestQueryString(table, columns, BuildWhereClauseString(conditions));
+            return ExecuteReaderCommand(queryString, conditions);
         }
 
         /// <summary>
@@ -700,269 +744,180 @@ namespace Tizsoft.Database
         /// <param name="table"></param>
         /// <param name="columns"></param>
         /// <param name="values"></param>
-        /// <param name="singleCondition"></param>
+        /// <param name="conditions"></param>
         /// <returns></returns>
-        public async Task UpdateAsync(string table, List<string> columns, List<object> values,
-            KeyValuePair<string, object> singleCondition)
-        {
-            await UpdateAsync(table, columns, values, SingleKeyValueWhereClause(singleCondition));
-        }
-
-        public async Task UpdateAsync(string table, List<string> columns, List<object> values, string whereClause)
+        public async Task<bool> UpdateAsync(string table, List<string> columns, List<object> values,
+            params KeyValuePair<string, object>[] conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
-                return;
+                return false;
 
-            var queryString = BuildUpdateQueryString(table, columns, values, whereClause);
-            MySqlConnection connection = null;
+            var queryString = BuildUpdateQueryString(table, columns, values, BuildWhereClauseString(conditions));
+            return await ExecuteNonQueryCommandAsync(queryString, conditions);
+        }
 
-            try
-            {
-                connection = await ConnectAsync();
-                var updateCommand = new MySqlCommand(queryString, connection);
-                await updateCommand.ExecuteNonQueryAsync();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
-            }
-            finally
-            {
-                DisconnectAsync(connection);
-            }
+        public async Task<bool> UpdateAsync(string table, List<string> columns, List<object> values, string conditions)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
+                return false;
+
+            var queryString = BuildUpdateQueryString(table, columns, values, conditions);
+            return await ExecuteNonQueryCommandAsync(queryString);
         }
 
         /// <summary>
-        /// Update data with single condition with "WHERE `key`='value'".
+        /// Update data with conditions with multiple "WHERE `key`='value'".
         /// </summary>
         /// <param name="table"></param>
         /// <param name="columns"></param>
         /// <param name="values"></param>
-        /// <param name="singleCondition"></param>
-        public void Update(string table, List<string> columns, List<object> values,
-            KeyValuePair<string, object> singleCondition)
-        {
-            Update(table, columns, values, SingleKeyValueWhereClause(singleCondition));
-        }
-
-        public void Update(string table, List<string> columns, List<object> values, string whereClause)
+        /// <param name="conditions"></param>
+        public bool Update(string table, List<string> columns, List<object> values,
+            params KeyValuePair<string, object>[] conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
             if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
-                return;
+                return false;
 
-            var queryString = BuildUpdateQueryString(table, columns, values, whereClause);
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = Connect();
-                var updateCommand = new MySqlCommand(queryString, connection);
-                updateCommand.ExecuteNonQuery();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
-            }
-            finally
-            {
-                Disconnect(connection);
-            }
+            var queryString = BuildUpdateQueryString(table, columns, values, BuildWhereClauseString(conditions));
+            return ExecuteNonQueryCommand(queryString, conditions);
         }
 
-        string BuildUpdateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string whereClause)
+        public bool Update(string table, List<string> columns, List<object> values,
+            string conditions)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("UPDATE `{0}` SET ", table);
-            var bound = Math.Min(columns.Count, values.Count);
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
 
-            for (var i = 0; i < bound; ++i)
-                _queryBuilder.AppendFormat(@"`{0}` = '{1}'{2}", columns[i], values[i], i == bound - 1 ? " " : ",");
+            if (columns == null || values == null || columns.Count == 0 || values.Count == 0)
+                return false;
 
-            if (!string.IsNullOrEmpty(whereClause))
-                _queryBuilder.AppendFormat("WHERE {0}", whereClause);
-
-            return _queryBuilder.ToString();
+            var queryString = BuildUpdateQueryString(table, columns, values, conditions);
+            return ExecuteNonQueryCommand(queryString);
         }
 
         /// <summary>
-        /// Delete data async with only one condition to create a `WHERE key`='value' query.
+        /// Delete data async with condition(s) to create a `WHERE key`='value' query.
+        /// If condition(s) is not set, DeleteAsync will return false to avoid delete all unintentionally.
         /// </summary>
         /// <param name="table"></param>
-        /// <param name="singleCondition"></param>
+        /// <param name="conditions"></param>
         /// <returns></returns>
-        public async Task DeleteAsync(string table, KeyValuePair<string, object> singleCondition)
-        {
-            await DeleteAsync(table, SingleKeyValueWhereClause(singleCondition));
-        }
-
-        public async Task DeleteAsync(string table, string whereClause)
+        public async Task<bool> DeleteAsync(string table, params KeyValuePair<string, object>[] conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
-            if (string.IsNullOrEmpty(whereClause))
-                return;
+            if (conditions.Length == 0)
+                return false;
 
-            var queryString = BuildDeleteQueryString(table, whereClause);
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = await ConnectAsync();
-                var deleteCommand = new MySqlCommand(queryString, connection);
-                await deleteCommand.ExecuteNonQueryAsync();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
-            }
-            finally
-            {
-                DisconnectAsync(connection);
-            }
+            var queryString = BuildDeleteQueryString(table, BuildWhereClauseString(conditions));
+            return await ExecuteNonQueryCommandAsync(queryString, conditions);
         }
 
         /// <summary>
-        /// Delete data with only one condition to create a `WHERE key`='value' query.
+        /// Delete data async with condition string passed from application.
+        /// If condition string is not set, DeleteAsync will return false to avoid delete all unintentionally.
         /// </summary>
         /// <param name="table"></param>
-        /// <param name="singleCondition"></param>
+        /// <param name="conditions"></param>
         /// <returns></returns>
-        public void Delete(string table, KeyValuePair<string, object> singleCondition)
-        {
-            Delete(table, SingleKeyValueWhereClause(singleCondition));
-        }
-
-        public void Delete(string table, string whereClause)
+        public async Task<bool> DeleteAsync(string table, string conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
-            if (string.IsNullOrEmpty(whereClause))
-                return;
+            if (string.IsNullOrEmpty(conditions))
+                return false;
 
-            var queryString = BuildDeleteQueryString(table, whereClause);
-            MySqlConnection connection = null;
-
-            try
-            {
-                connection = Connect();
-                var deleteCommand = new MySqlCommand(queryString, connection);
-                deleteCommand.ExecuteNonQuery();
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
-            }
-            finally
-            {
-                Disconnect(connection);
-            }
+            var queryString = BuildDeleteQueryString(table, conditions);
+            return await ExecuteNonQueryCommandAsync(queryString);
         }
 
-        string BuildDeleteQueryString(string table, string whereClause)
-        {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("DELETE FROM `{0}` WHERE {1}", table, whereClause);
-            return _queryBuilder.ToString();
-        }
-
-        public async Task<int> CountAsync(string table, KeyValuePair<string, string> whereClause)
+        /// <summary>
+        /// Delete data with condition(s) to create a `WHERE key`='value' query.
+        /// If condition(s) is not set, Delete will return false to avoid delete all unintentionally.
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="conditions"></param>
+        /// <returns></returns>
+        public bool Delete(string table, params KeyValuePair<string, object>[] conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
-            var queryString = BuildCountQueryString(table, whereClause);
-            MySqlConnection connection = null;
+            if (conditions.Length == 0)
+                return false;
 
-            try
-            {
-                connection = await ConnectAsync();
-                var countCommand = new MySqlCommand(queryString, connection);
-                var count = await countCommand.ExecuteScalarAsync();
-                return Convert.ToInt32(count);
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
-            }
-            finally
-            {
-                DisconnectAsync(connection);
-            }
-
-            return 0;
+            var queryString = BuildDeleteQueryString(table, BuildWhereClauseString(conditions));
+            return ExecuteNonQueryCommand(queryString, conditions);
         }
 
-        public int Count(string table, KeyValuePair<string, string> whereClause)
+        public bool Delete(string table, string conditions)
         {
             if (string.IsNullOrEmpty(_connectionString))
                 throw new Exception("Connection doesn't establish yet.");
 
-            var queryString = BuildCountQueryString(table, whereClause);
-            MySqlConnection connection = null;
+            if (string.IsNullOrEmpty(conditions))
+                return false;
 
-            try
-            {
-                connection = Connect();
-                var countCommand = new MySqlCommand(queryString, connection);
-                var count = countCommand.ExecuteScalar();
-                return Convert.ToInt32(count);
-            }
-            catch (MySqlException mySqlException)
-            {
-                GLogger.Fatal("query \"{0}\" get mysql exception {1} with number {2}", queryString, mySqlException, mySqlException.Number);
-            }
-            catch (Exception exception)
-            {
-                GLogger.Fatal("query \"{0}\" get exception {1}", queryString, exception);
-                throw;
-            }
-            finally
-            {
-                Disconnect(connection);
-            }
-
-            return 0;
+            var queryString = BuildDeleteQueryString(table, conditions);
+            return ExecuteNonQueryCommand(queryString);
         }
 
-        string BuildCountQueryString(string table, KeyValuePair<string, string> whereClause)
+        public async Task<int> CountAsync(string table, params KeyValuePair<string, object>[] conditions)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat(@"SELECT COUNT(*) FROM `{0}` WHERE `{1}`='{2}'", table, whereClause.Key,
-                whereClause.Value);
-            return _queryBuilder.ToString();
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            var queryString = BuildCountQueryString(table, BuildWhereClauseString(conditions));
+            return await ExecuteScalarCommandAsync(queryString, conditions);
+        }
+
+        public async Task<int> CountAsync(string table, string conditions)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            var queryString = BuildCountQueryString(table, conditions);
+            return await ExecuteScalarCommandAsync(queryString);
+        }
+
+        public int Count(string table, params KeyValuePair<string, object>[] conditions)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            var queryString = BuildCountQueryString(table, BuildWhereClauseString(conditions));
+            return ExecuteScalarCommand(queryString, conditions);
+        }
+
+        public int Count(string table, string conditions)
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new Exception("Connection doesn't establish yet.");
+
+            var queryString = BuildCountQueryString(table, conditions);
+            return ExecuteScalarCommand(queryString);
+        }
+
+        public static string CreateDuplicateOption(IReadOnlyList<string> columns)
+        {
+            if (columns.Count == 0)
+                return string.Empty;
+
+            _duplicateBuilder.Remove(0, _duplicateBuilder.Length);
+            _duplicateBuilder.Append("ON DUPLICATE KEY UPDATE ");
+            _duplicateBuilder.Append(string.Join(", ", columns.Select(col => string.Format("`{0}`=VALUES(`{0}`)", col))));
+            return _duplicateBuilder.ToString();
         }
     }
 }

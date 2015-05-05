@@ -78,6 +78,8 @@ namespace Tizsoft.Treenet
 
         public PacketProtocolSettings PacketProtocolSettings { get; set; }
 
+        public string Options { get; set; }
+
         const string ConfigFilename = "ServerConfig.json";
 
         static string ConfigFullPath(string appPath)
