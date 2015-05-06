@@ -74,7 +74,8 @@ namespace Tizsoft.Treenet
                         var contentLength = content.Length;
 
                         Debug.Assert(contentLength >= 0);
-                        if (contentLength > Settings.MaxContentSize)
+
+                        if (Settings.LimitSendSize && contentLength > Settings.MaxContentSize)
                         {
                             message = null;
                             return false;
@@ -165,7 +166,7 @@ namespace Tizsoft.Treenet
                             return false;
                         }
 
-                        if (contentLength > Settings.MaxContentSize)
+                        if (Settings.LimitReceiveSize && contentLength > Settings.MaxContentSize)
                         {
                             return false;
                         }

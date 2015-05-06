@@ -54,10 +54,24 @@ namespace Tizsoft.Treenet
             set { _maxContentSize = value > 0 ? value : 1; }
         }
 
+        /// <summary>
+        /// Set to true to limit send size to fit MaxContentSize.
+        /// Default is false.
+        /// </summary>
+        public bool LimitSendSize { get; set; }
+
+        /// <summary>
+        /// Set to true to limit receive size to fit MaxContentSize.
+        /// Default is true.
+        /// </summary>
+        public bool LimitReceiveSize { get; set; }
+
         public PacketProtocolSettings()
         {
             Signature = null;
             MaxContentSize = DefaultMaxContentSize;
+            LimitReceiveSize = true;
+            LimitSendSize = false;
         }
 
         void ComputeHeaderSize()

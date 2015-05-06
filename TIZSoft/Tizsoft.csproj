@@ -41,32 +41,14 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.6.0.5\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="PushSharp.Amazon.Adm">
-      <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.Amazon.Adm.dll</HintPath>
-    </Reference>
     <Reference Include="PushSharp.Android">
       <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.Android.dll</HintPath>
     </Reference>
     <Reference Include="PushSharp.Apple">
       <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.Apple.dll</HintPath>
     </Reference>
-    <Reference Include="PushSharp.Blackberry">
-      <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.Blackberry.dll</HintPath>
-    </Reference>
     <Reference Include="PushSharp.Core">
       <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="PushSharp.FirefoxOS">
-      <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.FirefoxOS.dll</HintPath>
-    </Reference>
-    <Reference Include="PushSharp.Google.Chrome">
-      <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.Google.Chrome.dll</HintPath>
-    </Reference>
-    <Reference Include="PushSharp.Windows">
-      <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.Windows.dll</HintPath>
-    </Reference>
-    <Reference Include="PushSharp.WindowsPhone">
-      <HintPath>..\packages\PushSharp.2.2.1.0\lib\net40\PushSharp.WindowsPhone.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -104,7 +86,6 @@
     <Compile Include="SimpleHttpRequest.cs" />
     <Compile Include="TizId.cs" />
     <Compile Include="TizMath.cs" />
-    <Compile Include="TizPusher.cs" />
     <Compile Include="TizRandom.cs" />
   </ItemGroup>
   <ItemGroup>
