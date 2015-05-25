@@ -80,6 +80,11 @@ namespace Tizsoft.Treenet
 
         public bool IsWorking { get; private set; }
 
+        public int RemainConnection
+        {
+            get { return _connectionPool.Count; }
+        }
+
         #endregion
 
         #region IConnectionSubject Members

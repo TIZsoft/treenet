@@ -9,5 +9,6 @@ namespace Tizsoft.Treenet.Interface
         void Update();
         void Stop();
         bool IsWorking { get; }
+        int RemainConnection { get; }
     }
 }
