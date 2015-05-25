@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Tizsoft.Treenet.Interface
 {
@@ -7,6 +8,7 @@ namespace Tizsoft.Treenet.Interface
         void Start();
         void Setup(EventArgs configArgs);
         void Update();
+        Task UpdateAsync();
         void Stop();
         bool IsWorking { get; }
         int RemainConnection { get; }

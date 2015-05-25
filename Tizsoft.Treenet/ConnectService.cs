@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Tizsoft.Collections;
 using Tizsoft.Treenet.Interface;
 
@@ -71,6 +72,11 @@ namespace Tizsoft.Treenet
                 if (!packet.IsNull)
                     _packetHandler.Parse(packet);
             }
+        }
+
+        public async Task UpdateAsync()
+        {
+            await Task.Run(() => Update()).ConfigureAwait(false);
         }
 
         public void Stop()
