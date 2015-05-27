@@ -80,6 +80,8 @@ namespace Tizsoft.Treenet
 
         public string Options { get; set; }
 
+        public bool DisconnectAfterSend { get; set; }
+
         const string ConfigFilename = "ServerConfig.json";
 
         static string ConfigFullPath(string appPath)

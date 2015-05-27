@@ -60,6 +60,8 @@ namespace Tizsoft.Treenet
 
         public double ConnectRetryInterval { get; set; }
 
+        public bool DisconnectAfterSend { get; set; }
+
         public ClientConfig()
         {
             Address = "127.0.0.1";

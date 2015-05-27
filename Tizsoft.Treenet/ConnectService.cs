@@ -22,8 +22,11 @@ namespace Tizsoft.Treenet
 
         void InitConnectionPool(PacketProtocol packetProtocol)
         {
-            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, _config.MaxMessageSize);
-            _connection.PacketProtocol = packetProtocol;
+            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, _config.MaxMessageSize)
+            {
+                PacketProtocol = packetProtocol,
+                DisconnectAfterSend = _config.DisconnectAfterSend
+            };
             _connection.Register(_connector);
             _connectionPool = new FixedSizeObjPool<IConnection>(1);
             _connectionPool.Push(_connection);

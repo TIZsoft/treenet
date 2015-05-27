@@ -186,6 +186,8 @@ namespace Tizsoft.Treenet
 
         public bool IsActive { get; private set; }
 
+        public bool DisconnectAfterSend { get; set; }
+
         #region IDisposable Members
 
         public void Dispose()

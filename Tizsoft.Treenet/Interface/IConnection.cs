@@ -20,5 +20,7 @@ namespace Tizsoft.Treenet.Interface
         double IdleTime { get; set;}
 
         bool IsActive { get; }
+
+        bool DisconnectAfterSend { get; set; }
     }
 }

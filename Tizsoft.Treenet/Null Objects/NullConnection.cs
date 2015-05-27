@@ -52,5 +52,7 @@ namespace Tizsoft.Treenet
         public double IdleTime { get; set; }
 
         public bool IsActive { get; private set; }
+
+        public bool DisconnectAfterSend { get; set; }
     }
 }

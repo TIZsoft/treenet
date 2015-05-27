@@ -46,6 +46,9 @@ namespace Tizsoft.Treenet
 
             if (sendOperation.SocketError == SocketError.Success)
             {
+                if (connection.DisconnectAfterSend)
+                    connection.Dispose();
+
                 GLogger.Debug("sent {0} bytes msg to {1}",
                     sendOperation.BytesTransferred, connection.DestAddress);
             }

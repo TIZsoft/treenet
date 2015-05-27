@@ -21,8 +21,11 @@ namespace Tizsoft.Treenet
 
             for (var i = 0; i < config.MaxConnections; ++i)
             {
-                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender, config.MaxMessageSize);
-                connection.PacketProtocol = packetProtocol;
+                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender, config.MaxMessageSize)
+                {
+                    PacketProtocol = packetProtocol,
+                    DisconnectAfterSend = config.DisconnectAfterSend
+                };
                 connection.Register(_socketListener);
                 _connectionPool.Push(connection);
             }
