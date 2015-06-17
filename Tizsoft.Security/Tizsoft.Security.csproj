@@ -43,6 +43,8 @@
     <Compile Include="Cryptography\ICryptoProvider.cs" />
     <Compile Include="Cryptography\AesCryptoProvider.cs" />
     <Compile Include="Cryptography\AesUtils.cs" />
+    <Compile Include="Cryptography\Md5CryptoProvider.cs" />
+    <Compile Include="Cryptography\Md5Utils.cs" />
     <Compile Include="Cryptography\XorCryptoProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
