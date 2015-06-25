@@ -87,18 +87,27 @@ namespace Tizsoft.Treenet
 
         public void StartConnect()
         {
-            //if (_connectOperation == null)
-            //    InitConnectOperation(_clientConfig);
-            _connectOperation = CreateConnectOperation(_clientConfig);
-
-            var willRaiseEvent = _connectOperation.AcceptSocket.ConnectAsync(_connectOperation);
+            var connectOperation = CreateConnectOperation(_clientConfig);
+            var willRaiseEvent = connectOperation.AcceptSocket.ConnectAsync(connectOperation);
 
             if (willRaiseEvent)
             {
                 return;
             }
 
-            ProcessConnect(_connectOperation);
+            ProcessConnect(connectOperation);
+
+            //if (_connectOperation == null)
+            //    InitConnectOperation(_clientConfig);
+
+            //var willRaiseEvent = _connectOperation.AcceptSocket.ConnectAsync(_connectOperation);
+
+            //if (willRaiseEvent)
+            //{
+            //    return;
+            //}
+
+            //ProcessConnect(_connectOperation);
         }
 
         public void Setup(EventArgs configArgs, FixedSizeObjPool<IConnection> connectionPool)
