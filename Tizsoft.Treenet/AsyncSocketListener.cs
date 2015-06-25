@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
@@ -25,8 +26,9 @@ namespace Tizsoft.Treenet
         ServerConfig _config;
         FixedSizeObjPool<IConnection> _connectionPool;
         Timer _heartBeatTimer;
-        readonly HashSet<IConnectionObserver> _observers = new HashSet<IConnectionObserver>();
-        readonly HashSet<IConnection> _workingConnections = new HashSet<IConnection>();
+
+        readonly ConcurrentDictionary<IConnectionObserver, object> _observers = new ConcurrentDictionary<IConnectionObserver, object>();
+        readonly ConcurrentDictionary<IConnection, object> _workingConnections = new ConcurrentDictionary<IConnection, object>();
 
         /// <summary>
         /// Begins an operation to accept a connection request from the client.
@@ -78,7 +80,7 @@ namespace Tizsoft.Treenet
                 }
 
                 var newConnection = CreateNewConnection(acceptOperation.AcceptSocket);
-                _workingConnections.Add(newConnection);
+                _workingConnections.TryAdd(newConnection, acceptOperation.UserToken);
                 GLogger.Debug("IP: {0} 已連線", newConnection.DestAddress);
                 GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
                 GLogger.Debug("可連線數: {0}", _connectionPool.Count);
@@ -211,7 +213,7 @@ namespace Tizsoft.Treenet
                 if (_workingConnections.Count == 0)
                     return;
 
-                foreach (var workingConnection in _workingConnections.Where(workingConnection => workingConnection.IsActive))
+                foreach (var workingConnection in _workingConnections.Keys.Where(workingConnection => workingConnection.IsActive))
                 {
                     workingConnection.IdleTime += Network.DefaultTimeOutTick;
 
@@ -238,14 +240,11 @@ namespace Tizsoft.Treenet
         void FreeWorkingConnections()
         {
             var connections = new IConnection[_workingConnections.Count];
-            _workingConnections.CopyTo(connections);
+            _workingConnections.Keys.CopyTo(connections, 0);
 
-            foreach (var workingConnection in connections)
+            foreach (var workingConnection in connections.Where(workingConnection => workingConnection != null))
             {
-                if (workingConnection != null)
-                {
-                    workingConnection.Dispose();
-                }
+                workingConnection.Dispose();
             }
         }
 
@@ -263,38 +262,29 @@ namespace Tizsoft.Treenet
             if (observer == null)
                 return;
 
-            _observers.Add(observer);
+            _observers.TryAdd(observer, observer);
         }
 
         public void Unregister(IConnectionObserver observer)
         {
-            _observers.Remove(observer);
+            object storedValue;
+            _observers.TryRemove(observer, out storedValue);
         }
 
-        void RemoveNullObservers()
-        {
-            _observers.RemoveWhere(observer => observer == null);
-        }
+        //void RemoveNullObservers()
+        //{
+        //    _observers.ke(observer => observer == null);
+        //}
 
         public void Notify(IConnection connection, bool isConnected)
         {
             if (connection == null)
                 return;
 
-            var needRemoveNullObservers = false;
-
-            foreach (var observer in _observers)
+            foreach (var observer in _observers.Where(p => p.Key != null))
             {
-                if (observer == null)
-                {
-                    needRemoveNullObservers = true;
-                    continue;
-                }
-                observer.GetConnectionEvent(connection, isConnected);
+                observer.Key.GetConnectionEvent(connection, isConnected);
             }
-            
-            if (needRemoveNullObservers)
-                RemoveNullObservers();
         }
 
         #endregion
@@ -308,7 +298,8 @@ namespace Tizsoft.Treenet
 
             if (!connection.IsNull)
             {
-                _workingConnections.Remove(connection);
+                object storedValue;
+                _workingConnections.TryRemove(connection, out storedValue);
                 _connectionPool.Push(connection);    
             }
 
