@@ -55,6 +55,8 @@ namespace Tizsoft.Treenet
                     Notify(Connection.Null, false);
                     break;
             }
+
+            connectOperation.Dispose();
         }
 
         void InitConnectOperation(ClientConfig config)
@@ -72,10 +74,22 @@ namespace Tizsoft.Treenet
             _connectOperation.Completed += OnConnectCompleted;
         }
 
+        SocketAsyncEventArgs CreateConnectOperation(ClientConfig config)
+        {
+            var args = new SocketAsyncEventArgs
+            {
+                AcceptSocket = new Socket(AddressFamily.InterNetwork, config.TransferType, config.UseProtocol),
+                RemoteEndPoint = Network.GetIpEndPoint(config.Address, config.Port),
+            };
+            args.Completed += OnConnectCompleted;
+            return args;
+        }
+
         public void StartConnect()
         {
-            if (_connectOperation == null)
-                InitConnectOperation(_clientConfig);
+            //if (_connectOperation == null)
+            //    InitConnectOperation(_clientConfig);
+            _connectOperation = CreateConnectOperation(_clientConfig);
 
             var willRaiseEvent = _connectOperation.AcceptSocket.ConnectAsync(_connectOperation);
 
@@ -95,7 +109,7 @@ namespace Tizsoft.Treenet
                 throw new InvalidCastException("config");
 
             _connectionPool = connectionPool;
-            InitConnectOperation(_clientConfig);
+            //InitConnectOperation(_clientConfig);
         }
 
         public void Stop()
