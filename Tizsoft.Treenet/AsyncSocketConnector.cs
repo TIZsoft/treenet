@@ -34,6 +34,8 @@ namespace Tizsoft.Treenet
 
         void ProcessConnect(SocketAsyncEventArgs connectOperation)
         {
+            var newConnection = Connection.Null;
+
             switch (connectOperation.SocketError)
             {
                 case SocketError.Success:
@@ -43,35 +45,20 @@ namespace Tizsoft.Treenet
                         return;
                     }
 
-                    var newConnection = CreateNewConnection(connectOperation.AcceptSocket);
+                    newConnection = CreateNewConnection(connectOperation.AcceptSocket);
                     _workingConnections.Add(newConnection);
                     GLogger.Debug("IP: {0} 已連線", newConnection.DestAddress);
                     GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
-                    Notify(newConnection, true);
                     break;
 
                 default:
                     GLogger.Debug("因為 {0} ，所以無法連線", connectOperation.SocketError);
-                    Notify(Connection.Null, false);
                     break;
             }
 
+            var isConnected = connectOperation.SocketError == SocketError.Success;
             connectOperation.Dispose();
-        }
-
-        void InitConnectOperation(ClientConfig config)
-        {
-            if (_connectOperation != null)
-                _connectOperation.Dispose();
-
-            _connectOperation = new SocketAsyncEventArgs
-            {
-                AcceptSocket = new Socket(AddressFamily.InterNetwork, config.TransferType, config.UseProtocol)
-            };
-
-            var endPoint = Network.GetIpEndPoint(config.Address, config.Port);
-            _connectOperation.RemoteEndPoint = endPoint;
-            _connectOperation.Completed += OnConnectCompleted;
+            Notify(newConnection, isConnected);
         }
 
         SocketAsyncEventArgs CreateConnectOperation(ClientConfig config)
@@ -87,27 +74,15 @@ namespace Tizsoft.Treenet
 
         public void StartConnect()
         {
-            var connectOperation = CreateConnectOperation(_clientConfig);
-            var willRaiseEvent = connectOperation.AcceptSocket.ConnectAsync(connectOperation);
+            _connectOperation = CreateConnectOperation(_clientConfig);
+            var willRaiseEvent = _connectOperation.AcceptSocket.ConnectAsync(_connectOperation);
 
             if (willRaiseEvent)
             {
                 return;
             }
 
-            ProcessConnect(connectOperation);
-
-            //if (_connectOperation == null)
-            //    InitConnectOperation(_clientConfig);
-
-            //var willRaiseEvent = _connectOperation.AcceptSocket.ConnectAsync(_connectOperation);
-
-            //if (willRaiseEvent)
-            //{
-            //    return;
-            //}
-
-            //ProcessConnect(_connectOperation);
+            ProcessConnect(_connectOperation);
         }
 
         public void Setup(EventArgs configArgs, FixedSizeObjPool<IConnection> connectionPool)

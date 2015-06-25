@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using Tizsoft.Log;
 using Tizsoft.Treenet.Interface;
@@ -13,13 +14,12 @@ namespace Tizsoft.Treenet
 
         public static IConnection Null { get { return NullConnection; } }
 
-        //bool _isActive;
-
         readonly MessageFraming _messageFraming;
-        readonly SocketAsyncEventArgs _socketOperation;
         readonly PacketSender _packetSender;
         readonly IPacketContainer _packetContainer;
         readonly HashSet<IConnectionObserver> _observers = new HashSet<IConnectionObserver>();
+        SocketAsyncEventArgs _socketOperation;
+        BufferManager _bufferManager;
 
         public bool IsNull { get { return false; } }
 
@@ -107,6 +107,20 @@ namespace Tizsoft.Treenet
             }
         }
 
+        void CreateSocketAsyncOperation()
+        {
+            _socketOperation = new SocketAsyncEventArgs();
+            _bufferManager.SetBuffer(_socketOperation);
+            _socketOperation.Completed += OnAsyncReceiveCompleted;
+        }
+
+        void FreeSocketAsyncOperation()
+        {
+            _socketOperation.Completed -= OnAsyncReceiveCompleted;
+            _bufferManager.FreeBuffer(_socketOperation);
+            _socketOperation.Dispose();
+        }
+
         public Connection(BufferManager bufferManager, IPacketContainer packetContainer, PacketSender packetSender, int maxMessageSize)
         {
             if (bufferManager == null)
@@ -118,9 +132,10 @@ namespace Tizsoft.Treenet
             if (packetSender == null)
                 throw new ArgumentNullException("packetSender");
 
+            _bufferManager = bufferManager;
             DestAddress = string.Empty;
-            _socketOperation = new SocketAsyncEventArgs();
-            bufferManager.SetBuffer(_socketOperation);
+            //_socketOperation = new SocketAsyncEventArgs();
+            //_bufferManager.SetBuffer(_socketOperation);
             _packetContainer = packetContainer;
             _packetSender = packetSender;
             _messageFraming = new MessageFraming(maxMessageSize);
@@ -153,7 +168,7 @@ namespace Tizsoft.Treenet
         {
             Dispose();
             _messageFraming.MessageArrived -= OnMessageArrived;
-            _socketOperation.Dispose();
+            _bufferManager = null;
         }
 
         public void SetConnection(Socket socket)
@@ -166,7 +181,7 @@ namespace Tizsoft.Treenet
             IsActive = true;
             ConnectSocket = socket;
             DestAddress = socket.RemoteEndPoint.ToString();
-            _socketOperation.Completed += OnAsyncReceiveCompleted;
+            CreateSocketAsyncOperation();
             StartReceive();
         }
 
@@ -196,9 +211,9 @@ namespace Tizsoft.Treenet
             {
                 IsActive = false;
                 IdleTime = 0;
-                _socketOperation.Completed -= OnAsyncReceiveCompleted;
                 _messageFraming.Clear();
                 CloseConnectSocket();
+                FreeSocketAsyncOperation();
                 Notify(this, false);
             }
         }
@@ -223,10 +238,9 @@ namespace Tizsoft.Treenet
 
         public void Notify(IConnection connection, bool isConnected)
         {
-            foreach (var observer in _observers)
+            foreach (var observer in _observers.Where(observer => observer != null))
             {
-                if (observer != null)
-                    observer.GetConnectionEvent(connection, isConnected);
+                observer.GetConnectionEvent(connection, isConnected);
             }
         }
 

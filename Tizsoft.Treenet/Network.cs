@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -71,42 +72,26 @@ namespace Tizsoft.Treenet
         {
             var hostAddresses = Dns.GetHostAddresses(hostNameOrAddress);
 
-            foreach (var ipAddress in hostAddresses)
+            foreach (var ipAddress in hostAddresses.Where(ipAddress => isIPv6 ? ipAddress.AddressFamily == AddressFamily.InterNetworkV6 : ipAddress.AddressFamily == AddressFamily.InterNetwork))
             {
-                if (isIPv6 ? ipAddress.AddressFamily == AddressFamily.InterNetworkV6 : ipAddress.AddressFamily == AddressFamily.InterNetwork)
-                    return new IPEndPoint(ipAddress, port);
+                return new IPEndPoint(ipAddress, port);
             }
 
             return new IPEndPoint(new IPAddress(new byte[] { 1, 0, 0, 127 }), 5566);
         }
 
-        public static List<IPAddress> GetLocalIpAddresses(bool includeIpV6)
+        public static IEnumerable<IPAddress> GetLocalIpAddresses(bool includeIpV6)
         {
-            var addresses = new List<IPAddress>();
-
             // Get a list of all network interfaces (usually one per network card, dialup, and VPN connection)
             var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
 
-            foreach (var network in networkInterfaces)
-            {
-                // Read the IP configuration for each network
-                var properties = network.GetIPProperties();
-
-                // Each network interface may have multiple IP addresses
-                foreach (var address in properties.UnicastAddresses)
-                {
-                    if (!includeIpV6 && address.Address.AddressFamily != AddressFamily.InterNetwork)
-                        continue;
-
-                    // Ignore loopback addresses (e.g., 127.0.0.1)
-                    if (IPAddress.IsLoopback(address.Address))
-                        continue;
-
-                    addresses.Add(address.Address);
-                }
-            }
-
-            return addresses;
+            return (from network in networkInterfaces
+                    select network.GetIPProperties()
+                    into properties
+                    from address in properties.UnicastAddresses
+                    where includeIpV6 || address.Address.AddressFamily == AddressFamily.InterNetwork
+                    where !IPAddress.IsLoopback(address.Address)
+                    select address.Address);
         }
     }
 }
