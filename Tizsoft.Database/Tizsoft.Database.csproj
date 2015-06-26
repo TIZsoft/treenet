@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DatabaseConfig.cs" />
+    <Compile Include="StringBuilderPool.cs" />
     <Compile Include="TizMySql.cs" />
     <Compile Include="Helper Interface\IMysqlStoredProcedureHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

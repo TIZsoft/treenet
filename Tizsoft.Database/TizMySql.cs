@@ -14,9 +14,7 @@ namespace Tizsoft.Database
 {
     public class TizMySql
     {
-        readonly static StringBuilder _duplicateBuilder = new StringBuilder();
-        readonly StringBuilder _whereBuilder = new StringBuilder();
-        readonly StringBuilder _queryBuilder = new StringBuilder();
+        readonly static StringBuilderPool _builderPool = new StringBuilderPool();
         readonly string _connectionString;
 
         static async void DisconnectAsync(MySqlConnection connection)
@@ -31,48 +29,45 @@ namespace Tizsoft.Database
                 connection.Close();
         }
 
-        void ResetQueryBuilder()
-        {
-            _queryBuilder.Remove(0, _queryBuilder.Length);
-        }
-
         #region build mysql query string
 
         string BuildCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string duplicateKeyClause)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
+            var builder = _builderPool.GetBuilder();
+            builder.AppendFormat("INSERT INTO `{0}` (", table);
 
             for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
-                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
+                builder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? string.Empty : ",");
 
-            _queryBuilder.Append(") VALUES(");
+            builder.Append(") VALUES(");
 
             for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
-                _queryBuilder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
+                builder.AppendFormat(@"'{0}'{1}", values[i], i == values.Count - 1 ? string.Empty : ",");
 
-            _queryBuilder.Append(") ");
+            builder.Append(") ");
 
             if (!string.IsNullOrEmpty(duplicateKeyClause))
             {
                 if (!duplicateKeyClause.ToUpper().Contains("ON DUPLICATE KEY UPDATE"))
-                    _queryBuilder.Append("ON DUPLICATE KEY UPDATE ");
+                    builder.Append("ON DUPLICATE KEY UPDATE ");
 
-                _queryBuilder.Append(duplicateKeyClause);
+                builder.Append(duplicateKeyClause);
             }
 
-            return _queryBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         string BuildMultiCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<List<object>> multiValueLists, string duplicateKeyClause)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("INSERT INTO `{0}` (", table);
+            var builder = _builderPool.GetBuilder();
+            builder.AppendFormat("INSERT INTO `{0}` (", table);
             var minColumnCount = Math.Min(columns.Count, multiValueLists[0].Count);
             for (var i = 0; i < minColumnCount; ++i)
-                _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == minColumnCount - 1 ? ") " : ",");
+                builder.AppendFormat("`{0}`{1}", columns[i], i == minColumnCount - 1 ? ") " : ",");
 
-            _queryBuilder.Append("VALUES");
+            builder.Append("VALUES");
 
             for (var i = 0; i < multiValueLists.Count; ++i)
             {
@@ -81,135 +76,147 @@ namespace Tizsoft.Database
                 if (valueList == null || valueList.Count <= 0)
                     continue;
 
-                _queryBuilder.Append("(");
+                builder.Append("(");
 
                 for (var j = 0; j < minColumnCount; ++j)
-                    _queryBuilder.AppendFormat(@"'{0}'{1}", valueList[j],
+                    builder.AppendFormat(@"'{0}'{1}", valueList[j],
                         j == minColumnCount - 1 ? ")" : ",");
 
-                _queryBuilder.Append(i == multiValueLists.Count - 1 ? " " : ",");
+                builder.Append(i == multiValueLists.Count - 1 ? " " : ",");
             }
 
             if (!string.IsNullOrEmpty(duplicateKeyClause))
             {
                 if (!duplicateKeyClause.ToUpper().Contains("ON DUPLICATE KEY UPDATE"))
-                    _queryBuilder.Append("ON DUPLICATE KEY UPDATE ");
+                    builder.Append("ON DUPLICATE KEY UPDATE ");
 
-                _queryBuilder.Append(duplicateKeyClause);
+                builder.Append(duplicateKeyClause);
             }
 
-            return _queryBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         string BuildRequestQueryString(string table, IReadOnlyList<string> columns, string conditions)
         {
-            ResetQueryBuilder();
-            _queryBuilder.Append("SELECT ");
+            var builder = _builderPool.GetBuilder();
+            builder.Append("SELECT ");
 
             if (columns == null || columns.Count == 0)
-                _queryBuilder.Append("* ");
+                builder.Append("* ");
             else
             {
                 for (var i = 0; i < columns.Count; ++i)
-                    _queryBuilder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? " " : ",");
+                    builder.AppendFormat("`{0}`{1}", columns[i], i == columns.Count - 1 ? " " : ",");
             }
 
-            _queryBuilder.AppendFormat("FROM `{0}` ", table);
+            builder.AppendFormat("FROM `{0}` ", table);
 
             if (!string.IsNullOrEmpty(conditions))
             {
                 if (!conditions.ToUpper().Contains("WHERE"))
-                    _queryBuilder.Append("WHERE ");
+                    builder.Append("WHERE ");
 
-                _queryBuilder.Append(conditions);
+                builder.Append(conditions);
             }
 
-            return _queryBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         string BuildRequestJoinQueryString(IReadOnlyList<string> tables, IReadOnlyList<string> columns, string conditions)
         {
-            ResetQueryBuilder();
+            var builder = _builderPool.GetBuilder();
 
             // SELECT
-            _queryBuilder.Append("SELECT ");
+            builder.Append("SELECT ");
             if (columns == null || columns.Count == 0)
-                _queryBuilder.Append("* ");
+                builder.Append("* ");
             else
             {
                 for (var i = 0; i < columns.Count; ++i)
-                    _queryBuilder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? " " : ",");
+                    builder.AppendFormat("{0}{1}", columns[i], i == columns.Count - 1 ? " " : ",");
             }
 
             // FROM
-            _queryBuilder.Append("FROM ");
+            builder.Append("FROM ");
             for (var i = 0; i < tables.Count; ++i)
             {
-                _queryBuilder.AppendFormat("{0}{1}", tables[i], i == tables.Count - 1 ? " " : ",");
+                builder.AppendFormat("{0}{1}", tables[i], i == tables.Count - 1 ? " " : ",");
             }
 
             // WHERE
             if (!string.IsNullOrEmpty(conditions))
             {
                 if (!conditions.ToUpper().Contains("WHERE"))
-                    _queryBuilder.Append("WHERE ");
+                    builder.Append("WHERE ");
 
-                _queryBuilder.Append(conditions);
+                builder.Append(conditions);
             }
 
-            return _queryBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         string BuildUpdateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string conditions)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("UPDATE `{0}` SET ", table);
+            var builder = _builderPool.GetBuilder();
+            builder.AppendFormat("UPDATE `{0}` SET ", table);
             var bound = Math.Min(columns.Count, values.Count);
 
             for (var i = 0; i < bound; ++i)
-                _queryBuilder.AppendFormat(@"`{0}` = '{1}'{2}", columns[i], values[i], i == bound - 1 ? " " : ",");
+                builder.AppendFormat(@"`{0}` = '{1}'{2}", columns[i], values[i], i == bound - 1 ? " " : ",");
 
             if (!string.IsNullOrEmpty(conditions))
             {
                 if (!conditions.ToUpper().Contains("WHERE"))
-                    _queryBuilder.Append("WHERE ");
+                    builder.Append("WHERE ");
 
-                _queryBuilder.Append(conditions);
+                builder.Append(conditions);
             }
 
-            return _queryBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         string BuildDeleteQueryString(string table, string conditions)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("DELETE FROM `{0}` ", table);
+            var builder = _builderPool.GetBuilder();
+            builder.AppendFormat("DELETE FROM `{0}` ", table);
 
             if (!string.IsNullOrEmpty(conditions))
             {
                 if (!conditions.ToUpper().Contains("WHERE"))
-                    _queryBuilder.Append("WHERE ");
+                    builder.Append("WHERE ");
 
-                _queryBuilder.Append(conditions);
+                builder.Append(conditions);
             }
 
-            return _queryBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         string BuildCountQueryString(string table, string conditions)
         {
-            ResetQueryBuilder();
-            _queryBuilder.AppendFormat("SELECT COUNT(*) FROM {0} ", table);
+            var builder = _builderPool.GetBuilder();
+            builder.AppendFormat("SELECT COUNT(*) FROM {0} ", table);
 
             if (!string.IsNullOrEmpty(conditions))
             {
                 if (!conditions.ToUpper().Contains("WHERE"))
-                    _queryBuilder.Append("WHERE ");
+                    builder.Append("WHERE ");
 
-                _queryBuilder.Append(conditions);
+                builder.Append(conditions);
             }
 
-            return _queryBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         string BuildWhereClauseString(params KeyValuePair<string, object>[] whereClauses)
@@ -217,12 +224,14 @@ namespace Tizsoft.Database
             if (whereClauses.Length <= 0) 
                 return string.Empty;
 
-            _whereBuilder.Remove(0, _whereBuilder.Length);
-            _whereBuilder.Append("WHERE ");
-            _whereBuilder.Append(string.Join(" AND ",
+            var builder = _builderPool.GetBuilder();
+            builder.Append("WHERE ");
+            builder.Append(string.Join(" AND ",
                 whereClauses.Select(pair => string.Format("{0}=@{0}", pair.Key))));
 
-            return _whereBuilder.ToString();
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
 
         #endregion
@@ -914,10 +923,13 @@ namespace Tizsoft.Database
             if (columns.Count == 0)
                 return string.Empty;
 
-            _duplicateBuilder.Remove(0, _duplicateBuilder.Length);
-            _duplicateBuilder.Append("ON DUPLICATE KEY UPDATE ");
-            _duplicateBuilder.Append(string.Join(", ", columns.Select(col => string.Format("`{0}`=VALUES(`{0}`)", col))));
-            return _duplicateBuilder.ToString();
+            var builder = _builderPool.GetBuilder();
+            builder.Append("ON DUPLICATE KEY UPDATE ");
+            builder.Append(string.Join(", ", columns.Select(col => string.Format("`{0}`=VALUES(`{0}`)", col))));
+
+            var result = builder.ToString();
+            _builderPool.ReturnBuilder(builder);
+            return result;
         }
     }
 }
