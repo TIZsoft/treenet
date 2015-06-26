@@ -14,7 +14,6 @@ namespace Tizsoft.Database
 {
     public class TizMySql
     {
-        readonly static StringBuilderPool _builderPool = new StringBuilderPool();
         readonly string _connectionString;
 
         static async void DisconnectAsync(MySqlConnection connection)
@@ -33,7 +32,7 @@ namespace Tizsoft.Database
 
         string BuildCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string duplicateKeyClause)
         {
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.AppendFormat("INSERT INTO `{0}` (", table);
 
             for (var i = 0; i < Math.Min(columns.Count, values.Count); ++i)
@@ -55,13 +54,12 @@ namespace Tizsoft.Database
             }
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
         string BuildMultiCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<List<object>> multiValueLists, string duplicateKeyClause)
         {
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.AppendFormat("INSERT INTO `{0}` (", table);
             var minColumnCount = Math.Min(columns.Count, multiValueLists[0].Count);
             for (var i = 0; i < minColumnCount; ++i)
@@ -94,13 +92,12 @@ namespace Tizsoft.Database
             }
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
         string BuildRequestQueryString(string table, IReadOnlyList<string> columns, string conditions)
         {
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.Append("SELECT ");
 
             if (columns == null || columns.Count == 0)
@@ -122,13 +119,12 @@ namespace Tizsoft.Database
             }
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
         string BuildRequestJoinQueryString(IReadOnlyList<string> tables, IReadOnlyList<string> columns, string conditions)
         {
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
 
             // SELECT
             builder.Append("SELECT ");
@@ -157,13 +153,12 @@ namespace Tizsoft.Database
             }
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
         string BuildUpdateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string conditions)
         {
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.AppendFormat("UPDATE `{0}` SET ", table);
             var bound = Math.Min(columns.Count, values.Count);
 
@@ -179,13 +174,12 @@ namespace Tizsoft.Database
             }
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
         string BuildDeleteQueryString(string table, string conditions)
         {
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.AppendFormat("DELETE FROM `{0}` ", table);
 
             if (!string.IsNullOrEmpty(conditions))
@@ -197,13 +191,12 @@ namespace Tizsoft.Database
             }
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
         string BuildCountQueryString(string table, string conditions)
         {
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.AppendFormat("SELECT COUNT(*) FROM {0} ", table);
 
             if (!string.IsNullOrEmpty(conditions))
@@ -215,7 +208,6 @@ namespace Tizsoft.Database
             }
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
@@ -224,13 +216,12 @@ namespace Tizsoft.Database
             if (whereClauses.Length <= 0) 
                 return string.Empty;
 
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.Append("WHERE ");
             builder.Append(string.Join(" AND ",
                 whereClauses.Select(pair => string.Format("{0}=@{0}", pair.Key))));
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
 
@@ -923,12 +914,11 @@ namespace Tizsoft.Database
             if (columns.Count == 0)
                 return string.Empty;
 
-            var builder = _builderPool.GetBuilder();
+            var builder = new StringBuilder();
             builder.Append("ON DUPLICATE KEY UPDATE ");
             builder.Append(string.Join(", ", columns.Select(col => string.Format("`{0}`=VALUES(`{0}`)", col))));
 
             var result = builder.ToString();
-            _builderPool.ReturnBuilder(builder);
             return result;
         }
     }
