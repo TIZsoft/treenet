@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Tizsoft.Log;
 
 namespace Tizsoft.Treenet
@@ -37,6 +37,8 @@ namespace Tizsoft.Treenet
         public int Backlog { get; set; }
 
         public int MaxConnections { get; set; }
+
+        public int MaxAcceptions { get; set; }
 
         /// <summary>
         ///     Gets or sets the maximum message size.

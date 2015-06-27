@@ -23,6 +23,7 @@ namespace Tizsoft.Treenet
         // Used to do asynchronous accept operation.
         SocketAsyncEventArgs _asyncAcceptOperation;
 
+        readonly ConcurrentStack<SocketAsyncEventArgs> _asyncAcceptArgs = new ConcurrentStack<SocketAsyncEventArgs>();
         ServerConfig _config;
         FixedSizeObjPool<IConnection> _connectionPool;
         Timer _heartBeatTimer;
@@ -35,27 +36,43 @@ namespace Tizsoft.Treenet
         /// </summary>
         void StartAccept()
         {
-            if (_asyncAcceptOperation == null)
-            {
-                _asyncAcceptOperation = new SocketAsyncEventArgs();
-                _asyncAcceptOperation.Completed += OnAsyncAcceptCompleted;
-            }
-            else
-            {
-                // Socket must be cleared since the context object is being reused.
-                _asyncAcceptOperation.AcceptSocket = null;
-            }
+            SocketAsyncEventArgs asyncAccept;
+
+            if (!_asyncAcceptArgs.TryPop(out asyncAccept))
+                return;
 
             _maxNumberAcceptedClients.WaitOne();
 
-            var willRaiseEvent = _listenSocket.AcceptAsync(_asyncAcceptOperation);
+            var willRaiseEvent = _listenSocket.AcceptAsync(asyncAccept);
 
             if (willRaiseEvent)
             {
                 return;
             }
 
-            ProcessAccept(_asyncAcceptOperation);
+            ProcessAccept(asyncAccept);
+
+            //if (_asyncAcceptOperation == null)
+            //{
+            //    _asyncAcceptOperation = new SocketAsyncEventArgs();
+            //    _asyncAcceptOperation.Completed += OnAsyncAcceptCompleted;
+            //}
+            //else
+            //{
+            //    // Socket must be cleared since the context object is being reused.
+            //    _asyncAcceptOperation.AcceptSocket = null;
+            //}
+
+            //_maxNumberAcceptedClients.WaitOne();
+
+            //var willRaiseEvent = _listenSocket.AcceptAsync(_asyncAcceptOperation);
+
+            //if (willRaiseEvent)
+            //{
+            //    return;
+            //}
+
+            //ProcessAccept(_asyncAcceptOperation);
         }
 
         /// <summary>
@@ -76,6 +93,7 @@ namespace Tizsoft.Treenet
                 if (_connectionPool.Count <= 0)
                 {
                     GLogger.Warn("連線數已達上限!");
+                    CloseAcceptSocket(acceptOperation);
                     return;
                 }
 
@@ -88,16 +106,17 @@ namespace Tizsoft.Treenet
             }
             else
             {
+                var lastError = acceptOperation.SocketError;
                 // Handle bad accept.
-                if (acceptOperation.AcceptSocket != null)
-                {
-                    acceptOperation.AcceptSocket.Close();
-                }
+                CloseAcceptSocket(acceptOperation);
 
                 // Server close on purpose.
-                if (acceptOperation.SocketError == SocketError.OperationAborted)
+                if (lastError == SocketError.OperationAborted)
                     return;
             }
+
+            acceptOperation.AcceptSocket = null;
+            _asyncAcceptArgs.Push(acceptOperation);
 
             // Accept the next connection request.
             StartAccept();
@@ -125,6 +144,68 @@ namespace Tizsoft.Treenet
             {
                 _maxNumberAcceptedClients = null;
             }
+        }
+
+        void CloseAcceptSocket(SocketAsyncEventArgs args)
+        {
+            if (args != null)
+            {
+                try
+                {
+                    args.Completed -= OnAsyncAcceptCompleted;
+                    if (args.AcceptSocket != null && args.AcceptSocket.Connected)
+                        args.AcceptSocket.Shutdown(SocketShutdown.Both);
+                }
+                catch (Exception exception)
+                {
+                    GLogger.Error(exception);
+                }
+                finally
+                {
+                    if (args.AcceptSocket != null)
+                        args.AcceptSocket.Close();
+
+                    args.AcceptSocket = null;
+                    _asyncAcceptArgs.Push(args);
+                }
+            }
+        }
+
+        void CloseAllAsyncAccept()
+        {
+            if (_asyncAcceptArgs.Count == 0)
+                return;
+
+            SocketAsyncEventArgs asyncAccept;
+
+            while (_asyncAcceptArgs.TryPop(out asyncAccept))
+            {
+                try
+                {
+                    if (asyncAccept == null)
+                        continue;
+
+                    asyncAccept.Completed -= OnAsyncAcceptCompleted;
+
+                    if (asyncAccept.AcceptSocket != null && asyncAccept.AcceptSocket.Connected)
+                        asyncAccept.AcceptSocket.Shutdown(SocketShutdown.Both);
+
+                    asyncAccept.AcceptSocket = null;
+                }
+                catch (Exception exception)
+                {
+                    GLogger.Error(exception);
+                }
+                finally
+                {
+                    if (asyncAccept.AcceptSocket != null)
+                        asyncAccept.AcceptSocket.Close();
+
+                    asyncAccept.Dispose();
+                }    
+            }
+
+            _asyncAcceptArgs.Clear();
         }
 
         void CloseAsyncAcceptOperation()
@@ -190,6 +271,7 @@ namespace Tizsoft.Treenet
 
             _config = config;
             _connectionPool = connectionPool;
+            InitAsyncAccept(_config);
             _maxNumberAcceptedClients = new Semaphore(config.MaxConnections, config.MaxConnections);
 
             var endPoint = Network.GetIpEndPoint(config.Address, config.Port);
@@ -224,6 +306,16 @@ namespace Tizsoft.Treenet
             _heartBeatTimer.Start();
         }
 
+        void InitAsyncAccept(ServerConfig config)
+        {
+            for (var i = 0; i < config.MaxAcceptions; ++i)
+            {
+                var asyncAccept = new SocketAsyncEventArgs();
+                asyncAccept.Completed += OnAsyncAcceptCompleted;
+                _asyncAcceptArgs.Push(asyncAccept);
+            }
+        }
+
         public void Start()
         {
             _listenSocket.Listen(_config.Backlog);
@@ -251,7 +343,8 @@ namespace Tizsoft.Treenet
         void FreeAcceptComponents()
         {
             CloseListenSocket();
-            CloseAsyncAcceptOperation();
+            CloseAllAsyncAccept();
+            //CloseAsyncAcceptOperation();
             CloseSemaphore();
         }
 
