@@ -149,6 +149,9 @@ namespace Tizsoft.Treenet
                 throw new InvalidOperationException("PacketProtocol is null.");
             }
 
+            if (!IsActive)
+                return;
+
             // TODO: Reuse packets.
             IPacket packet;
             if (PacketProtocol.TryParsePacket(e.Message, out packet))
@@ -212,6 +215,7 @@ namespace Tizsoft.Treenet
                 IsActive = false;
                 IdleTime = 0;
                 _messageFraming.Clear();
+                _packetContainer.ClearDisconnectedPacket(this);
                 CloseConnectSocket();
                 FreeSocketAsyncOperation();
                 Notify(this, false);
@@ -219,7 +223,6 @@ namespace Tizsoft.Treenet
         }
 
         #endregion
-
 
         #region IConnectionSubject Members
 

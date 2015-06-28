@@ -64,6 +64,23 @@ namespace Tizsoft.Treenet
             }
         }
 
+        public void ClearDisconnectedPacket(IConnection connection)
+        {
+            while (_queueingPackets.Count > 0)
+            {
+                {
+                    IPacket packet;
+                    if (_queueingPackets.TryDequeue(out packet))
+                    {
+                        if (packet.Connection == connection)
+                            RecyclePacket(packet);
+                        else
+                            _queueingPackets.Enqueue(packet);
+                    }
+                }
+            }
+        }
+
         public IPacket NextPacket()
         {
             IPacket packet;
