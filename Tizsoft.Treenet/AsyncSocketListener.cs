@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
@@ -51,28 +50,6 @@ namespace Tizsoft.Treenet
             }
 
             ProcessAccept(asyncAccept);
-
-            //if (_asyncAcceptOperation == null)
-            //{
-            //    _asyncAcceptOperation = new SocketAsyncEventArgs();
-            //    _asyncAcceptOperation.Completed += OnAsyncAcceptCompleted;
-            //}
-            //else
-            //{
-            //    // Socket must be cleared since the context object is being reused.
-            //    _asyncAcceptOperation.AcceptSocket = null;
-            //}
-
-            //_maxNumberAcceptedClients.WaitOne();
-
-            //var willRaiseEvent = _listenSocket.AcceptAsync(_asyncAcceptOperation);
-
-            //if (willRaiseEvent)
-            //{
-            //    return;
-            //}
-
-            //ProcessAccept(_asyncAcceptOperation);
         }
 
         /// <summary>
@@ -152,7 +129,7 @@ namespace Tizsoft.Treenet
             {
                 try
                 {
-                    args.Completed -= OnAsyncAcceptCompleted;
+                    //args.Completed -= OnAsyncAcceptCompleted;
                     if (args.AcceptSocket != null && args.AcceptSocket.Connected)
                         args.AcceptSocket.Shutdown(SocketShutdown.Both);
                 }
