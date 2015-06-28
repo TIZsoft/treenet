@@ -198,10 +198,15 @@ namespace Tizsoft.Treenet
                 }
                 finally
                 {
-                    if (asyncAccept.AcceptSocket != null)
-                        asyncAccept.AcceptSocket.Close();
+                    if (asyncAccept != null)
+                    {
+                        if (asyncAccept.AcceptSocket != null)
+                        {
+                            asyncAccept.AcceptSocket.Close();
+                        }
 
-                    asyncAccept.Dispose();
+                        asyncAccept.Dispose();
+                    }
                 }    
             }
 
