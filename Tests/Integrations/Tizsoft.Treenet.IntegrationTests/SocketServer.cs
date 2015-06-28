@@ -42,7 +42,7 @@ namespace Tizsoft.Treenet.IntegrationTests
                 connectionPool.Push(connection);
             }
             
-            _socketListener.Setup(config, connectionPool);
+            //_socketListener.Setup(config, connectionPool);
         }
 
         ~SocketServer()
@@ -132,5 +132,7 @@ namespace Tizsoft.Treenet.IntegrationTests
         {
             _socketListener.Notify(connection, isConnected);
         }
+
+        public int Count { get { return _socketListener.Count; } }
     }
 }

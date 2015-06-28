@@ -19,7 +19,7 @@ namespace Tizsoft.Database
         static async void DisconnectAsync(MySqlConnection connection)
         {
             if (connection != null)
-                await connection.CloseAsync();
+                await connection.CloseAsync().ConfigureAwait(false);
         }
 
         static void Disconnect(IDbConnection connection)
@@ -325,9 +325,9 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = await ConnectAsync();
+                connection = await ConnectAsync().ConfigureAwait(false);
                 var cmd = CreateMySqlCommand(queryString, connection, parameters);
-                await cmd.ExecuteNonQueryAsync();
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
                 return true;
             }
             catch (MySqlException mySqlException)
@@ -352,9 +352,9 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = await ConnectAsync();
+                connection = await ConnectAsync().ConfigureAwait(false);
                 var cmd = CreateMySqlCommand(queryString, connection, parameters);
-                var count = await cmd.ExecuteScalarAsync();
+                var count = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
                 return Convert.ToInt32(count);
             }
             catch (MySqlException mySqlException)
@@ -382,9 +382,9 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = await ConnectAsync();
+                connection = await ConnectAsync().ConfigureAwait(false);
                 var cmd = CreateMySqlCommand(queryString, connection, conditions);
-                dataReader = await cmd.ExecuteReaderAsync();
+                dataReader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
                 return FetchSqlResultToList(dataReader);
             }
             catch (MySqlException mySqlException)
@@ -426,7 +426,7 @@ namespace Tizsoft.Database
             try
             {
                 var mySqlConnection = new MySqlConnection(_connectionString);
-                await mySqlConnection.OpenAsync();
+                await mySqlConnection.OpenAsync().ConfigureAwait(false);
                 return mySqlConnection;
             }
             catch (MySqlException mySqlException)
@@ -507,22 +507,22 @@ namespace Tizsoft.Database
 
         public async Task<int> ExecuteScalarAsync(string query)
         {
-            return await ExecuteScalarCommandAsync(query);
+            return await ExecuteScalarCommandAsync(query).ConfigureAwait(false);
         }
 
         public async Task<bool> ExecuteNonQueryAsync(string query)
         {
-            return await ExecuteNonQueryCommandAsync(query);
+            return await ExecuteNonQueryCommandAsync(query).ConfigureAwait(false);
         }
 
         public async Task<List<Dictionary<string, object>>> ExecuteQueryAsync(string query)
         {
-            return await ExecuteReaderCommandAsync(query);
+            return await ExecuteReaderCommandAsync(query).ConfigureAwait(false);
         }
 
         public async Task<JArray> ExecuteQueryJsonAsync(string query)
         {
-            return JArray.FromObject(await ExecuteQueryAsync(query));
+            return JArray.FromObject(await ExecuteQueryAsync(query).ConfigureAwait(false));
         }
 
         public async Task<bool> ExecuteNonQueryStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
@@ -534,9 +534,9 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = await ConnectAsync();
+                connection = await ConnectAsync().ConfigureAwait(false);
                 var cmd = CreateStoredProcedureCommand(connection, helper);
-                await cmd.ExecuteNonQueryAsync();
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
                 return true;
             }
             catch (MySqlException mySqlException)
@@ -567,9 +567,9 @@ namespace Tizsoft.Database
 
             try
             {
-                connection = await ConnectAsync();
+                connection = await ConnectAsync().ConfigureAwait(false);
                 var cmd = CreateStoredProcedureCommand(connection, helper);
-                dataReader = await cmd.ExecuteReaderAsync();
+                dataReader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
                 result = FetchSqlResultToList(dataReader);
             }
             catch (MySqlException mySqlException)
@@ -592,12 +592,12 @@ namespace Tizsoft.Database
 
         public async Task<JArray> ExecuteQueryJsonStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
         {
-            return JArray.FromObject(await ExecuteQueryStoredProcedureAsync(helper));
+            return JArray.FromObject(await ExecuteQueryStoredProcedureAsync(helper).ConfigureAwait(false));
         }
 
         public async Task<bool> CreateAsync(string table, List<string> columns, List<object> values)
         {
-            return await CreateOnDuplicateAsync(table, columns, values);
+            return await CreateOnDuplicateAsync(table, columns, values).ConfigureAwait(false);
         }
 
         public async Task<bool> CreateOnDuplicateAsync(string table, List<string> columns, List<object> values,
@@ -610,7 +610,7 @@ namespace Tizsoft.Database
                 return false;
 
             var queryString = BuildCreateOnDuplicateQueryString(table, columns, values, duplicateKeyClause);
-            return await ExecuteNonQueryCommandAsync(queryString);
+            return await ExecuteNonQueryCommandAsync(queryString).ConfigureAwait(false);
         }
 
         public bool Create(string table, List<string> columns, List<object> values)
@@ -633,7 +633,7 @@ namespace Tizsoft.Database
         public async Task<bool> MultiCreateAsync(string table, List<string> columns,
             List<List<object>> multiValueLists)
         {
-            return await MultiCreateOnDuplicateAsync(table, columns, multiValueLists);
+            return await MultiCreateOnDuplicateAsync(table, columns, multiValueLists).ConfigureAwait(false);
         }
 
         public async Task<bool> MultiCreateOnDuplicateAsync(string table, List<string> columns,
@@ -646,7 +646,7 @@ namespace Tizsoft.Database
                 return false;
 
             var queryString = BuildMultiCreateOnDuplicateQueryString(table, columns, multiValueLists, duplicateKeyClause);
-            return await ExecuteNonQueryCommandAsync(queryString);
+            return await ExecuteNonQueryCommandAsync(queryString).ConfigureAwait(false);
         }
 
         public bool MultiCreate(string table, List<string> columns, List<List<object>> multiValueLists)
@@ -675,7 +675,7 @@ namespace Tizsoft.Database
             }
 
             var queryString = BuildRequestJoinQueryString(tables, columns, BuildWhereClauseString(conditions));
-            return await ExecuteReaderCommandAsync(queryString, conditions);
+            return await ExecuteReaderCommandAsync(queryString, conditions).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -688,12 +688,12 @@ namespace Tizsoft.Database
         public async Task<JArray> RequestJsonAsync(string table, List<string> columns,
             params KeyValuePair<string, object>[] conditions)
         {
-            return JArray.FromObject(await RequestAsync(table, columns, conditions));
+            return JArray.FromObject(await RequestAsync(table, columns, conditions).ConfigureAwait(false));
         }
 
         public async Task<JArray> RequestJsonAsync(string table, List<string> columns, string conditions)
         {
-            return JArray.FromObject(await RequestAsync(table, columns, conditions));
+            return JArray.FromObject(await RequestAsync(table, columns, conditions).ConfigureAwait(false));
         }
 
         /// <summary>
@@ -709,7 +709,7 @@ namespace Tizsoft.Database
                 throw new Exception("Connection doesn't establish yet.");
 
             var queryString = BuildRequestQueryString(table, columns, BuildWhereClauseString(conditions));
-            return await ExecuteReaderCommandAsync(queryString, conditions);
+            return await ExecuteReaderCommandAsync(queryString, conditions).ConfigureAwait(false);
         }
 
         public async Task<List<Dictionary<string, object>>> RequestAsync(string table, List<string> columns, string conditions)
@@ -718,7 +718,7 @@ namespace Tizsoft.Database
                 throw new Exception("Connection doesn't establish yet.");
 
             var queryString = BuildRequestQueryString(table, columns, conditions);
-            return await ExecuteReaderCommandAsync(queryString);
+            return await ExecuteReaderCommandAsync(queryString).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -756,7 +756,7 @@ namespace Tizsoft.Database
                 return false;
 
             var queryString = BuildUpdateQueryString(table, columns, values, BuildWhereClauseString(conditions));
-            return await ExecuteNonQueryCommandAsync(queryString, conditions);
+            return await ExecuteNonQueryCommandAsync(queryString, conditions).ConfigureAwait(false);
         }
 
         public async Task<bool> UpdateAsync(string table, List<string> columns, List<object> values, string conditions)
@@ -768,7 +768,7 @@ namespace Tizsoft.Database
                 return false;
 
             var queryString = BuildUpdateQueryString(table, columns, values, conditions);
-            return await ExecuteNonQueryCommandAsync(queryString);
+            return await ExecuteNonQueryCommandAsync(queryString).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -820,7 +820,7 @@ namespace Tizsoft.Database
                 return false;
 
             var queryString = BuildDeleteQueryString(table, BuildWhereClauseString(conditions));
-            return await ExecuteNonQueryCommandAsync(queryString, conditions);
+            return await ExecuteNonQueryCommandAsync(queryString, conditions).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -839,7 +839,7 @@ namespace Tizsoft.Database
                 return false;
 
             var queryString = BuildDeleteQueryString(table, conditions);
-            return await ExecuteNonQueryCommandAsync(queryString);
+            return await ExecuteNonQueryCommandAsync(queryString).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -879,7 +879,7 @@ namespace Tizsoft.Database
                 throw new Exception("Connection doesn't establish yet.");
 
             var queryString = BuildCountQueryString(table, BuildWhereClauseString(conditions));
-            return await ExecuteScalarCommandAsync(queryString, conditions);
+            return await ExecuteScalarCommandAsync(queryString, conditions).ConfigureAwait(false);
         }
 
         public async Task<int> CountAsync(string table, string conditions)
@@ -888,7 +888,7 @@ namespace Tizsoft.Database
                 throw new Exception("Connection doesn't establish yet.");
 
             var queryString = BuildCountQueryString(table, conditions);
-            return await ExecuteScalarCommandAsync(queryString);
+            return await ExecuteScalarCommandAsync(queryString).ConfigureAwait(false);
         }
 
         public int Count(string table, params KeyValuePair<string, object>[] conditions)

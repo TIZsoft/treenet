@@ -11,6 +11,5 @@ namespace Tizsoft.Treenet.Interface
         Task UpdateAsync();
         void Stop();
         bool IsWorking { get; }
-        int RemainConnection { get; }
     }
 }

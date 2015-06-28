@@ -1,35 +1,19 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Tizsoft.Collections;
+using Tizsoft.Treenet.Factory;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
 {
     public class ListenService : IService, IConnectionSubject
     {
-        FixedSizeObjPool<IConnection> _connectionPool;
+        ConnectionFactory _connectionFactory;
         readonly BufferManager _receiveBufferManager = new BufferManager();
         readonly BufferManager _sendBufferManager = new BufferManager();
         readonly AsyncSocketListener _socketListener = new AsyncSocketListener();
         readonly IPacketContainer _packetContainer = new PacketContainer();
         readonly PacketHandler _packetHandler = new PacketHandler();
         readonly PacketSender _packetSender = new PacketSender();
-
-        void InitConnectionPool(ServerConfig config, IPacketContainer packetContainer, PacketProtocol packetProtocol)
-        {
-            _connectionPool = new FixedSizeObjPool<IConnection>(config.MaxConnections);
-
-            for (var i = 0; i < config.MaxConnections; ++i)
-            {
-                var connection = new Connection(_receiveBufferManager, packetContainer, _packetSender, config.MaxMessageSize)
-                {
-                    PacketProtocol = packetProtocol,
-                    DisconnectAfterSend = config.DisconnectAfterSend
-                };
-                connection.Register(_socketListener);
-                _connectionPool.Push(connection);
-            }
-        }
 
         public void AddParser(PacketType type, IPacketProcessor processor)
         {
@@ -56,12 +40,12 @@ namespace Tizsoft.Treenet
 
             var packetProtocol = new PacketProtocol(config.PacketProtocolSettings);
             _receiveBufferManager.InitBuffer(config.MaxConnections, config.BufferSize);
-            InitConnectionPool(config, _packetContainer, packetProtocol);
+            _connectionFactory = new ConnectionFactory(_receiveBufferManager, _packetContainer, _packetSender, packetProtocol, config.MaxMessageSize);
             var sendConnectionCount = Math.Max(1, config.MaxConnections / 10);
             _sendBufferManager.InitBuffer(sendConnectionCount, config.BufferSize);
             _packetSender.Setup(_sendBufferManager, sendConnectionCount);
             _packetSender.PacketProtocol = packetProtocol;
-            _socketListener.Setup(config, _connectionPool);
+            _socketListener.Setup(config, _connectionFactory);
         }
 
         public void Update()
@@ -89,11 +73,6 @@ namespace Tizsoft.Treenet
 
         public bool IsWorking { get; private set; }
 
-        public int RemainConnection
-        {
-            get { return _connectionPool.Count; }
-        }
-
         #endregion
 
         #region IConnectionSubject Members
@@ -112,6 +91,8 @@ namespace Tizsoft.Treenet
         {
             _socketListener.Notify(connection, isConnected);
         }
+
+        public int Count { get { return _socketListener.Count; } }
 
         #endregion
     }

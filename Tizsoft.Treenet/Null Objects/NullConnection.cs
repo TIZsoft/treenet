@@ -39,6 +39,8 @@ namespace Tizsoft.Treenet
             
         }
 
+        public int Count { get { return 0; } }
+
         public void SetConnection(Socket socket)
         {
 

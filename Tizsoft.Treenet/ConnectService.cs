@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Tizsoft.Collections;
+using Tizsoft.Treenet.Factory;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -8,29 +8,17 @@ namespace Tizsoft.Treenet
     /// <summary>
     /// support "only 1" connection
     /// </summary>
-    public class ConnectService : IService, IConnectionSubject
+    public class ConnectService : IService, IConnectionSubject, IConnectionObserver
     {
-        Connection _connection;
+        IConnection _connection;
         ClientConfig _config;
-        FixedSizeObjPool<IConnection> _connectionPool;
+        ConnectionFactory _connectionFactory;
         readonly AsyncSocketConnector _connector = new AsyncSocketConnector();
         readonly BufferManager _receiveBufferManager = new BufferManager();
         readonly BufferManager _sendBufferManager = new BufferManager();
         readonly IPacketContainer _packetContainer = new PacketContainer();
         readonly PacketHandler _packetHandler = new PacketHandler();
         readonly PacketSender _packetSender = new PacketSender();
-
-        void InitConnectionPool(PacketProtocol packetProtocol)
-        {
-            _connection = new Connection(_receiveBufferManager, _packetContainer, _packetSender, _config.MaxMessageSize)
-            {
-                PacketProtocol = packetProtocol,
-                DisconnectAfterSend = _config.DisconnectAfterSend
-            };
-            _connection.Register(_connector);
-            _connectionPool = new FixedSizeObjPool<IConnection>(1);
-            _connectionPool.Push(_connection);
-        }
 
         public void Send(byte[] contents, PacketType packetType)
         {
@@ -60,10 +48,11 @@ namespace Tizsoft.Treenet
             var packetProtocol = new PacketProtocol(_config.PacketProtocolSettings);
             _receiveBufferManager.InitBuffer(1, _config.BufferSize);
             _sendBufferManager.InitBuffer(1, _config.BufferSize);
-            InitConnectionPool(packetProtocol);
+            _connectionFactory = new ConnectionFactory(_receiveBufferManager, _packetContainer, _packetSender, packetProtocol, _config.MaxMessageSize);
             _packetSender.Setup(_sendBufferManager, 1);
             _packetSender.PacketProtocol = packetProtocol;
-            _connector.Setup(_config, _connectionPool);
+            _connector.Setup(_config, _connectionFactory);
+            _connector.Register(this);
         }
 
         public void Update()
@@ -86,13 +75,12 @@ namespace Tizsoft.Treenet
         {
             _connection.Dispose();
             _connector.Stop();
+            _connector.Unregister(this);
             _packetContainer.Clear();
             IsWorking = false;
         }
 
         public bool IsWorking { get; private set; }
-
-        public int RemainConnection { get { return _connectionPool.Count; } }
 
         #endregion
 
@@ -113,6 +101,14 @@ namespace Tizsoft.Treenet
             _connector.Notify(connection, isConnected);
         }
 
+        public int Count { get { return _connector.Count; } }
+
         #endregion
+
+        public void GetConnectionEvent(IConnection connection, bool isConnected)
+        {
+            if (isConnected)
+                _connection = connection;
+        }
     }
 }

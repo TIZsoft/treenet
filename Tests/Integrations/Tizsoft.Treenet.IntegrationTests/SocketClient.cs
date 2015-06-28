@@ -48,7 +48,7 @@ namespace Tizsoft.Treenet.IntegrationTests
             connectionPool.Push(_connection);
 
             _connector.Register(this);
-            _connector.Setup(config, connectionPool);
+            //_connector.Setup(config, connectionPool);
         }
 
         ~SocketClient()

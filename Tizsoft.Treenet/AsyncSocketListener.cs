@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
-using Tizsoft.Collections;
 using Tizsoft.Log;
+using Tizsoft.Treenet.Factory;
 using Tizsoft.Treenet.Interface;
 using Timer = System.Timers.Timer;
 
@@ -20,11 +20,9 @@ namespace Tizsoft.Treenet
         Semaphore _maxNumberAcceptedClients;
 
         // Used to do asynchronous accept operation.
-        SocketAsyncEventArgs _asyncAcceptOperation;
-
         readonly ConcurrentStack<SocketAsyncEventArgs> _asyncAcceptArgs = new ConcurrentStack<SocketAsyncEventArgs>();
         ServerConfig _config;
-        FixedSizeObjPool<IConnection> _connectionPool;
+        ConnectionFactory _connectionFactory;
         Timer _heartBeatTimer;
 
         readonly ConcurrentDictionary<IConnectionObserver, object> _observers = new ConcurrentDictionary<IConnectionObserver, object>();
@@ -67,7 +65,7 @@ namespace Tizsoft.Treenet
         {
             if (acceptOperation.SocketError == SocketError.Success)
             {
-                if (_connectionPool.Count <= 0)
+                if (_workingConnections.Count >= _config.MaxConnections)
                 {
                     GLogger.Warn("連線數已達上限!");
                     CloseAcceptSocket(acceptOperation);
@@ -75,10 +73,21 @@ namespace Tizsoft.Treenet
                 }
 
                 var newConnection = CreateNewConnection(acceptOperation.AcceptSocket);
+
+                if (newConnection.IsNull)
+                {
+                    GLogger.Warn("無法建立連線!");
+                    CloseAcceptSocket(acceptOperation);
+                    _maxNumberAcceptedClients.Release();
+                    _asyncAcceptArgs.Push(acceptOperation);
+                    StartAccept();
+                    return;
+                }
+
                 _workingConnections.TryAdd(newConnection, acceptOperation.UserToken);
                 GLogger.Debug("IP: {0} 已連線", newConnection.DestAddress);
                 GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
-                GLogger.Debug("可連線數: {0}", _connectionPool.Count);
+                GLogger.Debug("可連線數: {0}", _config.MaxConnections - _workingConnections.Count);
                 Notify(newConnection, true);
             }
             else
@@ -101,8 +110,9 @@ namespace Tizsoft.Treenet
 
         IConnection CreateNewConnection(Socket socket)
         {
-            var connection = _connectionPool.Pop();
+            var connection = _connectionFactory.NewConnection();
             connection.SetConnection(socket);
+            connection.Register(this);
             return connection;
         }
 
@@ -129,7 +139,6 @@ namespace Tizsoft.Treenet
             {
                 try
                 {
-                    //args.Completed -= OnAsyncAcceptCompleted;
                     if (args.AcceptSocket != null && args.AcceptSocket.Connected)
                         args.AcceptSocket.Shutdown(SocketShutdown.Both);
                 }
@@ -190,37 +199,6 @@ namespace Tizsoft.Treenet
             _asyncAcceptArgs.Clear();
         }
 
-        void CloseAsyncAcceptOperation()
-        {
-            if (_asyncAcceptOperation == null)
-            {
-                return;
-            }
-
-            try
-            {
-                if (_asyncAcceptOperation.AcceptSocket != null &&
-                    _asyncAcceptOperation.AcceptSocket.Connected)
-                {
-                    _asyncAcceptOperation.AcceptSocket.Shutdown(SocketShutdown.Both);
-                }
-            }
-            catch (Exception exception)
-            {
-                GLogger.Error(exception);
-            }
-            finally
-            {
-                if (_asyncAcceptOperation.AcceptSocket != null)
-                {
-                    _asyncAcceptOperation.AcceptSocket.Close();
-                }
-
-                _asyncAcceptOperation.Dispose();
-                _asyncAcceptOperation = null;
-            }
-        }
-
         void CloseListenSocket()
         {
             if (_listenSocket == null)
@@ -234,16 +212,17 @@ namespace Tizsoft.Treenet
             _listenSocket = null;
         }
 
-        public void Setup(ServerConfig config, FixedSizeObjPool<IConnection> connectionPool)
+        //public void Setup(ServerConfig config, FixedSizeObjPool<IConnection> connectionPool)
+        public void Setup(ServerConfig config, ConnectionFactory connectionFactory)
         {
             if (config == null)
             {
                 throw new ArgumentNullException("config");
             }
 
-            if (connectionPool == null)
+            if (connectionFactory == null)
             {
-                throw new ArgumentNullException("connectionPool");
+                throw new ArgumentNullException("connectionFactory");
             }
 
             if (_listenSocket != null)
@@ -252,7 +231,7 @@ namespace Tizsoft.Treenet
             }
 
             _config = config;
-            _connectionPool = connectionPool;
+            _connectionFactory = connectionFactory;
             InitAsyncAccept(_config);
             _maxNumberAcceptedClients = new Semaphore(config.MaxConnections, config.MaxConnections);
 
@@ -326,7 +305,6 @@ namespace Tizsoft.Treenet
         {
             CloseListenSocket();
             CloseAllAsyncAccept();
-            //CloseAsyncAcceptOperation();
             CloseSemaphore();
         }
 
@@ -346,11 +324,6 @@ namespace Tizsoft.Treenet
             _observers.TryRemove(observer, out storedValue);
         }
 
-        //void RemoveNullObservers()
-        //{
-        //    _observers.ke(observer => observer == null);
-        //}
-
         public void Notify(IConnection connection, bool isConnected)
         {
             if (connection == null)
@@ -361,6 +334,8 @@ namespace Tizsoft.Treenet
                 observer.Key.GetConnectionEvent(connection, isConnected);
             }
         }
+
+        public int Count { get { return _workingConnections.Count; } }
 
         #endregion
 
@@ -375,15 +350,14 @@ namespace Tizsoft.Treenet
             {
                 object storedValue;
                 _workingConnections.TryRemove(connection, out storedValue);
-                _connectionPool.Push(connection);    
             }
 
             if (_maxNumberAcceptedClients != null)
                 _maxNumberAcceptedClients.Release();
 
             GLogger.Debug("IP: {0} 已斷線", connection.DestAddress);
-            GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
-            GLogger.Debug("可連線數: {0}", _connectionPool.Count);
+            GLogger.Debug("目前連線數: {0}", Count);
+            GLogger.Debug("可連線數: {0}", _config.MaxConnections - Count);
             Notify(connection, false);
         }
 

@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="ClientConfig.cs" />
     <Compile Include="ConnectService.cs" />
+    <Compile Include="Factory\ConnectionFactory.cs" />
     <Compile Include="Interface\IConnection.cs" />
     <Compile Include="Interface\IService.cs" />
     <Compile Include="Interface\IPacket.cs" />

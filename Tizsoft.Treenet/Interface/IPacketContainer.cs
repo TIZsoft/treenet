@@ -10,8 +10,6 @@
 
         void Clear();
 
-        void ClearDisconnectedPacket(IConnection connection);
-
         IPacket NextPacket();
     }
 }

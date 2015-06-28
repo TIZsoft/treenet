@@ -29,6 +29,8 @@ namespace Tizsoft.Treenet
 
         public PacketProtocol PacketProtocol { get; set; }
 
+        public object UserToken { get; set; }
+
         public double IdleTime { get; set; }
 
         void OnAsyncReceiveCompleted(object sender, SocketAsyncEventArgs socketOperation)
@@ -134,8 +136,6 @@ namespace Tizsoft.Treenet
 
             _bufferManager = bufferManager;
             DestAddress = string.Empty;
-            //_socketOperation = new SocketAsyncEventArgs();
-            //_bufferManager.SetBuffer(_socketOperation);
             _packetContainer = packetContainer;
             _packetSender = packetSender;
             _messageFraming = new MessageFraming(maxMessageSize);
@@ -148,9 +148,6 @@ namespace Tizsoft.Treenet
             {
                 throw new InvalidOperationException("PacketProtocol is null.");
             }
-
-            if (!IsActive)
-                return;
 
             // TODO: Reuse packets.
             IPacket packet;
@@ -215,7 +212,6 @@ namespace Tizsoft.Treenet
                 IsActive = false;
                 IdleTime = 0;
                 _messageFraming.Clear();
-                _packetContainer.ClearDisconnectedPacket(this);
                 CloseConnectSocket();
                 FreeSocketAsyncOperation();
                 Notify(this, false);
@@ -246,6 +242,8 @@ namespace Tizsoft.Treenet
                 observer.GetConnectionEvent(connection, isConnected);
             }
         }
+
+        public int Count { get { return 1; } }
 
         #endregion
     }

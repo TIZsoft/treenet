@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
-using Tizsoft.Collections;
 using Tizsoft.Log;
+using Tizsoft.Treenet.Factory;
 using Tizsoft.Treenet.Interface;
 
 namespace Tizsoft.Treenet
@@ -12,7 +12,7 @@ namespace Tizsoft.Treenet
         readonly HashSet<IConnectionObserver> _connectionObservers = new HashSet<IConnectionObserver>();
         readonly List<IConnection> _workingConnections = new List<IConnection>();
         SocketAsyncEventArgs _connectOperation;
-        FixedSizeObjPool<IConnection> _connectionPool;
+        ConnectionFactory _connectionFactory;
         ClientConfig _clientConfig;
 
         void OnConnectCompleted(object sender, SocketAsyncEventArgs socketOperation)
@@ -27,8 +27,9 @@ namespace Tizsoft.Treenet
 
         IConnection CreateNewConnection(Socket socket)
         {
-            var connection = _connectionPool.Pop();
+            var connection = _connectionFactory.NewConnection();
             connection.SetConnection(socket);
+            connection.Register(this);
             return connection;
         }
 
@@ -39,16 +40,25 @@ namespace Tizsoft.Treenet
             switch (connectOperation.SocketError)
             {
                 case SocketError.Success:
-                    if (_connectionPool.Count <= 0)
+                    if (_workingConnections.Count > 0)
                     {
                         GLogger.Warn("連線數已達上限!");
                         return;
                     }
 
                     newConnection = CreateNewConnection(connectOperation.AcceptSocket);
+
+                    if (newConnection.IsNull)
+                    {
+                        GLogger.Warn("未達連線數但無法建立連線!");
+                        connectOperation.Dispose();
+                        Notify(newConnection, false);
+                        return;
+                    }
+
                     _workingConnections.Add(newConnection);
                     GLogger.Debug("IP: {0} 已連線", newConnection.DestAddress);
-                    GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+                    GLogger.Debug("目前連線數: {0}", Count);
                     break;
 
                 default:
@@ -85,15 +95,17 @@ namespace Tizsoft.Treenet
             ProcessConnect(_connectOperation);
         }
 
-        public void Setup(EventArgs configArgs, FixedSizeObjPool<IConnection> connectionPool)
+        public void Setup(EventArgs configArgs, ConnectionFactory connectionFactory)
         {
             _clientConfig = (ClientConfig) configArgs;
 
             if (_clientConfig == null)
                 throw new InvalidCastException("config");
 
-            _connectionPool = connectionPool;
-            //InitConnectOperation(_clientConfig);
+            if (connectionFactory == null)
+                throw new ArgumentNullException("connectionFactory");
+
+            _connectionFactory = connectionFactory;
         }
 
         public void Stop()
@@ -142,6 +154,8 @@ namespace Tizsoft.Treenet
                 connectionObserver.GetConnectionEvent(connection, isConnected);
         }
 
+        public int Count { get { return _workingConnections.Count; } }
+
         #endregion
 
         #region IConnectionObserver Members
@@ -153,13 +167,10 @@ namespace Tizsoft.Treenet
 
             FreeConnectComponent();
             if (!connection.IsNull)
-            {
                 _workingConnections.Remove(connection);
-                _connectionPool.Push(connection);
-            }
 
             GLogger.Debug("IP: {0} 已斷線", connection.DestAddress);
-            GLogger.Debug("目前連線數: {0}", _workingConnections.Count);
+            GLogger.Debug("目前連線數: {0}", Count);
             Notify(connection, false);
         }
 

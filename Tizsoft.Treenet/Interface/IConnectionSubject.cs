@@ -7,5 +7,7 @@
         void Unregister(IConnectionObserver observer);
 
         void Notify(IConnection connection, bool isConnected);
+
+        int Count { get; }
     }
 }
