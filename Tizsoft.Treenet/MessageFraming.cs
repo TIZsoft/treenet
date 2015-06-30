@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using Tizsoft.Log;
 
 namespace Tizsoft.Treenet
 {
@@ -231,18 +232,24 @@ namespace Tizsoft.Treenet
                     // Sanity check for length < 0.
                     if (length < 0)
                     {
-                        throw new ProtocolViolationException("Message length is less than zero");
+                        //throw new ProtocolViolationException("Message length is less than zero");
+                        GLogger.Error("Message length is less than zero");
+                        return;
                     }
 
                     // Another sanity check is needed here for very large packets, to prevent denial-of-service attacks.
                     if (_maxMessageSize > 0 &&
                         length > _maxMessageSize)
                     {
-                        throw new ProtocolViolationException(string.Format(
-                            "Message length {0} is  larger than maximum message size {1}.",
+                        //throw new ProtocolViolationException(string.Format(
+                        //    "Message length {0} is  larger than maximum message size {1}.",
+                        //    length.ToString(CultureInfo.InvariantCulture),
+                        //    _maxMessageSize.ToString(CultureInfo.InvariantCulture))
+                        //);
+                        GLogger.Error("Message length {0} is  larger than maximum message size {1}.",
                             length.ToString(CultureInfo.InvariantCulture),
-                            _maxMessageSize.ToString(CultureInfo.InvariantCulture))
-                        );
+                            _maxMessageSize.ToString(CultureInfo.InvariantCulture));
+                        return;
                     }
 
                     // Zero-length packets are allowed as keepalives.
