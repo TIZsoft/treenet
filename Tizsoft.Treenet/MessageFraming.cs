@@ -114,7 +114,9 @@ namespace Tizsoft.Treenet
         {
             if (message == null)
             {
-                throw new ArgumentNullException("message");
+                //throw new ArgumentNullException("message");
+                GLogger.Error("ArgumentNullException: message");
+                return null;
             }
 
             // Get the length prefix for the message.
@@ -153,7 +155,9 @@ namespace Tizsoft.Treenet
         {
             if (data == null)
             {
-                throw new ArgumentNullException("data");
+                //throw new ArgumentNullException("data");
+                GLogger.Error("ArgumentNullException: data");
+                return;
             }
 
             // Process the incoming data in chunks, as the ReadCompleted requests it.
