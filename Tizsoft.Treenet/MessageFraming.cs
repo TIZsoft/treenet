@@ -237,7 +237,7 @@ namespace Tizsoft.Treenet
                     if (length < 0)
                     {
                         //throw new ProtocolViolationException("Message length is less than zero");
-                        GLogger.Error("Message length is less than zero");
+                        //GLogger.Error("Message length is less than zero");
                         return;
                     }
 
@@ -250,9 +250,9 @@ namespace Tizsoft.Treenet
                         //    length.ToString(CultureInfo.InvariantCulture),
                         //    _maxMessageSize.ToString(CultureInfo.InvariantCulture))
                         //);
-                        GLogger.Error("Message length {0} is  larger than maximum message size {1}.",
-                            length.ToString(CultureInfo.InvariantCulture),
-                            _maxMessageSize.ToString(CultureInfo.InvariantCulture));
+                        //GLogger.Error("Message length {0} is  larger than maximum message size {1}.",
+                        //    length.ToString(CultureInfo.InvariantCulture),
+                        //    _maxMessageSize.ToString(CultureInfo.InvariantCulture));
                         return;
                     }
 
