@@ -149,6 +149,13 @@ namespace Tizsoft.Treenet
                 throw new InvalidOperationException("PacketProtocol is null.");
             }
 
+            // Invalid message.
+            if (e.ErrorCode != MessageFramingErrorCode.None)
+            {
+                Dispose();
+                return;
+            }
+
             // TODO: Reuse packets.
             IPacket packet;
             if (PacketProtocol.TryParsePacket(e.Message, out packet))

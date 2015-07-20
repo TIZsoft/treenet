@@ -179,7 +179,7 @@ namespace Tizsoft.Treenet.Tests
         }
 
         // TODO: Remove duplicated code.
-        public IEnumerable<DataReceivedCaseSource> TestTestDataReceiveCaseSources()
+        public IEnumerable<DataReceivedCaseSource> TestDataReceiveCaseSources()
         {
             const int maxMessageSize = 4 * 1024 * 1024;
             const int receiveBufferSize = 512;
@@ -402,7 +402,7 @@ namespace Tizsoft.Treenet.Tests
         
         // Precondition: WrapMessage must be correct.
         // Timeout is dependent on device.
-        [TestCaseSource("TestTestDataReceiveCaseSources")]
+        [TestCaseSource("TestDataReceiveCaseSources")]
         [Timeout(120000)]
         public void TestDataReceive(DataReceivedCaseSource caseSource)
         {
@@ -425,6 +425,8 @@ namespace Tizsoft.Treenet.Tests
             var txPos = 0L;
             messageFraming.MessageArrived += (sender, args) =>
             {
+                Assert.AreEqual(MessageFramingErrorCode.None, args.ErrorCode);
+
                 // Compare TX RX
                 using (var txFile = new FileStream(txFileName, FileMode.Open, FileAccess.Read))
                 using (var txReader = new BinaryReader(txFile))
@@ -478,6 +480,35 @@ namespace Tizsoft.Treenet.Tests
 
                 spin.SpinOnce();
             }
+        }
+
+        public class TestInvalidMessageCaseSource
+        {
+            public int MessageSize { get; set; }
+
+            public int? TestSize { get; set; }
+
+            public byte[] BuildTestData()
+            {
+                return TestSize.HasValue ? MessageFraming.WrapMessage(new byte[TestSize.Value]) : null;
+            }
+        }
+
+        public IEnumerable<TestInvalidMessageCaseSource> TestInvalidMessageCaseSources()
+        {
+            yield return new TestInvalidMessageCaseSource
+            {
+                MessageSize = 32,
+                TestSize = 33
+            };
+        }
+
+        [TestCaseSource("TestInvalidMessageCaseSources")]
+        public void TestInvalidMessage(TestInvalidMessageCaseSource caseSource)
+        {
+            var messageFraming = new MessageFraming(caseSource.MessageSize);
+            messageFraming.MessageArrived += (sender, args) => Assert.AreNotEqual(MessageFramingErrorCode.None, args.ErrorCode);
+            messageFraming.DataReceived(caseSource.BuildTestData());
         }
     }
 }

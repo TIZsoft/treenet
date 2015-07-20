@@ -74,6 +74,7 @@
     <Compile Include="Interface\IService.cs" />
     <Compile Include="Interface\IPacket.cs" />
     <Compile Include="MessageArrivedEventArgs.cs" />
+    <Compile Include="MessageFramingErrorCode.cs" />
     <Compile Include="Null Objects\NullConnection.cs" />
     <Compile Include="Null Objects\NullPacket.cs" />
     <Compile Include="PacketFlags.cs" />

@@ -149,23 +149,30 @@ namespace Tizsoft.Treenet
             byte[] message;
             if (PacketProtocol.TryWrapPacket(packet, out message))
             {
-                message = MessageFraming.WrapMessage(message);
-
-                var splitedMessages = Utils.SplitArray(message, _segmentSize);
-                foreach (var splitedMessage in splitedMessages)
+                try
                 {
-                    var operand = new SendOperand
+                    message = MessageFraming.WrapMessage(message);
+
+                    var splitedMessages = Utils.SplitArray(message, _segmentSize);
+                    foreach (var splitedMessage in splitedMessages)
                     {
-                        Connection = packet.Connection,
-                        Message = splitedMessage
-                    };
-                    _sendQueue.Enqueue(operand);
-                }
+                        var operand = new SendOperand
+                        {
+                            Connection = packet.Connection,
+                            Message = splitedMessage
+                        };
+                        _sendQueue.Enqueue(operand);
+                    }
 
-                SocketAsyncEventArgs sendOperation;
-                if (_asyncSendOpPool.TryPop(out sendOperation))
+                    SocketAsyncEventArgs sendOperation;
+                    if (_asyncSendOpPool.TryPop(out sendOperation))
+                    {
+                        StartSend(sendOperation);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    StartSend(sendOperation);
+                    GLogger.Debug(ex);
                 }
             }
             else

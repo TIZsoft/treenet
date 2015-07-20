@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Globalization;
-using System.Net;
 using Tizsoft.Log;
 
 namespace Tizsoft.Treenet
@@ -39,7 +37,7 @@ namespace Tizsoft.Treenet
     {
         static readonly byte[] KeepaliveMessage = new byte[0];
 
-        static readonly MessageArrivedEventArgs KeepaliveEventArgs = new MessageArrivedEventArgs(KeepaliveMessage);
+        static readonly MessageArrivedEventArgs KeepaliveEventArgs = new MessageArrivedEventArgs(MessageFramingErrorCode.None, KeepaliveMessage);
 
         /// <summary>
         /// The maximum size of messages allowed.
@@ -114,9 +112,7 @@ namespace Tizsoft.Treenet
         {
             if (message == null)
             {
-                //throw new ArgumentNullException("message");
-                GLogger.Error("ArgumentNullException: message");
-                return null;
+                throw new ArgumentNullException("message");
             }
 
             // Get the length prefix for the message.
@@ -182,7 +178,10 @@ namespace Tizsoft.Treenet
                     i += bytesTransferred;
 
                     // Notify "read completion".
-                    ReadCompleted(bytesTransferred);
+                    if (!ReadCompleted(bytesTransferred))
+                    {
+                        break;
+                    }
                 }
                 else
                 {
@@ -196,11 +195,12 @@ namespace Tizsoft.Treenet
                     i += bytesTransferred;
 
                     // Notify "read completion".
-                    ReadCompleted(bytesTransferred);
+                    if (!ReadCompleted(bytesTransferred))
+                    {
+                        break;
+                    }
                 }
             }
-
-            Debug.Assert(i == data.Length);
         }
 
         public void Clear()
@@ -214,7 +214,8 @@ namespace Tizsoft.Treenet
         /// </summary>
         /// <param name="count">The number of bytes read.</param>
         /// <exception cref="System.Net.ProtocolViolationException">If the data received is not a properly-formed message.</exception>
-        void ReadCompleted(int count)
+        /// <returns>Is success?</returns>
+        bool ReadCompleted(int count)
         {
             Debug.Assert(count >= 0);
 
@@ -236,24 +237,18 @@ namespace Tizsoft.Treenet
                     // Sanity check for length < 0.
                     if (length < 0)
                     {
-                        //throw new ProtocolViolationException("Message length is less than zero");
-                        //GLogger.Error("Message length is less than zero");
-                        return;
+                        Clear();
+                        OnMessageArrived(new MessageArrivedEventArgs(MessageFramingErrorCode.ProtocolInvalid, null));
+                        return false;
                     }
 
                     // Another sanity check is needed here for very large packets, to prevent denial-of-service attacks.
                     if (_maxMessageSize > 0 &&
                         length > _maxMessageSize)
                     {
-                        //throw new ProtocolViolationException(string.Format(
-                        //    "Message length {0} is  larger than maximum message size {1}.",
-                        //    length.ToString(CultureInfo.InvariantCulture),
-                        //    _maxMessageSize.ToString(CultureInfo.InvariantCulture))
-                        //);
-                        //GLogger.Error("Message length {0} is  larger than maximum message size {1}.",
-                        //    length.ToString(CultureInfo.InvariantCulture),
-                        //    _maxMessageSize.ToString(CultureInfo.InvariantCulture));
-                        return;
+                        Clear();
+                        OnMessageArrived(new MessageArrivedEventArgs(MessageFramingErrorCode.ProtocolInvalid, null));
+                        return false;
                     }
 
                     // Zero-length packets are allowed as keepalives.
@@ -279,13 +274,14 @@ namespace Tizsoft.Treenet
                 else
                 {
                     // We've gotten an entire packet
-                    OnMessageArrived(new MessageArrivedEventArgs(_dataBuffer));
+                    OnMessageArrived(new MessageArrivedEventArgs(MessageFramingErrorCode.None, _dataBuffer));
                     
                     // Start reading the length buffer again.
-                    _dataBuffer = null;
-                    _bytesReceived = 0;
+                    Clear();
                 }
             }
+
+            return true;
         }
 
         void OnMessageArrived(MessageArrivedEventArgs e)
