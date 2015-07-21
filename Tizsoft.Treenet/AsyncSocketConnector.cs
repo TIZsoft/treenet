@@ -28,9 +28,17 @@ namespace Tizsoft.Treenet
         IConnection CreateNewConnection(Socket socket)
         {
             var connection = _connectionFactory.NewConnection();
-            connection.SetConnection(socket);
-            connection.Register(this);
-            return connection;
+            try
+            {
+                connection.SetConnection(socket);
+                connection.Register(this);
+                return connection;
+            }
+            catch (Exception exception)
+            {
+                GLogger.Error(exception);
+                return Connection.Null;
+            }
         }
 
         void ProcessConnect(SocketAsyncEventArgs connectOperation)

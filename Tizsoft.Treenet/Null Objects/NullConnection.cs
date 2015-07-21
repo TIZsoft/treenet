@@ -43,7 +43,6 @@ namespace Tizsoft.Treenet
 
         public void SetConnection(Socket socket)
         {
-
         }
 
         public void Send(byte[] content, PacketType packetType)
