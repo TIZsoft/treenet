@@ -77,6 +77,9 @@ namespace Tizsoft.Treenet
 
         void StartReceive()
         {
+            if (ConnectSocket == null || !IsActive)
+                return;
+
             var willRaiseEvent = ConnectSocket.ReceiveAsync(_socketOperation);
 
             if (willRaiseEvent)
