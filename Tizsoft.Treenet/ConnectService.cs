@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Tizsoft.Treenet.Factory;
 using Tizsoft.Treenet.Interface;
@@ -73,7 +74,11 @@ namespace Tizsoft.Treenet
 
         public void Stop()
         {
-            _connection.Dispose();
+            if (_connection != null)
+            {
+                _connection.Dispose();
+            }
+
             _connector.Stop();
             _connector.Unregister(this);
             _packetContainer.Clear();
@@ -108,7 +113,9 @@ namespace Tizsoft.Treenet
         public void GetConnectionEvent(IConnection connection, bool isConnected)
         {
             if (isConnected)
+            {
                 _connection = connection;
+            }
         }
     }
 }
