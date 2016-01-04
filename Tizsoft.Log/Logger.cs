@@ -1,6 +1,6 @@
 ﻿using NLog;
 using NLog.Config;
-using NLog.Targets;
+using NLog.Windows.Forms;
 
 namespace Tizsoft.Log
 {
@@ -29,10 +29,6 @@ namespace Tizsoft.Log
             var rule = new LoggingRule("*", LogLevel.Info, target);
             config.LoggingRules.Add(rule);
             return config;
-
-            // using config like below: 
-            //_logger = LogManager.GetCurrentClassLogger();
-            //_logger.Debug("using programmatic config");
         }
 
         public static void Trace(string msg)

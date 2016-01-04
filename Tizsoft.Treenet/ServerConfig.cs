@@ -88,7 +88,7 @@ namespace Tizsoft.Treenet
 
         static string ConfigFullPath(string appPath)
         {
-            return string.Format(@"{0}\{1}", appPath, ConfigFilename);
+            return $@"{appPath}\{ConfigFilename}";
         }
 
         public ServerConfig()

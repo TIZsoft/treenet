@@ -16,7 +16,7 @@ namespace Tizsoft.Database
     {
         readonly string _connectionString;
 
-        static async void DisconnectAsync(MySqlConnection connection)
+        static async Task DisconnectAsync(MySqlConnection connection)
         {
             if (connection != null)
                 await connection.CloseAsync().ConfigureAwait(false);
@@ -30,7 +30,7 @@ namespace Tizsoft.Database
 
         #region build mysql query string
 
-        string BuildCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string duplicateKeyClause)
+        static string BuildCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string duplicateKeyClause)
         {
             var builder = new StringBuilder();
             builder.AppendFormat("INSERT INTO `{0}` (", table);
@@ -57,7 +57,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildMultiCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<List<object>> multiValueLists, string duplicateKeyClause)
+        static string BuildMultiCreateOnDuplicateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<List<object>> multiValueLists, string duplicateKeyClause)
         {
             var builder = new StringBuilder();
             builder.AppendFormat("INSERT INTO `{0}` (", table);
@@ -95,7 +95,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildRequestQueryString(string table, IReadOnlyList<string> columns, string conditions)
+        static string BuildRequestQueryString(string table, IReadOnlyList<string> columns, string conditions)
         {
             var builder = new StringBuilder();
             builder.Append("SELECT ");
@@ -122,7 +122,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildRequestJoinQueryString(IReadOnlyList<string> tables, IReadOnlyList<string> columns, string conditions)
+        static string BuildRequestJoinQueryString(IReadOnlyList<string> tables, IReadOnlyList<string> columns, string conditions)
         {
             var builder = new StringBuilder();
 
@@ -156,7 +156,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildUpdateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string conditions)
+        static string BuildUpdateQueryString(string table, IReadOnlyList<string> columns, IReadOnlyList<object> values, string conditions)
         {
             var builder = new StringBuilder();
             builder.AppendFormat("UPDATE `{0}` SET ", table);
@@ -177,7 +177,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildDeleteQueryString(string table, string conditions)
+        static string BuildDeleteQueryString(string table, string conditions)
         {
             var builder = new StringBuilder();
             builder.AppendFormat("DELETE FROM `{0}` ", table);
@@ -194,7 +194,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildCountQueryString(string table, string conditions)
+        static string BuildCountQueryString(string table, string conditions)
         {
             var builder = new StringBuilder();
             builder.AppendFormat("SELECT COUNT(*) FROM {0} ", table);
@@ -211,7 +211,7 @@ namespace Tizsoft.Database
             return result;
         }
 
-        string BuildWhereClauseString(params KeyValuePair<string, object>[] whereClauses)
+        static string BuildWhereClauseString(params KeyValuePair<string, object>[] whereClauses)
         {
             if (whereClauses.Length <= 0) 
                 return string.Empty;
@@ -219,7 +219,7 @@ namespace Tizsoft.Database
             var builder = new StringBuilder();
             builder.Append("WHERE ");
             builder.Append(string.Join(" AND ",
-                whereClauses.Select(pair => string.Format("{0}=@{0}", pair.Key))));
+                whereClauses.Select(pair => $"{pair.Key}=@{pair.Key}")));
 
             var result = builder.ToString();
             return result;
@@ -342,7 +342,7 @@ namespace Tizsoft.Database
             }
             finally
             {
-                Disconnect(connection);
+                await DisconnectAsync(connection).ConfigureAwait(false);
             }
         }
 
@@ -369,7 +369,7 @@ namespace Tizsoft.Database
             }
             finally
             {
-                Disconnect(connection);
+                await DisconnectAsync(connection).ConfigureAwait(false);
             }
         }
 
@@ -399,7 +399,7 @@ namespace Tizsoft.Database
             {
                 if (dataReader != null)
                     dataReader.Close();
-                Disconnect(connection);
+                await DisconnectAsync(connection).ConfigureAwait(false);
             }
 
             return result;
@@ -417,8 +417,8 @@ namespace Tizsoft.Database
             if (config == null)
                 throw new InvalidCastException("configArgs");
 
-            _connectionString = string.Format("server={0};port={1};uid={2};pwd={3};database={4};Charset=utf8;ConvertZeroDateTime=true;{5}",
-                    config.HostName, config.Port, config.UserName, config.Password, config.DataBase, config.Option);
+            _connectionString =
+                $"server={config.HostName};port={config.Port};uid={config.UserName};pwd={config.Password};database={config.DataBase};Charset=utf8;ConvertZeroDateTime=true;{config.Option}";
         }
 
         async Task<MySqlConnection> ConnectAsync()
@@ -465,7 +465,7 @@ namespace Tizsoft.Database
         {
             var cmd = new MySqlCommand(helper.Function, connection) {CommandType = CommandType.StoredProcedure};
             foreach (var parameter in helper.Parameters())
-                cmd.Parameters.AddWithValue(string.Format("@{0}", parameter.Key), parameter.Value);
+                cmd.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
             return cmd;
         }
 
@@ -478,7 +478,7 @@ namespace Tizsoft.Database
                 return cmd;
 
             foreach (var parameter in parameters)
-                cmd.Parameters.AddWithValue(string.Format("@{0}", parameter.Key), parameter.Value);
+                cmd.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
 
             return cmd;
         }
@@ -522,7 +522,8 @@ namespace Tizsoft.Database
 
         public async Task<JArray> ExecuteQueryJsonAsync(string query)
         {
-            return JArray.FromObject(await ExecuteQueryAsync(query).ConfigureAwait(false));
+            var queryResult = await ExecuteQueryAsync(query).ConfigureAwait(false);
+            return await Task.Run((() => JArray.FromObject(queryResult))).ConfigureAwait(false);
         }
 
         public async Task<bool> ExecuteNonQueryStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
@@ -551,7 +552,7 @@ namespace Tizsoft.Database
             }
             finally
             {
-                DisconnectAsync(connection);
+                await DisconnectAsync(connection).ConfigureAwait(false);
             }
         }
 
@@ -584,7 +585,8 @@ namespace Tizsoft.Database
             {
                 if (dataReader != null)
                     dataReader.Close();
-                DisconnectAsync(connection);
+
+                await DisconnectAsync(connection).ConfigureAwait(false);
             }
 
             return result;
@@ -592,7 +594,8 @@ namespace Tizsoft.Database
 
         public async Task<JArray> ExecuteQueryJsonStoredProcedureAsync(IMySqlStoredProcedureHelper helper)
         {
-            return JArray.FromObject(await ExecuteQueryStoredProcedureAsync(helper).ConfigureAwait(false));
+            var queryResult = await ExecuteQueryStoredProcedureAsync(helper).ConfigureAwait(false);
+            return await Task.Run((() => JArray.FromObject(queryResult))).ConfigureAwait(false);
         }
 
         public async Task<bool> CreateAsync(string table, List<string> columns, List<object> values)
@@ -688,12 +691,14 @@ namespace Tizsoft.Database
         public async Task<JArray> RequestJsonAsync(string table, List<string> columns,
             params KeyValuePair<string, object>[] conditions)
         {
-            return JArray.FromObject(await RequestAsync(table, columns, conditions).ConfigureAwait(false));
+            var requestResult = await RequestAsync(table, columns, conditions).ConfigureAwait(false);
+            return await Task.Run((() => JArray.FromObject(requestResult))).ConfigureAwait(false);
         }
 
         public async Task<JArray> RequestJsonAsync(string table, List<string> columns, string conditions)
         {
-            return JArray.FromObject(await RequestAsync(table, columns, conditions).ConfigureAwait(false));
+            var requestResult = await RequestAsync(table, columns, conditions).ConfigureAwait(false);
+            return await Task.Run((() => JArray.FromObject(requestResult))).ConfigureAwait(false);
         }
 
         /// <summary>
