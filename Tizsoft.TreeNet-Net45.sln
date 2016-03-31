@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet", "Tizsoft.Treenet\Tizsoft.Treenet.csproj", "{1D6374E8-979F-457C-A649-3E3369373365}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet-Net45", "Tizsoft.Treenet\Tizsoft.Treenet-Net45.csproj", "{1D6374E8-979F-457C-A649-3E3369373365}"
 	ProjectSection(ProjectDependencies) = postProject
 		{42DD1816-7E8D-4581-93B6-BE03F1E72652} = {42DD1816-7E8D-4581-93B6-BE03F1E72652}
 		{C63ED371-2C77-40AD-B9BC-F1222B221B68} = {C63ED371-2C77-40AD-B9BC-F1222B221B68}
