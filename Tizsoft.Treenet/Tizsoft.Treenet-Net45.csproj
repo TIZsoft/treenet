@@ -125,9 +125,9 @@
       <Project>{c87a4c25-27e1-4884-a9a6-0411caae7001}</Project>
       <Name>Tizsoft.Security</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Tizsoft\Tizsoft.csproj">
+    <ProjectReference Include="..\Tizsoft.Common\Tizsoft.Common.csproj">
       <Project>{42DD1816-7E8D-4581-93B6-BE03F1E72652}</Project>
-      <Name>Tizsoft</Name>
+      <Name>Tizsoft.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

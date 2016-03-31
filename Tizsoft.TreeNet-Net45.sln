@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Treenet-Net45", "Ti
 		{206DAAAD-628B-46A9-8366-8CCA080B1991} = {206DAAAD-628B-46A9-8366-8CCA080B1991}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft", "Tizsoft\Tizsoft.csproj", "{42DD1816-7E8D-4581-93B6-BE03F1E72652}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Common", "Tizsoft.Common\Tizsoft.Common.csproj", "{42DD1816-7E8D-4581-93B6-BE03F1E72652}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tizsoft.Net", "Tizsoft.Net\Tizsoft.Net.csproj", "{C63ED371-2C77-40AD-B9BC-F1222B221B68}"
 	ProjectSection(ProjectDependencies) = postProject

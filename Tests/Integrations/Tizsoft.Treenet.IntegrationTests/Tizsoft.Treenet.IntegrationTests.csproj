@@ -70,9 +70,9 @@
       <Project>{1D6374E8-979F-457C-A649-3E3369373365}</Project>
       <Name>Tizsoft.Treenet-Net45</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Tizsoft\Tizsoft.csproj">
+    <ProjectReference Include="..\..\..\Tizsoft.Common\Tizsoft.Common.csproj">
       <Project>{42DD1816-7E8D-4581-93B6-BE03F1E72652}</Project>
-      <Name>Tizsoft</Name>
+      <Name>Tizsoft.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
