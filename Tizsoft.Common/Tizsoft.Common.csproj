@@ -39,32 +39,36 @@
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PushSharp.Amazon, Version=1.0.5838.31056, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PushSharp.3.0.0-beta38\lib\net45\PushSharp.Amazon.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PushSharp.Apple, Version=1.0.5838.31056, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PushSharp.3.0.0-beta38\lib\net45\PushSharp.Apple.dll</HintPath>
+    <Reference Include="PushSharp.Amazon, Version=4.0.8.0, Culture=neutral, PublicKeyToken=cf74b75eab2c0170, processorArchitecture=MSIL">
+      <HintPath>..\packages\PushSharp.4.0.8\lib\net45\PushSharp.Amazon.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PushSharp.Blackberry, Version=1.0.5838.31056, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PushSharp.3.0.0-beta38\lib\net45\PushSharp.Blackberry.dll</HintPath>
+    <Reference Include="PushSharp.Apple, Version=4.0.8.0, Culture=neutral, PublicKeyToken=cf74b75eab2c0170, processorArchitecture=MSIL">
+      <HintPath>..\packages\PushSharp.4.0.8\lib\net45\PushSharp.Apple.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PushSharp.Core, Version=1.0.5838.31055, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PushSharp.3.0.0-beta38\lib\net45\PushSharp.Core.dll</HintPath>
+    <Reference Include="PushSharp.Blackberry, Version=4.0.8.0, Culture=neutral, PublicKeyToken=cf74b75eab2c0170, processorArchitecture=MSIL">
+      <HintPath>..\packages\PushSharp.4.0.8\lib\net45\PushSharp.Blackberry.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PushSharp.Firefox, Version=1.0.5838.31056, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PushSharp.3.0.0-beta38\lib\net45\PushSharp.Firefox.dll</HintPath>
+    <Reference Include="PushSharp.Core, Version=4.0.8.0, Culture=neutral, PublicKeyToken=cf74b75eab2c0170, processorArchitecture=MSIL">
+      <HintPath>..\packages\PushSharp.4.0.8\lib\net45\PushSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PushSharp.Google, Version=1.0.5838.31056, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PushSharp.3.0.0-beta38\lib\net45\PushSharp.Google.dll</HintPath>
+    <Reference Include="PushSharp.Firefox, Version=4.0.8.0, Culture=neutral, PublicKeyToken=cf74b75eab2c0170, processorArchitecture=MSIL">
+      <HintPath>..\packages\PushSharp.4.0.8\lib\net45\PushSharp.Firefox.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PushSharp.Windows, Version=1.0.5838.31056, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PushSharp.3.0.0-beta38\lib\net45\PushSharp.Windows.dll</HintPath>
+    <Reference Include="PushSharp.Google, Version=4.0.8.0, Culture=neutral, PublicKeyToken=cf74b75eab2c0170, processorArchitecture=MSIL">
+      <HintPath>..\packages\PushSharp.4.0.8\lib\net45\PushSharp.Google.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PushSharp.Windows, Version=4.0.8.0, Culture=neutral, PublicKeyToken=cf74b75eab2c0170, processorArchitecture=MSIL">
+      <HintPath>..\packages\PushSharp.4.0.8\lib\net45\PushSharp.Windows.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
